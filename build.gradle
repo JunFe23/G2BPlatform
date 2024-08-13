@@ -33,6 +33,12 @@ dependencies {
 
     // 기타 필요한 Google 라이브러리
     implementation 'com.google.oauth-client:google-oauth-client-jetty:1.32.1'
+
+    // 스프링 WebFlux 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // Jackson JSON 파싱 라이브러리 (필요 시)
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
 tasks.named('test') {
