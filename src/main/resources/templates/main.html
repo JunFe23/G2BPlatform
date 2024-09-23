@@ -40,7 +40,7 @@
     </select>
 
     <label for="serviceKey">Service Key 입력:</label>
-    <input type="text" id="serviceKey" name="serviceKey" value="Ayf0jexFhEl7e9BLvEjDXdBqUYUoJ7ekILYytvJ2dUy0f%2Fd6xKClhtcFIyjB1GtffyOBHLKhbRIx6f7bw9L6VA%3D%3D" required>
+    <input type="text" id="serviceKey" name="serviceKey" value="%2FwZoB2Eujc4Y0tk%2Fd8HcpY9mrcupnHiFHTHwXNTZ9LZSXXwcbYfHwi7%2Fedrq%2B7eXV%2BkP1TIriT3BbKQX4kQKSQ%3D%3D" required>
 
     <label for="inqryBgnDt">시작일 입력:</label>
     <input type="text" id="inqryBgnDt" name="inqryBgnDt" placeholder="202401010000" maxlength="12" required>
@@ -96,24 +96,33 @@
 
         // Fetch API를 사용하여 POST 요청을 보냄
         fetch('/fetch', {
-            method: 'POST', // 메서드를 POST로 설정
+            method: 'POST',
             headers: {
-                'Content-Type': 'application/json' // JSON 형식으로 보냄
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ endpoint: endpoint, serviceKey: serviceKey, inqryBgnDt: inqryBgnDt, inqryEndDt: inqryEndDt }) // JSON 형태로 데이터 전송
+            body: JSON.stringify({ endpoint: endpoint, serviceKey: serviceKey, inqryBgnDt: inqryBgnDt, inqryEndDt: inqryEndDt })
         })
-            .then(response => response.json()) // JSON 응답을 파싱
+            .then(response => {
+                if (!response.ok) {
+                    // 응답이 정상적이지 않으면 오류 처리
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.response.header.resultCode != null && data.response.header.resultCode === "00") {
-                    // 종료 시간 기록 및 소요 시간 계산
+                if (data.message) {
+                    // 데이터 성공적으로 가져왔음을 알림
                     const endTime = new Date();
                     const elapsedTime = Math.floor((endTime - startTime) / 1000); // 소요 시간 (초)
                     const formattedTime = formatTime(elapsedTime);
 
-                    alert(`데이터를 성공적으로 가져왔습니다! (${formattedTime})`); // 소요 시간 표시
-                } else {
-                    // 오류 메시지 표시
+                    alert(`데이터를 성공적으로 가져왔습니다! (${formattedTime})`);
+                } else if (data.response && data.response.header) {
+                    // 오류 메시지 처리
                     alert(`오류가 발생했습니다! (코드: ${data.response.header.resultCode}, 메시지: ${data.response.header.resultMsg})`);
+                } else {
+                    // 예상치 못한 응답 형식
+                    alert('예상치 못한 응답 형식입니다.');
                 }
             })
             .catch(error => {
@@ -124,6 +133,7 @@
                 hideLoading(); // 로딩 표시 숨기기
             });
     }
+
 </script>
 </body>
 </html>

@@ -2,6 +2,7 @@ package org.example.g2bplatform.Controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import org.example.g2bplatform.Model.ContractInfo;
 import org.example.g2bplatform.Repostiory.ContractInfoRepository;
 import org.springframework.http.HttpHeaders;
@@ -12,8 +13,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.slf4j.Logger;
@@ -49,6 +48,7 @@ public class HomeController {
     }
 
     @PostMapping("/fetch")
+    @Transactional
     public Mono<ResponseEntity<String>> fetchDataFromApi(@RequestBody Map<String, String> requestData) {
         // 클라이언트로부터 받은 엔드포인트와 서비스 키
         String endpoint = requestData.get("endpoint");
@@ -81,15 +81,8 @@ public class HomeController {
 
                         // resultCode가 "00"이면 성공, 아니면 오류 메시지를 포함하여 반환
                         if ("00".equals(resultCode)) {
-                            // 각 페이지에 대한 요청을 만들어 Flux로 처리
-                            List<Mono<Void>> requestMonos = new ArrayList<>();
-                            for (int pageNo = 1; pageNo <= totalPages; pageNo++) {
-                                String url = buildUrl(endpoint, serviceKey, inqryBgnDt, inqryEndDt, pageNo);
-                                requestMonos.add(fetchAndSaveData(url));
-                            }
-
-                            // 모든 요청이 완료될 때까지 기다림
-                            return Flux.merge(requestMonos)
+                            // 모든 페이지에 대한 요청을 병렬로 처리
+                            return fetchAndSaveAllPages(endpoint, serviceKey, inqryBgnDt, inqryEndDt, totalPages)
                                     .then(Mono.just(ResponseEntity.ok("{\"message\":\"All data fetched and saved successfully.\"}")));
                         } else {
                             logger.error("API Error: {}", resultMsg);
@@ -109,6 +102,18 @@ public class HomeController {
                 });
     }
 
+    // 모든 페이지를 병렬로 처리하는 메소드
+    private Mono<Void> fetchAndSaveAllPages(String endpoint, String serviceKey, String inqryBgnDt, String inqryEndDt, int totalPages) {
+        return Flux.range(1, totalPages) // 1부터 totalPages까지의 페이지 번호 생성
+                .flatMap(pageNo -> {
+                    String url = buildUrl(endpoint, serviceKey, inqryBgnDt, inqryEndDt, pageNo);
+                    return fetchAndSaveData(url)
+                            .doOnError(e -> logger.error("Error while processing page {}: {}", pageNo, e.getMessage())) // 에러 로깅
+                            .retry(3); // 페이지 처리 오류 시 최대 3회 재시도
+                }, 20) // 병렬로 처리할 최대 개수 설정 (10개의 페이지를 동시에 처리)
+                .then(); // 모든 작업이 완료될 때까지 기다림
+    }
+
     // 데이터 요청 및 저장 메소드
     private Mono<Void> fetchAndSaveData(String url) {
         return webClient.get()
@@ -117,6 +122,12 @@ public class HomeController {
                 .bodyToMono(String.class)
                 .flatMap(response -> {
                     try {
+                        // 응답이 JSON 형식인지 확인
+                        if (!response.trim().startsWith("{") && !response.trim().startsWith("[")) {
+                            logger.error("Unexpected response format for URL: {}. Response: {}", url, response);
+                            return Mono.error(new RuntimeException("Unexpected response format"));
+                        }
+
                         JsonNode jsonNode = objectMapper.readTree(response);
                         JsonNode bodyNode = jsonNode.path("response").path("body").path("items");
 
@@ -126,19 +137,22 @@ public class HomeController {
                             contractInfos.add(contractInfo);
                         }
 
-                        // 데이터베이스에 저장
-                        contractInfoRepository.saveAll(contractInfos);
-                        logger.info("Saved data for URL: {}", url);
-                        return Mono.empty();
+                        // 데이터베이스에 2000개 단위로 배치 저장
+                        int batchSize = 2000;
+                        return Flux.fromIterable(contractInfos)
+                                .buffer(batchSize) // 2000개 단위로 배치 처리
+                                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoRepository.saveAll(batch)))
+                                .then();
                     } catch (Exception e) {
                         logger.error("Error parsing JSON response for URL: {}", url, e);
                         return Mono.error(new RuntimeException("Error parsing JSON response"));
                     }
                 })
+                .retry(3)
                 .onErrorResume(e -> {
                     logger.error("Error while fetching data for URL: {}", url, e);
-                    return Mono.empty(); // 에러 발생 시 빈 결과를 반환
-                }).then();
+                    return Mono.empty();
+                });
     }
 
     // URL 생성 메소드
