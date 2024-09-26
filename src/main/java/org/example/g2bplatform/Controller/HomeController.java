@@ -18,8 +18,10 @@ import reactor.core.publisher.Mono;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.util.retry.Retry;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -109,11 +111,12 @@ public class HomeController {
                     String url = buildUrl(endpoint, serviceKey, inqryBgnDt, inqryEndDt, pageNo);
                     return fetchAndSaveData(url)
                             .doOnError(e -> logger.error("Error while processing page {}: {}", pageNo, e.getMessage())) // 에러 로깅
-                            .retry(3); // 페이지 처리 오류 시 최대 3회 재시도
-                }, 20) // 병렬로 처리할 최대 개수 설정 (10개의 페이지를 동시에 처리)
+                            .retry(10); // 페이지 처리 오류 시 최대 설정횟수만큼 재시도
+                }, 30) // 병렬로 처리할 최대 개수 설정
                 .then(); // 모든 작업이 완료될 때까지 기다림
     }
 
+    // 데이터 요청 및 저장 메소드
     // 데이터 요청 및 저장 메소드
     private Mono<Void> fetchAndSaveData(String url) {
         return webClient.get()
@@ -129,6 +132,16 @@ public class HomeController {
                         }
 
                         JsonNode jsonNode = objectMapper.readTree(response);
+                        JsonNode headerNode = jsonNode.path("response").path("header");
+                        String resultCode = headerNode.path("resultCode").asText();
+                        String resultMsg = headerNode.path("resultMsg").asText();
+
+                        // API 요청이 성공했는지 확인
+                        if (!"00".equals(resultCode)) {
+                            logger.error("API Error for URL {}: {}", url, resultMsg);
+                            return Mono.error(new RuntimeException("API Error: " + resultMsg));
+                        }
+
                         JsonNode bodyNode = jsonNode.path("response").path("body").path("items");
 
                         List<ContractInfo> contractInfos = new ArrayList<>();
@@ -137,7 +150,7 @@ public class HomeController {
                             contractInfos.add(contractInfo);
                         }
 
-                        // 데이터베이스에 2000개 단위로 배치 저장
+                        // 데이터베이스에 배치 저장
                         int batchSize = 2000;
                         return Flux.fromIterable(contractInfos)
                                 .buffer(batchSize) // 2000개 단위로 배치 처리
@@ -148,7 +161,10 @@ public class HomeController {
                         return Mono.error(new RuntimeException("Error parsing JSON response"));
                     }
                 })
-                .retry(3)
+                .retryWhen(
+                        Retry.backoff(3, Duration.ofSeconds(3))
+                                .filter(throwable -> throwable instanceof RuntimeException) // RuntimeException인 경우에만 재시도
+                )
                 .onErrorResume(e -> {
                     logger.error("Error while fetching data for URL: {}", url, e);
                     return Mono.empty();
