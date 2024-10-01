@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.example.g2bplatform.Model.ContractInfo;
+import org.example.g2bplatform.Model.ContractInfoChangeHistory;
 import org.example.g2bplatform.Model.ContractInfoDetail;
+import org.example.g2bplatform.Repostiory.ContractInfoChangeHistoryRepository;
 import org.example.g2bplatform.Repostiory.ContractInfoDetailRepository;
 import org.example.g2bplatform.Repostiory.ContractInfoRepository;
 import org.springframework.http.HttpHeaders;
@@ -41,12 +43,14 @@ public class HomeController {
     private final WebClient webClient;
     private final ContractInfoRepository contractInfoRepository;
     private final ContractInfoDetailRepository contractInfoDetailRepository;
+    private final ContractInfoChangeHistoryRepository contractInfoChangeHistoryRepository;
     private final ObjectMapper objectMapper;
 
     // 생성자에서 ObjectMapper를 주입받도록 수정
     public HomeController(WebClient.Builder webClientBuilder,
                           ContractInfoRepository contractInfoRepository,
                           ContractInfoDetailRepository contractInfoDetailRepository,
+                          ContractInfoChangeHistoryRepository contractInfoChangeHistoryRepository,
                           ObjectMapper objectMapper) {
         this.webClient = webClientBuilder
                 .baseUrl("https://apis.data.go.kr")
@@ -54,6 +58,7 @@ public class HomeController {
                 .build();
         this.contractInfoRepository = contractInfoRepository;
         this.contractInfoDetailRepository =  contractInfoDetailRepository;
+        this.contractInfoChangeHistoryRepository =  contractInfoChangeHistoryRepository;
         this.objectMapper = objectMapper; // 주입받은 ObjectMapper 사용
     }
 
@@ -146,10 +151,12 @@ public class HomeController {
                         JsonNode bodyNode = jsonNode.path("response").path("body").path("items");
 
                         // 엔드포인트에 따라 다른 처리 메소드 호출
-                        if ("/1230000/CntrctInfoService01/getCntrctInfoListThng01".equals(endpoint)) {
+                        if ("/1230000/CntrctInfoService01/getCntrctInfoListThng01".equals(endpoint)) { // 계약현황에 대한 물품조회
                             return processContractInfo(bodyNode);
-                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngDetail01".equals(endpoint)) {
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngDetail01".equals(endpoint)) { // 계약현황에 대한 물품세부조회
                             return processContractInfoDetail(bodyNode);
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngChgHstry01".equals(endpoint)) { // 계약현황에 대한 물품변경이력조회
+                            return processContractInfoChangeHistory(bodyNode);
                         }
                         // 다른 엔드포인트 처리 추가
                         else {
@@ -192,6 +199,19 @@ public class HomeController {
         return Flux.fromIterable(contractInfoDetails)
                 .buffer(2000)
                 .flatMap(batch -> Mono.fromRunnable(() -> contractInfoDetailRepository.saveAll(batch)))
+                .then();
+    }
+
+    // ContractInfoChangeHistory 엔티티 처리
+    private Mono<Void> processContractInfoChangeHistory(JsonNode bodyNode) throws JsonProcessingException {
+        List<ContractInfoChangeHistory> contractInfoChangeHistories = new ArrayList<>();
+        for (JsonNode itemNode : bodyNode) {
+            ContractInfoChangeHistory contractInfoChangeHistory = objectMapper.treeToValue(itemNode, ContractInfoChangeHistory.class);
+            contractInfoChangeHistories.add(contractInfoChangeHistory);
+        }
+        return Flux.fromIterable(contractInfoChangeHistories)
+                .buffer(2000)
+                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoChangeHistoryRepository.saveAll(batch)))
                 .then();
     }
 
