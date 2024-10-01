@@ -1,9 +1,12 @@
 package org.example.g2bplatform.Controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.example.g2bplatform.Model.ContractInfo;
+import org.example.g2bplatform.Model.ContractInfoDetail;
+import org.example.g2bplatform.Repostiory.ContractInfoDetailRepository;
 import org.example.g2bplatform.Repostiory.ContractInfoRepository;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -37,15 +40,20 @@ public class HomeController {
     private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
     private final WebClient webClient;
     private final ContractInfoRepository contractInfoRepository;
+    private final ContractInfoDetailRepository contractInfoDetailRepository;
     private final ObjectMapper objectMapper;
 
     // 생성자에서 ObjectMapper를 주입받도록 수정
-    public HomeController(WebClient.Builder webClientBuilder, ContractInfoRepository contractInfoRepository, ObjectMapper objectMapper) {
+    public HomeController(WebClient.Builder webClientBuilder,
+                          ContractInfoRepository contractInfoRepository,
+                          ContractInfoDetailRepository contractInfoDetailRepository,
+                          ObjectMapper objectMapper) {
         this.webClient = webClientBuilder
                 .baseUrl("https://apis.data.go.kr")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
         this.contractInfoRepository = contractInfoRepository;
+        this.contractInfoDetailRepository =  contractInfoDetailRepository;
         this.objectMapper = objectMapper; // 주입받은 ObjectMapper 사용
     }
 
@@ -109,7 +117,7 @@ public class HomeController {
         return Flux.range(1, totalPages) // 1부터 totalPages까지의 페이지 번호 생성
                 .flatMap(pageNo -> {
                     String url = buildUrl(endpoint, serviceKey, inqryBgnDt, inqryEndDt, pageNo);
-                    return fetchAndSaveData(url)
+                    return fetchAndSaveData(url, endpoint)
                             .doOnError(e -> logger.error("Error while processing page {}: {}", pageNo, e.getMessage())) // 에러 로깅
                             .retry(10); // 페이지 처리 오류 시 최대 설정횟수만큼 재시도
                 }, 30) // 병렬로 처리할 최대 개수 설정
@@ -117,20 +125,13 @@ public class HomeController {
     }
 
     // 데이터 요청 및 저장 메소드
-    // 데이터 요청 및 저장 메소드
-    private Mono<Void> fetchAndSaveData(String url) {
+    private Mono<Void> fetchAndSaveData(String url, String endpoint) {
         return webClient.get()
                 .uri(URI.create(url))
                 .retrieve()
                 .bodyToMono(String.class)
                 .flatMap(response -> {
                     try {
-                        // 응답이 JSON 형식인지 확인
-                        if (!response.trim().startsWith("{") && !response.trim().startsWith("[")) {
-                            logger.error("Unexpected response format for URL: {}. Response: {}", url, response);
-                            return Mono.error(new RuntimeException("Unexpected response format"));
-                        }
-
                         JsonNode jsonNode = objectMapper.readTree(response);
                         JsonNode headerNode = jsonNode.path("response").path("header");
                         String resultCode = headerNode.path("resultCode").asText();
@@ -144,31 +145,54 @@ public class HomeController {
 
                         JsonNode bodyNode = jsonNode.path("response").path("body").path("items");
 
-                        List<ContractInfo> contractInfos = new ArrayList<>();
-                        for (JsonNode itemNode : bodyNode) {
-                            ContractInfo contractInfo = objectMapper.treeToValue(itemNode, ContractInfo.class);
-                            contractInfos.add(contractInfo);
+                        // 엔드포인트에 따라 다른 처리 메소드 호출
+                        if ("/1230000/CntrctInfoService01/getCntrctInfoListThng01".equals(endpoint)) {
+                            return processContractInfo(bodyNode);
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngDetail01".equals(endpoint)) {
+                            return processContractInfoDetail(bodyNode);
+                        }
+                        // 다른 엔드포인트 처리 추가
+                        else {
+                            return Mono.empty(); // 해당 엔드포인트가 없을 경우 빈 응답 처리
                         }
 
-                        // 데이터베이스에 배치 저장
-                        int batchSize = 2000;
-                        return Flux.fromIterable(contractInfos)
-                                .buffer(batchSize) // 2000개 단위로 배치 처리
-                                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoRepository.saveAll(batch)))
-                                .then();
                     } catch (Exception e) {
                         logger.error("Error parsing JSON response for URL: {}", url, e);
                         return Mono.error(new RuntimeException("Error parsing JSON response"));
                     }
                 })
-                .retryWhen(
-                        Retry.backoff(3, Duration.ofSeconds(3))
-                                .filter(throwable -> throwable instanceof RuntimeException) // RuntimeException인 경우에만 재시도
-                )
+                .retryWhen(Retry.backoff(5, Duration.ofSeconds(10))
+                        .filter(throwable -> throwable instanceof RuntimeException))
                 .onErrorResume(e -> {
                     logger.error("Error while fetching data for URL: {}", url, e);
                     return Mono.empty();
                 });
+    }
+
+    // ContractInfo 엔티티 처리
+    private Mono<Void> processContractInfo(JsonNode bodyNode) throws JsonProcessingException {
+        List<ContractInfo> contractInfos = new ArrayList<>();
+        for (JsonNode itemNode : bodyNode) {
+            ContractInfo contractInfo = objectMapper.treeToValue(itemNode, ContractInfo.class);
+            contractInfos.add(contractInfo);
+        }
+        return Flux.fromIterable(contractInfos)
+                .buffer(2000)
+                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoRepository.saveAll(batch)))
+                .then();
+    }
+
+    // ContractInfoDetail 엔티티 처리
+    private Mono<Void> processContractInfoDetail(JsonNode bodyNode) throws JsonProcessingException {
+        List<ContractInfoDetail> contractInfoDetails = new ArrayList<>();
+        for (JsonNode itemNode : bodyNode) {
+            ContractInfoDetail contractInfoDetail = objectMapper.treeToValue(itemNode, ContractInfoDetail.class);
+            contractInfoDetails.add(contractInfoDetail);
+        }
+        return Flux.fromIterable(contractInfoDetails)
+                .buffer(2000)
+                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoDetailRepository.saveAll(batch)))
+                .then();
     }
 
     // URL 생성 메소드

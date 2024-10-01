@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "contract_info_list_thing")
-@Data  // Lombok annotation to generate getters, setters, toString, equals, and hashCode methods
+@Data
 public class ContractInfo {
 
     @Id
