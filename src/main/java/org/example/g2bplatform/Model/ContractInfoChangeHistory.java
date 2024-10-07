@@ -53,7 +53,7 @@ public class ContractInfoChangeHistory {
     @Column(name = "thtmCntrctAmt", precision = 15, scale = 2)
     private BigDecimal thtmCntrctAmt; // 금차계약금액
 
-    @Column(name = "grntymnyRate", precision = 5, scale = 3)
+    @Column(name = "grntymnyRate", precision = 7, scale = 4)
     private BigDecimal grntymnyRate; // 보증금률
 
     @Column(name = "cntrctInfoUrl", length = 500)
