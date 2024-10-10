@@ -7,8 +7,10 @@ import jakarta.transaction.Transactional;
 import org.example.g2bplatform.Model.ContractInfo;
 import org.example.g2bplatform.Model.ContractInfoChangeHistory;
 import org.example.g2bplatform.Model.ContractInfoDetail;
+import org.example.g2bplatform.Model.ContractInfoPPSSrch;
 import org.example.g2bplatform.Repostiory.ContractInfoChangeHistoryRepository;
 import org.example.g2bplatform.Repostiory.ContractInfoDetailRepository;
+import org.example.g2bplatform.Repostiory.ContractInfoPPSSrchRepository;
 import org.example.g2bplatform.Repostiory.ContractInfoRepository;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -44,6 +46,7 @@ public class HomeController {
     private final ContractInfoRepository contractInfoRepository;
     private final ContractInfoDetailRepository contractInfoDetailRepository;
     private final ContractInfoChangeHistoryRepository contractInfoChangeHistoryRepository;
+    private final ContractInfoPPSSrchRepository contractInfoPPSSrchRepository;
     private final ObjectMapper objectMapper;
 
     // 생성자에서 ObjectMapper를 주입받도록 수정
@@ -51,6 +54,7 @@ public class HomeController {
                           ContractInfoRepository contractInfoRepository,
                           ContractInfoDetailRepository contractInfoDetailRepository,
                           ContractInfoChangeHistoryRepository contractInfoChangeHistoryRepository,
+                          ContractInfoPPSSrchRepository contractInfoPPSSrchRepository,
                           ObjectMapper objectMapper) {
         this.webClient = webClientBuilder
                 .baseUrl("https://apis.data.go.kr")
@@ -59,6 +63,7 @@ public class HomeController {
         this.contractInfoRepository = contractInfoRepository;
         this.contractInfoDetailRepository =  contractInfoDetailRepository;
         this.contractInfoChangeHistoryRepository =  contractInfoChangeHistoryRepository;
+        this.contractInfoPPSSrchRepository = contractInfoPPSSrchRepository;
         this.objectMapper = objectMapper; // 주입받은 ObjectMapper 사용
     }
 
@@ -157,9 +162,9 @@ public class HomeController {
                             return processContractInfoDetail(bodyNode);
                         } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngChgHstry01".equals(endpoint)) { // 계약현황에 대한 물품변경이력조회
                             return processContractInfoChangeHistory(bodyNode);
-                        }
-                        // 다른 엔드포인트 처리 추가
-                        else {
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01".equals(endpoint)) { // 나라장터검색조건에 의한 계약현황 물품조회
+                            return processContractInfoPPSSrch(bodyNode);
+                        } else {
                             return Mono.empty(); // 해당 엔드포인트가 없을 경우 빈 응답 처리
                         }
 
@@ -215,15 +220,39 @@ public class HomeController {
                 .then();
     }
 
+    // 나라장터검색조건에 의한 계약현황 물품조회 처리
+    private Mono<Void> processContractInfoPPSSrch(JsonNode bodyNode) throws JsonProcessingException {
+        List<ContractInfoPPSSrch> contractInfoPPSSrches = new ArrayList<>();
+        for (JsonNode itemNode : bodyNode) {
+            ContractInfoPPSSrch contractInfoPPSSrch = objectMapper.treeToValue(itemNode, ContractInfoPPSSrch.class); // ContractInfo 엔티티로 변환
+            contractInfoPPSSrches.add(contractInfoPPSSrch);
+        }
+        return Flux.fromIterable(contractInfoPPSSrches)
+                .buffer(2000) // 대량 데이터 처리 시 배치 처리
+                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoPPSSrchRepository.saveAll(batch))) // 저장 처리
+                .then();
+    }
+
+
     // URL 생성 메소드
     private String buildUrl(String endpoint, String serviceKey, String inqryBgnDt, String inqryEndDt, int pageNo) {
+        String beginDateParam = "inqryBgnDt"; // 기본적으로 inqryBgnDt 사용
+        String endDateParam = "inqryEndDt";   // 기본적으로 inqryEndDt 사용
+
+        // "나라장터검색조건에 의한 계약현황 물품조회" 엔드포인트일 경우 파라미터명을 inqryBgnDate와 inqryEndDate로 변경
+        if ("/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01".equals(endpoint)) {
+            beginDateParam = "inqryBgnDate";
+            endDateParam = "inqryEndDate";
+        }
+
+        // URL 생성
         return "https://apis.data.go.kr" + endpoint +
                 "?serviceKey=" + serviceKey +
                 "&numOfRows=100" +
                 "&pageNo=" + pageNo +
                 "&inqryDiv=1" +
-                "&inqryBgnDt=" + inqryBgnDt +
-                "&inqryEndDt=" + inqryEndDt +
+                "&" + beginDateParam + "=" + inqryBgnDt +
+                "&" + endDateParam + "=" + inqryEndDt +
                 "&type=json";
     }
 }
