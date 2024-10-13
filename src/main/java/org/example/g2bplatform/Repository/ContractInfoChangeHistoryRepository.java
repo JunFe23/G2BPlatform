@@ -1,4 +1,4 @@
-package org.example.g2bplatform.Repostiory;
+package org.example.g2bplatform.Repository;
 
 import org.example.g2bplatform.Model.ContractInfoChangeHistory;
 import org.springframework.data.jpa.repository.JpaRepository;

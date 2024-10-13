@@ -4,14 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
-import org.example.g2bplatform.Model.ContractInfo;
-import org.example.g2bplatform.Model.ContractInfoChangeHistory;
-import org.example.g2bplatform.Model.ContractInfoDetail;
-import org.example.g2bplatform.Model.ContractInfoPPSSrch;
-import org.example.g2bplatform.Repostiory.ContractInfoChangeHistoryRepository;
-import org.example.g2bplatform.Repostiory.ContractInfoDetailRepository;
-import org.example.g2bplatform.Repostiory.ContractInfoPPSSrchRepository;
-import org.example.g2bplatform.Repostiory.ContractInfoRepository;
+import org.example.g2bplatform.Model.*;
+import org.example.g2bplatform.Repository.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +41,7 @@ public class HomeController {
     private final ContractInfoDetailRepository contractInfoDetailRepository;
     private final ContractInfoChangeHistoryRepository contractInfoChangeHistoryRepository;
     private final ContractInfoPPSSrchRepository contractInfoPPSSrchRepository;
+    private final ContractInfoCnstwkRepository contractInfoCnstwkRepository;
     private final ObjectMapper objectMapper;
 
     // 생성자에서 ObjectMapper를 주입받도록 수정
@@ -55,6 +50,7 @@ public class HomeController {
                           ContractInfoDetailRepository contractInfoDetailRepository,
                           ContractInfoChangeHistoryRepository contractInfoChangeHistoryRepository,
                           ContractInfoPPSSrchRepository contractInfoPPSSrchRepository,
+                          ContractInfoCnstwkRepository contractInfoCnstwkRepository,
                           ObjectMapper objectMapper) {
         this.webClient = webClientBuilder
                 .baseUrl("https://apis.data.go.kr")
@@ -64,6 +60,7 @@ public class HomeController {
         this.contractInfoDetailRepository =  contractInfoDetailRepository;
         this.contractInfoChangeHistoryRepository =  contractInfoChangeHistoryRepository;
         this.contractInfoPPSSrchRepository = contractInfoPPSSrchRepository;
+        this.contractInfoCnstwkRepository = contractInfoCnstwkRepository;
         this.objectMapper = objectMapper; // 주입받은 ObjectMapper 사용
     }
 
@@ -164,6 +161,8 @@ public class HomeController {
                             return processContractInfoChangeHistory(bodyNode);
                         } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01".equals(endpoint)) { // 나라장터검색조건에 의한 계약현황 물품조회
                             return processContractInfoPPSSrch(bodyNode);
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListCnstwk01".equals(endpoint)) { // 계약현황에 대한 공사조회
+                            return processContractInfoCnstwk(bodyNode);
                         } else {
                             return Mono.empty(); // 해당 엔드포인트가 없을 경우 빈 응답 처리
                         }
@@ -220,16 +219,29 @@ public class HomeController {
                 .then();
     }
 
-    // 나라장터검색조건에 의한 계약현황 물품조회 처리
+    // ContractInfoPPSSrch 처리
     private Mono<Void> processContractInfoPPSSrch(JsonNode bodyNode) throws JsonProcessingException {
         List<ContractInfoPPSSrch> contractInfoPPSSrches = new ArrayList<>();
         for (JsonNode itemNode : bodyNode) {
-            ContractInfoPPSSrch contractInfoPPSSrch = objectMapper.treeToValue(itemNode, ContractInfoPPSSrch.class); // ContractInfo 엔티티로 변환
+            ContractInfoPPSSrch contractInfoPPSSrch = objectMapper.treeToValue(itemNode, ContractInfoPPSSrch.class); // ContractInfoPPSSrch 엔티티로 변환
             contractInfoPPSSrches.add(contractInfoPPSSrch);
         }
         return Flux.fromIterable(contractInfoPPSSrches)
                 .buffer(2000) // 대량 데이터 처리 시 배치 처리
                 .flatMap(batch -> Mono.fromRunnable(() -> contractInfoPPSSrchRepository.saveAll(batch))) // 저장 처리
+                .then();
+    }
+
+    // ContractInfoCnstwk 처리
+    private Mono<Void> processContractInfoCnstwk(JsonNode bodyNode) throws JsonProcessingException {
+        List<ContractInfoCnstwk> contractInfoCnstwks = new ArrayList<>();
+        for (JsonNode itemNode : bodyNode) {
+            ContractInfoCnstwk contractInfoCnstwk = objectMapper.treeToValue(itemNode, ContractInfoCnstwk.class); // ContractInfoCnstwk 엔티티로 변환
+            contractInfoCnstwks.add(contractInfoCnstwk);
+        }
+        return Flux.fromIterable(contractInfoCnstwks)
+                .buffer(2000) // 대량 데이터 처리 시 배치 처리
+                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoCnstwkRepository.saveAll(batch))) // 저장 처리
                 .then();
     }
 
