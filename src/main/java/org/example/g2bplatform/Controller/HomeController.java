@@ -42,6 +42,7 @@ public class HomeController {
     private final ContractInfoChangeHistoryRepository contractInfoChangeHistoryRepository;
     private final ContractInfoPPSSrchRepository contractInfoPPSSrchRepository;
     private final ContractInfoCnstwkRepository contractInfoCnstwkRepository;
+    private final ContractInfoServcRepository contractInfoServcRepository;
     private final ObjectMapper objectMapper;
 
     // 생성자에서 ObjectMapper를 주입받도록 수정
@@ -51,6 +52,7 @@ public class HomeController {
                           ContractInfoChangeHistoryRepository contractInfoChangeHistoryRepository,
                           ContractInfoPPSSrchRepository contractInfoPPSSrchRepository,
                           ContractInfoCnstwkRepository contractInfoCnstwkRepository,
+                          ContractInfoServcRepository contractInfoServcRepository,
                           ObjectMapper objectMapper) {
         this.webClient = webClientBuilder
                 .baseUrl("https://apis.data.go.kr")
@@ -61,6 +63,7 @@ public class HomeController {
         this.contractInfoChangeHistoryRepository =  contractInfoChangeHistoryRepository;
         this.contractInfoPPSSrchRepository = contractInfoPPSSrchRepository;
         this.contractInfoCnstwkRepository = contractInfoCnstwkRepository;
+        this.contractInfoServcRepository = contractInfoServcRepository;
         this.objectMapper = objectMapper; // 주입받은 ObjectMapper 사용
     }
 
@@ -163,7 +166,9 @@ public class HomeController {
                             return processContractInfoPPSSrch(bodyNode);
                         } else if ("/1230000/CntrctInfoService01/getCntrctInfoListCnstwk01".equals(endpoint)) { // 계약현황에 대한 공사조회
                             return processContractInfoCnstwk(bodyNode);
-                        } else {
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListServc01".equals(endpoint)) { // 계약현황에 대한 공사조회
+                            return processContractInfoServc(bodyNode);
+                        }else {
                             return Mono.empty(); // 해당 엔드포인트가 없을 경우 빈 응답 처리
                         }
 
@@ -245,6 +250,18 @@ public class HomeController {
                 .then();
     }
 
+    // ContractInfoServc 처리
+    private Mono<Void> processContractInfoServc(JsonNode bodyNode) throws JsonProcessingException {
+        List<ContractInfoServc> contractInfoServcs = new ArrayList<>();
+        for (JsonNode itemNode : bodyNode) {
+            ContractInfoServc contractInfoServc = objectMapper.treeToValue(itemNode, ContractInfoServc.class); // ContractInfoCnstwk 엔티티로 변환
+            contractInfoServcs.add(contractInfoServc);
+        }
+        return Flux.fromIterable(contractInfoServcs)
+                .buffer(2000) // 대량 데이터 처리 시 배치 처리
+                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoServcRepository.saveAll(batch))) // 저장 처리
+                .then();
+    }
 
     // URL 생성 메소드
     private String buildUrl(String endpoint, String serviceKey, String inqryBgnDt, String inqryEndDt, int pageNo) {
