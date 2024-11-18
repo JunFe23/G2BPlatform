@@ -1,10 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page 1</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+    <style>
+        /* 스타일 코드 (기존 그대로 유지) */
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const header = document.querySelector('.sidebar-header');
+            const dataTable = $('#data-table').DataTable();
+
+            function updateHeader() {
+                if (sidebar.offsetWidth > 60) {
+                    header.classList.remove('collapsed');
+                    header.classList.add('expanded');
+                    header.innerHTML = '<span>G2B PROJECT</span>';
+                } else {
+                    header.classList.remove('expanded');
+                    header.classList.add('collapsed');
+                    header.innerHTML = '<span>G2B</span>';
+                }
+            }
+
+            sidebar.addEventListener('transitionend', updateHeader);
+            updateHeader();
+
+            // 카테고리 선택 시 서버로 데이터 요청
+            document.getElementById('category-select').addEventListener('change', function() {
+                const category = this.value;
+                fetchData(category);
+            });
+
+            function fetchData(category) {
+                // 서버에 API 요청 (예: /api/data?category=goods)
+                $.ajax({
+                    url: `/api/data?category=${category}`,
+                    method: 'GET',
+                    success: function(response) {
+                        // 데이터테이블의 기존 데이터를 지우고 새 데이터 추가
+                        dataTable.clear();
+                        response.forEach(item => {
+                            dataTable.row.add([
+                                item.id,
+                                item.name,
+                                item.category,
+                                item.details
+                            ]);
+                        });
+                        dataTable.draw();
+                    },
+                    error: function() {
+                        alert('데이터를 불러오는 중 오류가 발생했습니다.');
+                    }
+                });
+            }
+
+            // 초기 데이터를 물품으로 설정해서 로드
+            fetchData('goods');
+        });
+    </script>
 </head>
 <body>
-$END$
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header collapsed"><span>G2B</span></div>
+    <ul>
+        <li class="menu-item">
+            <a href="/page1" class="menu-label">Page 1</a>
+        </li>
+        <li class="menu-item">
+            <a href="/page2" class="menu-label">Page 2</a>
+        </li>
+        <li class="menu-item">
+            <a href="/page3" class="menu-label">Page 3</a>
+        </li>
+    </ul>
+</div>
+<div id="content" class="content">
+    <h1>관련업계 전체시장 DB</h1>
+    <p>아래에서 물품, 용역, 공사 중 하나를 선택하세요:</p>
+    <select id="category-select">
+        <option value="goods">물품</option>
+        <option value="services">용역</option>
+        <option value="construction">공사</option>
+    </select>
+    <table id="data-table" class="display" style="width:100%; margin-top: 20px;">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Details</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- 데이터는 JavaScript에서 동적으로 추가됩니다 -->
+        </tbody>
+    </table>
+</div>
 </body>
 </html>

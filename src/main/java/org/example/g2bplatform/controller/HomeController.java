@@ -1,11 +1,11 @@
-package org.example.g2bplatform.Controller;
+package org.example.g2bplatform.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
-import org.example.g2bplatform.Model.*;
-import org.example.g2bplatform.Repository.*;
+import org.example.g2bplatform.model.*;
+import org.example.g2bplatform.repository.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +32,7 @@ public class HomeController {
 
     @GetMapping("/")
     public String home(Model model) {
-        return "main";
+        return "page1";
     }
 
     private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
@@ -283,5 +283,28 @@ public class HomeController {
                 "&" + beginDateParam + "=" + inqryBgnDt +
                 "&" + endDateParam + "=" + inqryEndDt +
                 "&type=json";
+    }
+
+    @GetMapping(value = "/settings")
+    private String goToSettings(){
+        return "settings.html";
+    }
+
+    @GetMapping("/page1")
+    public String page1(Model model) {
+        model.addAttribute("pageTitle", "Page 1");
+        return "page1"; // templates/page1.html을 렌더링
+    }
+
+    @GetMapping("/page2")
+    public String page2(Model model) {
+        model.addAttribute("pageTitle", "Page 2");
+        return "page2"; // templates/page2.html을 렌더링
+    }
+
+    @GetMapping("/page3")
+    public String page3(Model model) {
+        model.addAttribute("pageTitle", "Page 3");
+        return "page3"; // templates/page3.html을 렌더링
     }
 }

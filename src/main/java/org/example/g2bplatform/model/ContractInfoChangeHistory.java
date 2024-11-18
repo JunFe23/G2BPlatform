@@ -1,4 +1,4 @@
-package org.example.g2bplatform.Model;
+package org.example.g2bplatform.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;

@@ -1,16 +1,17 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hover Expand Sidebar</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500&display=swap" rel="stylesheet">
+    <title>Page 1</title>
+    <link rel="stylesheet" href="/css/style.css">
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: Arial, sans-serif;
             margin: 0;
             display: flex;
         }
+
         .sidebar {
             width: 60px;
             height: 100vh;
@@ -20,6 +21,7 @@
             transition: width 0.3s ease;
             overflow: hidden;
         }
+
         .sidebar::after {
             content: '';
             display: block;
@@ -32,13 +34,16 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
+
         .sidebar:hover::after {
             opacity: 1;
         }
+
         .sidebar:hover {
-            width: 200px;
+            width: 300px;
         }
-        .header {
+
+        .sidebar-header {
             background-color: #34495e;
             color: #ecf0f1;
             padding: 20px;
@@ -46,15 +51,20 @@
             font-size: 1.5em;
             font-weight: 500;
             transition: all 0.3s ease;
+            overflow: hidden;
+            white-space: nowrap;
         }
-        .header.collapsed span {
+
+        .sidebar-header.collapsed span {
             display: block;
             writing-mode: vertical-rl;
             transform: rotate(180deg);
         }
-        .header.expanded span {
+
+        .sidebar-header.expanded span {
             display: inline;
         }
+
         .menu-item {
             padding: 20px;
             display: flex;
@@ -62,152 +72,74 @@
             transition: background-color 0.3s;
             cursor: pointer;
         }
+
         .menu-item:hover {
             background-color: #34495e;
         }
-        .menu-item i {
-            font-size: 24px;
-            margin-right: 10px;
-        }
+
         .menu-label {
             white-space: nowrap;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateX(-20px);
         }
+
         .sidebar:hover .menu-label {
             opacity: 1;
+            transform: translateX(0);
         }
+
         .content {
             margin-left: 60px;
             padding: 20px;
-            transition: margin-left 0.3s;
+            transition: margin-left 0.3s ease;
+            width: calc(100% - 60px);
         }
-        .sidebar:hover + .content {
-            margin-left: 200px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-        }
-        th {
-            background-color: #2c3e50;
-            color: #ecf0f1;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
+
+        .sidebar:hover ~ .content {
+            margin-left: 300px;
+            width: calc(100% - 300px);
         }
     </style>
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.querySelector('.sidebar');
-            const header = document.querySelector('.header');
-            const menuItems = document.querySelectorAll('.menu-item');
-            const content = document.querySelector('.content');
+            const header = document.querySelector('.sidebar-header');
 
             function updateHeader() {
                 if (sidebar.offsetWidth > 60) {
                     header.classList.remove('collapsed');
                     header.classList.add('expanded');
-                    header.querySelector('span').textContent = 'G2B PROJECT';
+                    header.innerHTML = '<span>G2B PROJECT</span>';
                 } else {
                     header.classList.remove('expanded');
                     header.classList.add('collapsed');
-                    header.querySelector('span').textContent = 'G2B';
+                    header.innerHTML = '<span>G2B</span>';
                 }
             }
 
             sidebar.addEventListener('transitionend', updateHeader);
             updateHeader();
-
-            menuItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    const selectedPage = this.querySelector('.menu-label').textContent.trim().toLowerCase();
-                    loadContent(selectedPage);
-                });
-            });
-
-            function loadContent(page) {
-                let htmlContent = '';
-                switch(page) {
-                    case 'home':
-                        htmlContent = '<object type="text/html" data="home.html" style="width:100%; height:100%;"></object>';
-                        break;
-                    case 'profile':
-                        htmlContent = '<object type="text/html" data="profile.html" style="width:100%; height:100%;"></object>';
-                        break;
-                    case 'messages':
-                        htmlContent = '<object type="text/html" data="messages.html" style="width:100%; height:100%;"></object>';
-                        break;
-                    case 'settings':
-                        htmlContent = '<object type="text/html" data="settings.html" style="width:100%; height:100%;"></object>';
-                        break;
-                    default:
-                        htmlContent = '<h1>Welcome to the Page</h1><p>This is the main content area. The sidebar expands when you hover over it.</p>';
-                }
-                content.innerHTML = htmlContent;
-            }
         });
     </script>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="header collapsed">
-            <span>G2B</span>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-home"></i>
-            <span class="menu-label">Home</span>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-user"></i>
-            <span class="menu-label">Profile</span>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-envelope"></i>
-            <span class="menu-label">Messages</span>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-cog"></i>
-            <span class="menu-label">Settings</span>
-        </div>
-    </div>
-    <div class="content">
-        <h1>Welcome to the Page</h1>
-        <p>This is the main content area. The sidebar expands when you hover over it.</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Age</th>
-                    <th>Email</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Example data row, replace with server-side generated rows -->
-                <tr>
-                    <td>1</td>
-                    <td>John Doe</td>
-                    <td>28</td>
-                    <td>johndoe@example.com</td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>Jane Smith</td>
-                    <td>34</td>
-                    <td>janesmith@example.com</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header collapsed"><span>G2B</span></div>
+    <ul>
+        <li class="menu-item">
+            <a href="/page1" class="menu-label">관련업계 전체시장 DB</a>
+        </li>
+        <li class="menu-item">
+            <a href="/page2" class="menu-label">탑인더스트리 & 탑정보통신 수주현황DB</a>
+        </li>
+        <li class="menu-item">
+            <a href="/page3" class="menu-label">수주대상 사업탐색</a>
+        </li>
+    </ul>
+</div>
+<div id="content" class="content">
+    <h1>데이터 업데이트 현황</h1>
+</div>
 </body>
 </html>

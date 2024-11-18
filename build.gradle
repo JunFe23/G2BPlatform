@@ -45,8 +45,6 @@ dependencies {
 
     // JPA (Java Persistence API) 의존성
     implementation 'javax.persistence:javax.persistence-api:2.2'
-}
 
-tasks.named('test') {
-    useJUnitPlatform()
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
 }
