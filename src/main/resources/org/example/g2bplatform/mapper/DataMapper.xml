@@ -158,4 +158,212 @@
             )
         </if>
     </select>
+
+
+    <select id="getTopsData" resultType="map">
+        SELECT
+        unty_cntrct_no,
+        cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_list_thing
+        WHERE
+        1=1
+        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
+        <if test="search != null and search != ''">
+            AND (
+            cntrct_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+        UNION
+        SELECT
+        unty_cntrct_no,
+        cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_service
+        WHERE
+        1=1
+        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
+        <if test="search != null and search != ''">
+            AND (
+            cntrct_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+        UNION
+        SELECT
+        unty_cntrct_no,
+        cnstwk_nm as cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_construction_work
+        WHERE
+        1=1
+        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
+        <if test="search != null and search != ''">
+            AND (
+            cnstwk_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+        LIMIT #{start}, #{length}
+    </select>
+
+    <!-- 전체 데이터 개수 조회 -->
+    <select id="getTopsTotalCount" resultType="int">
+        SELECT
+            COUNT(*)
+        FROM
+            (SELECT
+        unty_cntrct_no,
+        cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_list_thing
+        WHERE
+        1=1
+        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
+        UNION
+        SELECT
+        unty_cntrct_no,
+        cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_service
+        WHERE
+        1=1
+        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
+        UNION
+        SELECT
+        unty_cntrct_no,
+        cnstwk_nm as cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_construction_work
+        WHERE
+        1=1
+        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
+    ) as derived_table_alias
+    </select>
+
+    <!-- 검색된 데이터 개수 조회 -->
+    <select id="getTopsFilteredCount" resultType="int">
+        SELECT
+        COUNT(*)
+        FROM
+        (
+        SELECT
+        unty_cntrct_no,
+        cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_list_thing
+        WHERE
+        1=1
+        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
+        <if test="search != null and search != ''">
+            AND (
+            cntrct_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+        UNION
+        SELECT
+        unty_cntrct_no,
+        cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_service
+        WHERE
+        1=1
+        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
+        <if test="search != null and search != ''">
+            AND (
+            cntrct_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+        UNION
+        SELECT
+        unty_cntrct_no,
+        cnstwk_nm as cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_construction_work
+        WHERE
+        1=1
+        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
+        <if test="search != null and search != ''">
+            AND (
+            cnstwk_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+        ) as derived_table_alias
+    </select>
 </mapper>

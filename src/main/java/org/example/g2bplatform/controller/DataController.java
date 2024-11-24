@@ -46,6 +46,10 @@ public class DataController {
             data = dataService.getConstructionsData(start, length, searchValue, category);
             totalRecords = dataService.getConstructionsTotalCount(category);
             filteredRecords = dataService.getConstructionsFilteredCount(searchValue, category);
+        } else if ("onlyTop".equals(category)) {
+            data = dataService.getTopsData(start, length, searchValue, category);
+            totalRecords = dataService.getTopsTotalCount(category);
+            filteredRecords = dataService.getTopsFilteredCount(searchValue, category);
         }
         Map<String, Object> response = new HashMap<>();
         response.put("draw", draw);

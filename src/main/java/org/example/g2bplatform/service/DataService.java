@@ -48,4 +48,17 @@ public class DataService {
     public int getConstructionsFilteredCount(String search, String category) {
         return dataMapper.getConstructionsFilteredCount(search, category);
     }
+
+
+    public List<Map<String, String>> getTopsData(int start, int length, String search, String category) {
+        return dataMapper.getTopsData(start, length, search, category);
+    }
+
+    public int getTopsTotalCount(String category) {
+        return dataMapper.getTopsTotalCount(category);
+    }
+
+    public int getTopsFilteredCount(String search, String category) {
+        return dataMapper.getTopsFilteredCount(search, category);
+    }
 }

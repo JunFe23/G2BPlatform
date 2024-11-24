@@ -72,4 +72,19 @@ public interface DataMapper {
             @Param("search") String search,
             @Param("category") String category
     );
+
+
+    List<Map<String, String>> getTopsData(
+            @Param("start") int start,
+            @Param("length") int length,
+            @Param("search") String search,
+            @Param("category") String category
+    );
+
+    int getTopsTotalCount(@Param("category") String category);
+
+    int getTopsFilteredCount(
+            @Param("search") String search,
+            @Param("category") String category
+    );
 }
