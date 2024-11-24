@@ -4,7 +4,158 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="org.example.g2bplatform.mapper.DataMapper">
-    <select id="getDataById" parameterType="int" resultType="String">
-        SELECT * FROM data WHERE id = #{id}
+    <!-- 페이징 및 검색 조건이 포함된 데이터 조회 -->
+    <select id="getThingsData" resultType="map">
+        SELECT
+        unty_cntrct_no,
+        cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_list_thing
+        WHERE
+        1=1
+        <if test="search != null and search != ''">
+            AND (
+            cntrct_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+        LIMIT #{start}, #{length}
+    </select>
+
+    <!-- 전체 데이터 개수 조회 -->
+    <select id="getThingsTotalCount" resultType="int">
+        SELECT
+        COUNT(*)
+        FROM
+        contract_info_list_thing
+    </select>
+
+    <!-- 검색된 데이터 개수 조회 -->
+    <select id="getThingsFilteredCount" resultType="int">
+        SELECT
+        COUNT(*)
+        FROM
+        contract_info_list_thing
+        WHERE
+        1=1
+        <if test="search != null and search != ''">
+            AND (
+            cntrct_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+    </select>
+
+    <select id="getServicesData" resultType="map">
+        SELECT
+        unty_cntrct_no,
+        cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_service
+        WHERE
+        1=1
+        and pub_prcrmnt_clsfc_no in ('80161599','80161590','81111599','72101597','81111899')
+        <if test="search != null and search != ''">
+            AND (
+            cntrct_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+        LIMIT #{start}, #{length}
+    </select>
+
+    <!-- 전체 데이터 개수 조회 -->
+    <select id="getServicesTotalCount" resultType="int">
+        SELECT
+            COUNT(*)
+        FROM
+            contract_info_service
+            where
+                pub_prcrmnt_clsfc_no in ('80161599','80161590','81111599','72101597','81111899')
+    </select>
+
+    <!-- 검색된 데이터 개수 조회 -->
+    <select id="getServicesFilteredCount" resultType="int">
+        SELECT
+        COUNT(*)
+        FROM
+        contract_info_service
+        WHERE
+        1=1
+        and pub_prcrmnt_clsfc_no in ('80161599','80161590','81111599','72101597','81111899')
+        <if test="search != null and search != ''">
+            AND (
+            cntrct_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+    </select>
+
+    <select id="getConstructionsData" resultType="map">
+        SELECT
+        unty_cntrct_no,
+        cnstwk_nm as cntrct_nm,
+        cntrct_prd,
+        tot_cntrct_amt,
+        thtm_cntrct_amt,
+        cntrct_instt_nm,
+        base_dtls,
+        cntrct_cncls_mthd_nm,
+        pub_prcrmnt_clsfc_nm,
+        corp_list
+        FROM
+        contract_info_construction_work
+        WHERE
+        1=1
+        and pub_prcrmnt_clsfc_no in ('72151597','72151699','72151295','72101507')
+        <if test="search != null and search != ''">
+            AND (
+            cnstwk_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
+        LIMIT #{start}, #{length}
+    </select>
+
+    <!-- 전체 데이터 개수 조회 -->
+    <select id="getConstructionsTotalCount" resultType="int">
+        SELECT
+            COUNT(*)
+        FROM
+            contract_info_construction_work
+        where pub_prcrmnt_clsfc_no in ('72151597','72151699','72151295','72101507')
+    </select>
+
+    <!-- 검색된 데이터 개수 조회 -->
+    <select id="getConstructionsFilteredCount" resultType="int">
+        SELECT
+        COUNT(*)
+        FROM
+        contract_info_construction_work
+        WHERE
+        1=1
+        and pub_prcrmnt_clsfc_no in ('72151597','72151699','72151295','72101507')
+        <if test="search != null and search != ''">
+            AND (
+            cnstwk_nm LIKE CONCAT('%', #{search}, '%')
+            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
+            )
+        </if>
     </select>
 </mapper>

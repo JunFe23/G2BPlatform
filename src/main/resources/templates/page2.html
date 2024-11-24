@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Page 1</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -22,38 +23,71 @@
             overflow: hidden;
         }
 
+        .sidebar::after {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+            position: absolute;
+            right: 0;
+            top: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar:hover::after {
+            opacity: 1;
+        }
+
         .sidebar:hover {
             width: 300px;
         }
 
         .sidebar-header {
+            background-color: #34495e;
+            color: #ecf0f1;
             padding: 20px;
-            font-size: 1.5em;
-            font-weight: bold;
             text-align: center;
+            font-size: 1.5em;
+            font-weight: 500;
             transition: all 0.3s ease;
+            overflow: hidden;
             white-space: nowrap;
         }
 
-        .sidebar:hover .sidebar-header {
-            content: 'G2B PROJECT';
-            font-size: 1.8em;
+        .sidebar-header.collapsed span {
+            display: block;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
         }
 
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
+        .sidebar-header.expanded span {
+            display: inline;
         }
 
-        .sidebar ul li {
+        .menu-item {
             padding: 20px;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.3s;
+            cursor: pointer;
         }
 
-        .sidebar ul li a {
-            color: #ecf0f1;
-            text-decoration: none;
-            font-size: 1.2em;
+        .menu-item:hover {
+            background-color: #34495e;
+        }
+
+        .menu-label {
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateX(-20px);
+        }
+
+        .sidebar:hover .menu-label {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .content {
@@ -67,26 +101,170 @@
             margin-left: 300px;
             width: calc(100% - 300px);
         }
+
+        /* 새로운 H1 스타일 추가 */
+        .content h1 {
+            background-color: #34495e;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #2c3e50;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .content h1.goods {
+            border-left: 15px solid #3498db; /* 물품 페이지용 - 파란색 강조 */
+        }
+
+        .content h1.services {
+            border-left: 15px solid #e67e22; /* 용역 페이지용 - 주황색 강조 */
+        }
+
+        .content h1.construction {
+            border-left: 15px solid #27ae60; /* 공사 페이지용 - 초록색 강조 */
+        }
     </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+
+            console.log("Document is ready. Initializing DataTable...");
+
+            // 카테고리 변수 정의
+            let category = 'services';
+
+            // 기존 DataTable 파괴
+            if ($.fn.DataTable.isDataTable('#data-table')) {
+                console.log("Destroying existing DataTable...");
+                $('#data-table').DataTable().destroy(); // DataTable 인스턴스 파괴
+                $('#data-table').empty(); // 테이블 헤더와 데이터를 초기화
+            }
+
+            $('#data-table').html(`
+                <thead>
+                    <tr>
+                        <th>통합계약번호</th>
+                        <th>계약명</th>
+                        <th>계약기간</th>
+                        <th>총계약금액</th>
+                        <th>금차계약금액</th>
+                        <th>계약기관명</th>
+                        <th>근거내역</th>
+                        <th>계약체결방법명</th>
+                        <th>공공조달분류명</th>
+                        <th>업체목록</th>
+                    </tr>
+                </thead>
+            `);
+
+            // 새 DataTable 초기화
+            $('#data-table').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: '/api/data',
+                    type: 'GET',
+                    data: function (d) {
+                        d.category = category; // 요청 데이터에 카테고리 추가
+                        console.log('DataTables request parameters:', d); // 요청 데이터 확인
+                        return d;
+                    },
+                    error: function (xhr, error, code) {
+                        console.error('Ajax Error:', xhr.responseText, error, code); // 에러 발생 시 확인
+                    }
+                },
+                columns: [
+                    { data: 'unty_cntrct_no' },
+                    { data: 'cntrct_nm' },
+                    { data: 'cntrct_prd' },
+                    { data: 'tot_cntrct_amt' },
+                    { data: 'thtm_cntrct_amt' },
+                    { data: 'cntrct_instt_nm' },
+                    { data: 'base_dtls' },
+                    { data: 'cntrct_cncls_mthd_nm' },
+                    { data: 'pub_prcrmnt_clsfc_nm' },
+                    { data: 'corp_list' }
+                ]
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const header = document.querySelector('.sidebar-header');
+            const dataTable = $('#data-table').DataTable();
+
+            function updateHeader() {
+                if (sidebar.offsetWidth > 60) {
+                    header.classList.remove('collapsed');
+                    header.classList.add('expanded');
+                    header.innerHTML = '<span>G2B PROJECT</span>';
+                } else {
+                    header.classList.remove('expanded');
+                    header.classList.add('collapsed');
+                    header.innerHTML = '<span>G2B</span>';
+                }
+            }
+
+            sidebar.addEventListener('transitionend', updateHeader);
+            updateHeader();
+
+            // "관련업계 전체시장 DB" 클릭 시 하위 메뉴 펼치기/접기
+            $('#toggle-related-market-db').on('click', function () {
+                $('#related-market-submenu').slideToggle();
+            });
+
+        });
+    </script>
 </head>
 <body>
 <div id="sidebar" class="sidebar">
-    <div class="sidebar-header">G2B</div>
+    <div class="sidebar-header collapsed"><span>G2B</span></div>
     <ul>
+        <li id="toggle-related-market-db" class="menu-item">
+            <span class="menu-label">관련업계 전체시장 DB</span>
+        </li>
+        <ul id="related-market-submenu" class="submenu" style="display: none; padding-left: 20px;">
+            <li id="goods-item" class="menu-item">
+                <a href="/page1" class="menu-label">물품</a>
+            </li>
+            <li id="services-item" class="menu-item">
+                <a href="/page2" class="menu-label">용역</a>
+            </li>
+            <li id="construction-item" class="menu-item">
+                <a href="/page3" class="menu-label">공사</a>
+            </li>
+        </ul>
         <li class="menu-item">
-            <a href="/page1" class="menu-label">관련업계 전체시장 DB</a>
+            <a href="/imsi" class="menu-label">탑인더스트리 & 탑정보통신 수주현황DB</a>
         </li>
         <li class="menu-item">
-            <a href="/page2" class="menu-label">탑인더스트리 & 탑정보통신 수주현황DB</a>
-        </li>
-        <li class="menu-item">
-            <a href="/page3" class="menu-label">수주대상 사업탐색</a>
+            <a href="/imsi" class="menu-label">수주대상 사업탐색</a>
         </li>
     </ul>
 </div>
 <div id="content" class="content">
-    <h1>Welcome to Page 2</h1>
-    <p>This is the content of Page 2.</p>
+    <h1 class="services">관련업계 전체시장 DB - 용역</h1>
+    <table id="data-table" class="display" style="width:100%; margin-top: 20px;">
+        <thead>
+        <tr>
+            <th>통합계약번호</th>
+            <th>계약명</th>
+            <th>계약기간</th>
+            <th>총계약금액</th>
+            <th>금차계약금액</th>
+            <th>계약기관명</th>
+            <th>근거내역</th>
+            <th>계약체결방법명</th>
+            <th>공공조달분류명</th>
+            <th>업체목록</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- 데이터는 JavaScript에서 동적으로 추가됩니다 -->
+        </tbody>
+    </table>
 </div>
 </body>
 </html>

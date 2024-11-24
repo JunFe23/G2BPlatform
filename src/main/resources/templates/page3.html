@@ -23,6 +23,23 @@
             overflow: hidden;
         }
 
+        .sidebar::after {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+            position: absolute;
+            right: 0;
+            top: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar:hover::after {
+            opacity: 1;
+        }
+
         .sidebar:hover {
             width: 300px;
         }
@@ -37,6 +54,16 @@
             transition: all 0.3s ease;
             overflow: hidden;
             white-space: nowrap;
+        }
+
+        .sidebar-header.collapsed span {
+            display: block;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+        }
+
+        .sidebar-header.expanded span {
+            display: inline;
         }
 
         .menu-item {
@@ -75,13 +102,27 @@
             width: calc(100% - 300px);
         }
 
+        /* 새로운 H1 스타일 추가 */
         .content h1 {
             background-color: #34495e;
             color: #ecf0f1;
             padding: 15px;
             border-radius: 8px;
+            border: 2px solid #2c3e50;
             text-align: center;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .content h1.goods {
+            border-left: 15px solid #3498db; /* 물품 페이지용 - 파란색 강조 */
+        }
+
+        .content h1.services {
+            border-left: 15px solid #e67e22; /* 용역 페이지용 - 주황색 강조 */
+        }
+
+        .content h1.construction {
+            border-left: 15px solid #27ae60; /* 공사 페이지용 - 초록색 강조 */
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -92,7 +133,7 @@
             console.log("Document is ready. Initializing DataTable...");
 
             // 카테고리 변수 정의
-            let category = 'goods'; // 기본값: 'goods'
+            let category = 'constructions';
 
             // 기존 DataTable 파괴
             if ($.fn.DataTable.isDataTable('#data-table')) {
@@ -179,7 +220,7 @@
 </head>
 <body>
 <div id="sidebar" class="sidebar">
-    <div class="sidebar-header"><span>G2B PROJECT</span></div>
+    <div class="sidebar-header collapsed"><span>G2B</span></div>
     <ul>
         <li id="toggle-related-market-db" class="menu-item">
             <span class="menu-label">관련업계 전체시장 DB</span>
@@ -204,7 +245,7 @@
     </ul>
 </div>
 <div id="content" class="content">
-    <h1 class="goods">관련업계 전체시장 DB - 물품</h1>
+    <h1 class="construction">관련업계 전체시장 DB - 공사</h1>
     <table id="data-table" class="display" style="width:100%; margin-top: 20px;">
         <thead>
         <tr>

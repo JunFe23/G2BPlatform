@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page 1</title>
+    <title>개발 작업 중</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -68,6 +67,12 @@
             padding: 20px;
             transition: margin-left 0.3s ease;
             width: calc(100% - 60px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
         }
 
         .sidebar:hover ~ .content {
@@ -75,80 +80,34 @@
             width: calc(100% - 300px);
         }
 
-        .content h1 {
+        .work-in-progress {
             background-color: #34495e;
             color: #ecf0f1;
-            padding: 15px;
+            padding: 30px;
             border-radius: 8px;
-            text-align: center;
+            border: 2px solid #2c3e50;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+        }
+
+        .work-in-progress h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .work-in-progress p {
+            font-size: 1.2em;
+        }
+
+        .construction-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #e67e22;
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
     <script>
-        $(document).ready(function () {
-
-            console.log("Document is ready. Initializing DataTable...");
-
-            // 카테고리 변수 정의
-            let category = 'goods'; // 기본값: 'goods'
-
-            // 기존 DataTable 파괴
-            if ($.fn.DataTable.isDataTable('#data-table')) {
-                console.log("Destroying existing DataTable...");
-                $('#data-table').DataTable().destroy(); // DataTable 인스턴스 파괴
-                $('#data-table').empty(); // 테이블 헤더와 데이터를 초기화
-            }
-
-            $('#data-table').html(`
-                <thead>
-                    <tr>
-                        <th>통합계약번호</th>
-                        <th>계약명</th>
-                        <th>계약기간</th>
-                        <th>총계약금액</th>
-                        <th>금차계약금액</th>
-                        <th>계약기관명</th>
-                        <th>근거내역</th>
-                        <th>계약체결방법명</th>
-                        <th>공공조달분류명</th>
-                        <th>업체목록</th>
-                    </tr>
-                </thead>
-            `);
-
-            // 새 DataTable 초기화
-            $('#data-table').DataTable({
-                processing: true,
-                serverSide: true,
-                ajax: {
-                    url: '/api/data',
-                    type: 'GET',
-                    data: function (d) {
-                        d.category = category; // 요청 데이터에 카테고리 추가
-                        console.log('DataTables request parameters:', d); // 요청 데이터 확인
-                        return d;
-                    },
-                    error: function (xhr, error, code) {
-                        console.error('Ajax Error:', xhr.responseText, error, code); // 에러 발생 시 확인
-                    }
-                },
-                columns: [
-                    { data: 'unty_cntrct_no' },
-                    { data: 'cntrct_nm' },
-                    { data: 'cntrct_prd' },
-                    { data: 'tot_cntrct_amt' },
-                    { data: 'thtm_cntrct_amt' },
-                    { data: 'cntrct_instt_nm' },
-                    { data: 'base_dtls' },
-                    { data: 'cntrct_cncls_mthd_nm' },
-                    { data: 'pub_prcrmnt_clsfc_nm' },
-                    { data: 'corp_list' }
-                ]
-            });
-        });
-
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.querySelector('.sidebar');
             const header = document.querySelector('.sidebar-header');
@@ -170,16 +129,53 @@
             updateHeader();
 
             // "관련업계 전체시장 DB" 클릭 시 하위 메뉴 펼치기/접기
-            $('#toggle-related-market-db').on('click', function () {
-                $('#related-market-submenu').slideToggle();
+            document.getElementById('toggle-related-market-db').addEventListener('click', function() {
+                const submenu = document.getElementById('related-market-submenu');
+                if (submenu.style.display === 'none' || submenu.style.display === '') {
+                    submenu.style.display = 'block';
+                } else {
+                    submenu.style.display = 'none';
+                }
             });
 
+            // 카테고리 선택 시 서버로 데이터 요청
+            document.getElementById('category-select').addEventListener('change', function() {
+                const category = this.value;
+                fetchData(category);
+            });
+
+            function fetchData(category) {
+                // 서버에 API 요청 (예: /api/data?category=goods)
+                $.ajax({
+                    url: `/api/data?category=${category}`,
+                    method: 'GET',
+                    success: function(response) {
+                        // 데이터테이블의 기존 데이터를 지우고 새 데이터 추가
+                        dataTable.clear();
+                        response.forEach(item => {
+                            dataTable.row.add([
+                                item.id,
+                                item.name,
+                                item.category,
+                                item.details
+                            ]);
+                        });
+                        dataTable.draw();
+                    },
+                    error: function() {
+                        alert('데이터를 불러오는 중 오류가 발생했습니다.');
+                    }
+                });
+            }
+
+            // 초기 데이터를 물품으로 설정해서 로드
+            fetchData('goods');
         });
     </script>
 </head>
 <body>
-<div id="sidebar" class="sidebar">
-    <div class="sidebar-header"><span>G2B PROJECT</span></div>
+<<div id="sidebar" class="sidebar">
+    <div class="sidebar-header collapsed"><span>G2B</span></div>
     <ul>
         <li id="toggle-related-market-db" class="menu-item">
             <span class="menu-label">관련업계 전체시장 DB</span>
@@ -204,26 +200,11 @@
     </ul>
 </div>
 <div id="content" class="content">
-    <h1 class="goods">관련업계 전체시장 DB - 물품</h1>
-    <table id="data-table" class="display" style="width:100%; margin-top: 20px;">
-        <thead>
-        <tr>
-            <th>통합계약번호</th>
-            <th>계약명</th>
-            <th>계약기간</th>
-            <th>총계약금액</th>
-            <th>금차계약금액</th>
-            <th>계약기관명</th>
-            <th>근거내역</th>
-            <th>계약체결방법명</th>
-            <th>공공조달분류명</th>
-            <th>업체목록</th>
-        </tr>
-        </thead>
-        <tbody>
-        <!-- 데이터는 JavaScript에서 동적으로 추가됩니다 -->
-        </tbody>
-    </table>
+    <div class="work-in-progress">
+        <div class="construction-icon">🚧</div>
+        <h1>개발 작업 중</h1>
+        <p>현재 이 페이지는 작업 중입니다. <br>빠른 시일 내에 업데이트를 완료하도록 하겠습니다.</p>
+    </div>
 </div>
 </body>
 </html>

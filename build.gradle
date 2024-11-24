@@ -15,8 +15,8 @@ java {
 
 repositories {
     mavenCentral()
-    google() // Google Maven 저장소 추가
-    jcenter() // JCenter 저장소 추가
+    google()
+    jcenter()
 }
 
 dependencies {
@@ -26,25 +26,26 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // MySQL Connector 의존성 추가 (버전 지정)
     runtimeOnly 'mysql:mysql-connector-java:8.0.33'
 
-    // 스프링 WebFlux 의존성
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
-
-    // Jackson JSON 파싱 라이브러리 (필요 시)
     implementation 'com.fasterxml.jackson.core:jackson-databind'
-
     implementation 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-
     implementation 'io.netty:netty-resolver-dns-native-macos:4.1.75.Final'
-
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.0'
     implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names'
 
-    // JPA (Java Persistence API) 의존성
     implementation 'javax.persistence:javax.persistence-api:2.2'
 
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
+
+    // Exclude Logback and use Log4j2
+    configurations {
+        all {
+            exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+        }
+    }
+
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
 }
