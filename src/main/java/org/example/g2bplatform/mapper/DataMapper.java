@@ -10,19 +10,28 @@ import java.util.Map;
 @Mapper
 public interface DataMapper {
     /**
-     * 페이징 및 검색 조건에 맞는 데이터를 조회
      *
-     * @param start    시작 인덱스 (OFFSET)
-     * @param length   가져올 데이터의 개수 (LIMIT)
-     * @param search   검색어 (null 허용)
-     * @param category 데이터 카테고리
-     * @return 조회된 데이터 목록
+     * @param start
+     * @param length
+     * @param dminsttNm
+     * @param dminsttNmDetail
+     * @param prdctClsfcNo
+     * @param cntctCnclsMthdNm
+     * @param firstCntrctDate
+     * @return
      */
     List<Map<String, String>> getThingsData(
             @Param("start") int start,
             @Param("length") int length,
-            @Param("search") String search,
-            @Param("category") String category
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd
     );
 
     /**
@@ -35,14 +44,23 @@ public interface DataMapper {
 
     /**
      * 검색 조건에 맞는 데이터 개수를 반환
-     *
-     * @param search   검색어 (null 허용)
-     * @param category 데이터 카테고리
-     * @return 검색된 데이터 개수
+     * @param dminsttNm
+     * @param dminsttNmDetail
+     * @param prdctClsfcNo
+     * @param cntctCnclsMthdNm
+     * @param firstCntrctDate
+     * @return
      */
     int getThingsFilteredCount(
-            @Param("search") String search,
-            @Param("category") String category
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd
     );
 
     List<Map<String, String>> getServicesData(

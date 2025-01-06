@@ -13,16 +13,16 @@ public class DataService {
     @Autowired
     private DataMapper dataMapper;
 
-    public List<Map<String, String>> getThingsData(int start, int length, String search, String category) {
-        return dataMapper.getThingsData(start, length, search, category);
+    public List<Map<String, String>> getThingsData(int start, int length, String dminsttNm, String dminsttNmDetail, String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate, Integer year, String month, String rangeStart, String rangeEnd) {
+        return dataMapper.getThingsData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd);
     }
 
     public int getThingsTotalCount(String category) {
         return dataMapper.getThingsTotalCount(category);
     }
 
-    public int getThingsFilteredCount(String search, String category) {
-        return dataMapper.getThingsFilteredCount(search, category);
+    public int getThingsFilteredCount(String dminsttNm, String dminsttNmDetail, String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate, Integer year, String month, String rangeStart, String rangeEnd) {
+        return dataMapper.getThingsFilteredCount(dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd);
     }
 
     public List<Map<String, String>> getServicesData(int start, int length, String search, String category) {

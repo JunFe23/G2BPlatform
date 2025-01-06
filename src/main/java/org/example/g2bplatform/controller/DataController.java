@@ -1,11 +1,14 @@
 package org.example.g2bplatform.controller;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.example.g2bplatform.service.DataService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.example.g2bplatform.service.ExcelService;
+import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,8 +20,11 @@ public class DataController {
 
     private final DataService dataService;
 
-    public DataController(DataService dataService) {
+    private final ExcelService excelService;
+
+    public DataController(DataService dataService, ExcelService excelService) {
         this.dataService = dataService;
+        this.excelService = excelService;
     }
 
     @GetMapping("/data")
@@ -26,7 +32,17 @@ public class DataController {
                                               @RequestParam int start,
                                               @RequestParam int length,
                                               @RequestParam Map<String, String> search, // Map으로 검색 값을 받아옵니다
-                                              @RequestParam String category) {
+                                              @RequestParam String category,
+                                        @RequestParam(required = false) String dminsttNm,         // 수요기관명
+                                        @RequestParam(required = false) String dminsttNmDetail, // 수요기관 지역명
+                                        @RequestParam(required = false) String prdctClsfcNo,    // 품명 내용
+                                        @RequestParam(required = false) String cntctCnclsMthdNm,// 입찰 계약방법
+                                        @RequestParam(required = false) String firstCntrctDate,  // 최초 계약일자
+                                        @RequestParam(required = false) Integer year,
+                                        @RequestParam(required = false) String month,
+                                        @RequestParam(required = false) String rangeStart,
+                                        @RequestParam(required = false) String rangeEnd
+                                        ) {
         String searchValue = search.get("search[value]"); // DataTables가 전송하는 검색어
 
         List<Map<String, String>> data = new ArrayList<>();
@@ -35,9 +51,9 @@ public class DataController {
 
         // 예시 데이터 - 실제로는 데이터베이스에서 가져와야 함
         if ("goods".equals(category)) {
-            data = dataService.getThingsData(start, length, searchValue, category);
+            data = dataService.getThingsData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd);
             totalRecords = dataService.getThingsTotalCount(category);
-            filteredRecords = dataService.getThingsFilteredCount(searchValue, category);
+            filteredRecords = dataService.getThingsFilteredCount(dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd);
         } else if ("services".equals(category)) {
             data = dataService.getServicesData(start, length, searchValue, category);
             totalRecords = dataService.getServicesTotalCount(category);
@@ -58,5 +74,44 @@ public class DataController {
         response.put("data", data);
 
         return response;
+    }
+
+    @PostMapping("/data/excel")
+    public void downloadExcel(@RequestBody Map<String, Object> requestData, HttpServletResponse response) throws IOException {
+        // 숫자 값 변환
+        Integer year = null;
+        if (requestData.get("year") != null && !requestData.get("year").toString().isEmpty()) {
+            try {
+                year = Integer.parseInt(requestData.get("year").toString());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid year format: " + requestData.get("year"));
+            }
+        }
+
+        // 데이터 조회
+        List<Map<String, String>> data = dataService.getThingsData(
+                0, Integer.MAX_VALUE, // 전체 데이터를 가져옴
+                (String) requestData.get("dminsttNm"),
+                (String) requestData.get("dminsttNmDetail"),
+                (String) requestData.get("prdctClsfcNo"),
+                (String) requestData.get("cntctCnclsMthdNm"),
+                (String) requestData.get("firstCntrctDate"),
+                year,
+                (String) requestData.get("month"),
+                (String) requestData.get("rangeStart"),
+                (String) requestData.get("rangeEnd")
+        );
+
+        // 엑셀 파일 생성
+        ByteArrayOutputStream excelFile = excelService.createExcelFile(data);
+
+        // URL 인코딩된 파일 이름 생성
+        String fileName = URLEncoder.encode("조회결과.xlsx", StandardCharsets.UTF_8.toString());
+
+        // 응답 설정 및 파일 전송
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + fileName);
+        response.getOutputStream().write(excelFile.toByteArray());
+        response.getOutputStream().flush();
     }
 }
