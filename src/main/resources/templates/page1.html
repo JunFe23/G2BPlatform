@@ -141,6 +141,11 @@
                 }
             });
 
+            // "저장된 데이터만 보기" 체크박스 상태에 따른 데이터 테이블 필터링
+            $('#show-saved-only').on('change', function () {
+                table.draw(); // DataTable 새로고침
+            });
+
             // 엑셀다운로드
             $('#download-excel').on('click', function () {
                 const dateType = $('#search-date-type').val();
@@ -154,7 +159,8 @@
                     year: dateType === 'year' ? $('#search-year').val() : null,
                     month: dateType === 'month' ? $('#search-month').val() : null,
                     rangeStart: dateType === 'range' ? $('#search-range-start').val() : null,
-                    rangeEnd: dateType === 'range' ? $('#search-range-end').val() : null
+                    rangeEnd: dateType === 'range' ? $('#search-range-end').val() : null,
+                    showSavedOnly: $('#show-saved-only').is(':checked') ? 1 : 0
                 };
 
                 // 로딩 스피너 표시
@@ -213,11 +219,11 @@
                         <th>입찰계약방법</th>
                         <th>입찰공고번호</th>
                         <th>최초계약일자</th>
-                        <th>계약금액</th>
-                        <th>계약일자</th>
-                        <th>계약금액</th>
+                        <th>최초계약금액</th>
+                        <th>최종계약일자</th>
+                        <th>최종계약금액</th>
                         <th>계약변경차수</th>
-                        <th>최종계약여부</th>
+                        <th>저장</th>
                     </tr>
                 </thead>
             `);
@@ -257,6 +263,10 @@
                             d.rangeStart = $('#search-range-start').val(); // 시작 월
                             d.rangeEnd = $('#search-range-end').val(); // 종료 월
                         }
+
+                        // "저장된 데이터만 보기" 체크 상태 추가
+                        d.showSavedOnly = $('#show-saved-only').is(':checked') ? 1 : 0; // 체크된 경우 1, 아니면 0
+
                         return d;
                     },
                     error: function (xhr, error, code) {
@@ -288,7 +298,7 @@
                         data: 'cntrctDate',
                         render: function (data) {
                             // 날짜 포맷 (yyyy-mm-dd)
-                            return new Date(data).toISOString().split('T')[0];
+                            return data;
                         }
                     },
                     {
@@ -299,8 +309,38 @@
                         }
                     },
                     { data: 'cntrctCnt' },
-                    { data: 'finalCntrctYn' }
+                    {
+                        data: 'checked',
+                        render: function (data, type, row) {
+                            return `
+                        <input type="checkbox" class="save-checkbox" data-id="${row.id}" ${data ? 'checked' : ''}>
+                    `;
+                        },
+                        orderable: false
+                    },
+                ],
+                columnDefs: [
+                    { targets: 'id', visible: false } // id 컬럼 숨김 처리
                 ]
+            });
+
+            // 체크박스 변경 이벤트 처리
+            $('#data-table').on('change', '.save-checkbox', function () {
+                const id = $(this).data('id');
+                const checked = $(this).is(':checked');
+
+                $.ajax({
+                    url: '/api/update-checked',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ id: id, checked: checked }),
+                    success: function () {
+                        console.log(`ID: ${id}, Checked: ${checked} 업데이트 성공`);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('업데이트 실패:', xhr.responseText);
+                    }
+                });
             });
 
             // 검색 버튼 클릭 시 DataTable 새로고침
@@ -396,6 +436,13 @@
         <button id="search-button" style="padding: 8px 15px; background-color: #34495e; color: #ecf0f1; border: none; cursor: pointer;">
             검색
         </button>
+
+        <!-- 저장된 데이터만 보기 체크박스 -->
+        <label style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" id="show-saved-only" style="cursor: pointer;">
+            저장된 데이터만 보기
+        </label>
+
         <!-- 엑셀 다운로드 버튼 -->
         <button id="download-excel" style="padding: 8px 15px; background-color: #27ae60; color: #ecf0f1; border: none; cursor: pointer; margin-left: 10px;">
             엑셀 다운로드

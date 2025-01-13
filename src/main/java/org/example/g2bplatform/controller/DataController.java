@@ -3,6 +3,8 @@ package org.example.g2bplatform.controller;
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.g2bplatform.service.DataService;
 import org.example.g2bplatform.service.ExcelService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayOutputStream;
@@ -41,7 +43,8 @@ public class DataController {
                                         @RequestParam(required = false) Integer year,
                                         @RequestParam(required = false) String month,
                                         @RequestParam(required = false) String rangeStart,
-                                        @RequestParam(required = false) String rangeEnd
+                                        @RequestParam(required = false) String rangeEnd,
+                                        @RequestParam(required = false) int showSavedOnly
                                         ) {
         String searchValue = search.get("search[value]"); // DataTables가 전송하는 검색어
 
@@ -51,9 +54,9 @@ public class DataController {
 
         // 예시 데이터 - 실제로는 데이터베이스에서 가져와야 함
         if ("goods".equals(category)) {
-            data = dataService.getThingsData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd);
+            data = dataService.getThingsData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
             totalRecords = dataService.getThingsTotalCount(category);
-            filteredRecords = dataService.getThingsFilteredCount(dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd);
+            filteredRecords = dataService.getThingsFilteredCount(dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         } else if ("services".equals(category)) {
             data = dataService.getServicesData(start, length, searchValue, category);
             totalRecords = dataService.getServicesTotalCount(category);
@@ -99,7 +102,8 @@ public class DataController {
                 year,
                 (String) requestData.get("month"),
                 (String) requestData.get("rangeStart"),
-                (String) requestData.get("rangeEnd")
+                (String) requestData.get("rangeEnd"),
+                (int) requestData.get("showSavedOnly")
         );
 
         // 엑셀 파일 생성
@@ -113,5 +117,19 @@ public class DataController {
         response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + fileName);
         response.getOutputStream().write(excelFile.toByteArray());
         response.getOutputStream().flush();
+    }
+
+    // 체크박스 상태 업데이트 API
+    @PostMapping("/update-checked")
+    public ResponseEntity<String> updateChecked(@RequestBody Map<String, Object> request) {
+        try {
+            // 데이터베이스에서 업데이트 처리
+            dataService.updateChecked((int) request.get("id"), (boolean) request.get("checked"));
+            return ResponseEntity.ok("체크박스 상태가 성공적으로 업데이트되었습니다.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("체크박스 상태 업데이트 중 오류가 발생했습니다.");
+        }
     }
 }

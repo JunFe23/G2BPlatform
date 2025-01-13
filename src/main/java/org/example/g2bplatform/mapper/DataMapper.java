@@ -31,7 +31,8 @@ public interface DataMapper {
             @Param("year") Integer year,
             @Param("month") String month,
             @Param("rangeStart") String rangeStart,
-            @Param("rangeEnd") String rangeEnd
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
     );
 
     /**
@@ -60,7 +61,8 @@ public interface DataMapper {
             @Param("year") Integer year,
             @Param("month") String month,
             @Param("rangeStart") String rangeStart,
-            @Param("rangeEnd") String rangeEnd
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
     );
 
     List<Map<String, String>> getServicesData(
@@ -105,4 +107,6 @@ public interface DataMapper {
             @Param("search") String search,
             @Param("category") String category
     );
+
+    int updateChecked(@Param("id") int id, @Param("checked") int checked);
 }

@@ -4,97 +4,173 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="org.example.g2bplatform.mapper.DataMapper">
-    <!-- 페이징 및 검색 조건이 포함된 데이터 조회 -->
-    <select id="getThingsData" resultType="map">
-        WITH RankedData AS (
-            SELECT
-                cilt.unty_cntrct_no,
-                cilt.req_no,
-                cilt.cntrct_date,
-                cilt.thtm_cntrct_amt,
-                cidlt.prdct_clsfc_no,
-                cilt.cntrct_nm,
-                cilt.dminstt_list,
-                cilt.cntrct_instt_nm,
-                cilt.cntrct_cncls_mthd_nm,
-                cilt.ntce_no,
-                cilt.cntrct_prd,
-                cilt.base_dtls,
-                cilt.corp_list,
-                ROW_NUMBER() OVER (PARTITION BY cilt.req_no ORDER BY cilt.cntrct_date ASC) AS RowNum,
-                    RANK() OVER (PARTITION BY cilt.req_no ORDER BY cilt.cntrct_date ASC) AS CntrctCnt,
-                    RANK() OVER (PARTITION BY cilt.req_no ORDER BY cilt.cntrct_date DESC) AS ReverseRank
-            FROM
-                contract_info_list_thing cilt
-                    INNER JOIN
-                contract_info_detail_list_thing cidlt
-                ON cidlt.unty_cntrct_no = cilt.unty_cntrct_no
-            WHERE
-                cidlt.prdct_clsfc_no IN ('39121103','39121189','41112498','41113319','39121801','39121104','39121101','39121006','46171622','41112501','39121198','43232499','81111599','39121106','41112407','21101593','60131303','43221733','41111938','39121011','43201802','47101516')
-                <if test="dminsttNm != null and dminsttNm != ''">
-                    AND cilt.dminstt_list LIKE CONCAT('%', #{dminsttNm}, '%')
-                </if>
-                <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
-                    AND cilt.cntrct_instt_nm LIKE CONCAT('%', #{dminsttNmDetail}, '%')
-                </if>
-                <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
-                    AND cidlt.prdct_clsfc_no LIKE CONCAT('%', #{prdctClsfcNo}, '%')
-                </if>
-                <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
-                    AND cilt.cntrct_cncls_mthd_nm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
-                </if>
-                <if test="firstCntrctDate != null and firstCntrctDate != ''">
-                    AND DATE(cilt.cntrct_date) = #{firstCntrctDate}
-                </if>
 
-                <!-- 계약일자 조건 처리 -->
-                <if test="year != null">
-                    AND YEAR(cilt.cntrct_date) = #{year}
-                </if>
-                <if test="month != null and month != ''">
-                    AND DATE_FORMAT(cilt.cntrct_date, '%Y-%m') = #{month}
-                </if>
-                <if test="rangeStart != null and rangeEnd != null">
-                    AND DATE_FORMAT(cilt.cntrct_date, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
-                </if>
-        GROUP BY CILT.UNTY_CNTRCT_NO
-        ),
-             FirstData AS (
+    <sql id="commonRankedData">
+        WITH RankedData AS (
+        SELECT
+        cilt.unty_cntrct_no,
+        cilt.req_no,
+        cilt.cntrct_date,
+        cilt.thtm_cntrct_amt,
+        cidlt.prdct_clsfc_no,
+        cilt.cntrct_nm,
+        cilt.dminstt_list,
+        cilt.cntrct_instt_nm,
+        cilt.cntrct_cncls_mthd_nm,
+        cilt.ntce_no,
+        cilt.cntrct_prd,
+        cilt.base_dtls,
+        cilt.corp_list,
+        ROW_NUMBER() OVER (
+        PARTITION BY
+        CASE
+        WHEN cilt.req_no = '' THEN cilt.unty_cntrct_no -- req_no가 빈 값인 경우 고유 ID로 unty_cntrct_no를 사용
+        ELSE cilt.req_no
+        END
+        ORDER BY cilt.cntrct_date ASC
+        ) AS RowNum,
+        RANK() OVER (
+        PARTITION BY
+        CASE
+        WHEN cilt.req_no = '' THEN cilt.unty_cntrct_no
+        ELSE cilt.req_no
+        END
+        ORDER BY cilt.cntrct_date ASC
+        ) AS CntrctCnt,
+        RANK() OVER (
+        PARTITION BY
+        CASE
+        WHEN cilt.req_no = '' THEN cilt.unty_cntrct_no
+        ELSE cilt.req_no
+        END
+        ORDER BY cilt.cntrct_date DESC
+        ) AS ReverseRank
+        FROM
+        contract_info_list_thing cilt
+        INNER JOIN
+        contract_info_detail_list_thing cidlt
+        ON cidlt.unty_cntrct_no = cilt.unty_cntrct_no
+        WHERE
+        cidlt.prdct_clsfc_no IN ('39121103','39121189','41112498','41113319','39121801','39121104','39121101','39121006','46171622','41112501','39121198','43232499','81111599','39121106','41112407','21101593','60131303','43221733','41111938','39121011','43201802','47101516')
+        <if test="dminsttNm != null and dminsttNm != ''">
+            AND cilt.dminstt_list LIKE CONCAT('%', #{dminsttNm}, '%')
+        </if>
+        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
+            AND cilt.cntrct_instt_nm LIKE CONCAT('%', #{dminsttNmDetail}, '%')
+        </if>
+        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
+            AND cidlt.prdct_clsfc_no LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        </if>
+        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
+            AND cilt.cntrct_cncls_mthd_nm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND DATE(cilt.cntrct_date) = #{firstCntrctDate}
+        </if>
+
+        <!-- 계약일자 조건 처리 -->
+        <if test="year != null">
+            AND YEAR(cilt.cntrct_date) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(cilt.cntrct_date, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeEnd != null">
+            AND DATE_FORMAT(cilt.cntrct_date, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+        )
+    </sql>
+
+    <sql id="commonFirstData">
+        FirstData AS (
                  SELECT
                      req_no,
                      MIN(cntrct_date) AS FirstCntrctDate,
                      MIN(thtm_cntrct_amt) AS FirstCntrctAmt
                  FROM
                      RankedData
-                 GROUP BY
-                     req_no
+                GROUP BY
+                    CASE
+                    WHEN req_no = '' THEN unty_cntrct_no
+                    ELSE req_no
+                END
              )
+    </sql>
+
+    <sql id="commonLastData">
+        LastData AS (
+            SELECT
+                CASE
+                    WHEN req_no = '' THEN unty_cntrct_no
+                    ELSE req_no
+                END AS req_no,
+                MAX(cntrct_date) AS LastCntrctDate,
+                MAX(thtm_cntrct_amt) AS LastCntrctAmt,
+                MAX(CntrctCnt) AS MaxCntrctCnt
+            FROM
+                RankedData
+            GROUP BY
+                CASE
+                    WHEN req_no = '' THEN unty_cntrct_no
+                    ELSE req_no
+                END
+        )
+    </sql>
+
+    <!-- 페이징 및 검색 조건이 포함된 데이터 조회 -->
+    <select id="getThingsData" resultType="map">
         SELECT
-            SUBSTRING_INDEX(SUBSTRING_INDEX(rd.corp_list, '^', 4), '^', -1) AS cmpNm,
-            rd.cntrct_nm AS cntrctNm,
-            SUBSTRING_INDEX(SUBSTRING_INDEX(rd.dminstt_list, '^', 3), '^', -1) AS dminsttNm,
-            rd.cntrct_instt_nm AS dminsttNmDetail,
-            rd.prdct_clsfc_no AS prdctClsfcNo,
-            rd.cntrct_cncls_mthd_nm AS cntctCnclsMthdNm,
-            rd.ntce_no AS ntceNo,
-            date_format(fd.FirstCntrctDate, '%Y-%m-%d') AS firstCntrctDate,
-            fd.FirstCntrctAmt AS firstCntrctAmt,
-            date_format(rd.cntrct_date, '%Y-%m-%d') AS cntrctDate,
-            rd.thtm_cntrct_amt AS thtmCntrctAmt,
-            rd.CntrctCnt AS cntrctCnt,
-            CASE WHEN rd.ReverseRank = 1 THEN 'Y' ELSE 'N' END AS finalCntrctYn,
-            rd.unty_cntrct_no,
-            rd.req_no,
-            rd.cntrct_prd,
-            rd.base_dtls,
-            REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(rd.corp_list, '^', 10), '^', -1), ']', '') AS cmpNo
+            cmpNm as cmpNm,
+            cntrctNm as cntrctNm,
+            dminsttNm as dminsttNm,
+            dminsttNmDetail as dminsttNmDetail,
+            prdctClsfcNo as prdctClsfcNo,
+            cntctCnclsMthdNm as cntctCnclsMthdNm,
+            ntceNo as ntceNo,
+            date_format(firstCntrctDate, '%Y-%m-%d') as firstCntrctDate,
+            firstCntrctAmt as firstCntrctAmt,
+            date_format(LastCntrctDate, '%Y-%m-%d') as cntrctDate,
+            LastCntrctAmt as thtmCntrctAmt,
+            LastCntrctCnt as cntrctCnt,
+            finalCntrctYn as finalCntrctYn,
+            id as id,
+            checked as checked
         FROM
-            RankedData rd
-                LEFT JOIN
-            FirstData fd
-            ON rd.req_no = fd.req_no
+            daily_contracts_things
+        WHERE
+            1=1
+        <if test="dminsttNm != null and dminsttNm != ''">
+            AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
+        </if>
+        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
+            AND dminsttNmDetail LIKE CONCAT('%', #{dminsttNmDetail}, '%')
+        </if>
+        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
+            AND prdctClsfcNo LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        </if>
+        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
+            AND cntctCnclsMthdNm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND firstCntrctDate = #{firstCntrctDate}
+        </if>
+
+        <!-- 계약일자 조건 처리 -->
+        <if test="year != null">
+            AND YEAR(firstCntrctDate) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeEnd != null">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+
+        <if test="showSavedOnly == 1">
+            AND checked = 1
+        </if>
         ORDER BY
-            rd.req_no DESC, rd.cntrct_date DESC
+            firstCntrctDate DESC
         LIMIT #{start}, #{length}
     </select>
 
@@ -104,69 +180,12 @@
             COUNT(*)
         FROM
         (
-            WITH RankedData AS (
-                SELECT
-                    cilt.unty_cntrct_no,
-                    cilt.req_no,
-                    cilt.cntrct_date,
-                    cilt.thtm_cntrct_amt,
-                    cidlt.prdct_clsfc_no,
-                    cilt.cntrct_nm,
-                    cilt.dminstt_list,
-                    cilt.cntrct_instt_nm,
-                    cilt.cntrct_cncls_mthd_nm,
-                    cilt.ntce_no,
-                    cilt.cntrct_prd,
-                    cilt.base_dtls,
-                    cilt.corp_list,
-                    ROW_NUMBER() OVER (PARTITION BY cilt.req_no ORDER BY cilt.cntrct_date ASC) AS RowNum,
-                        RANK() OVER (PARTITION BY cilt.req_no ORDER BY cilt.cntrct_date ASC) AS CntrctCnt,
-                        RANK() OVER (PARTITION BY cilt.req_no ORDER BY cilt.cntrct_date DESC) AS ReverseRank
-                FROM
-                    contract_info_list_thing cilt
-                        INNER JOIN
-                    contract_info_detail_list_thing cidlt
-                    ON cidlt.unty_cntrct_no = cilt.unty_cntrct_no
-                WHERE
-                    cidlt.prdct_clsfc_no IN ('39121103','39121189','41112498','41113319','39121801','39121104','39121101','39121006','46171622','41112501','39121198','43232499','81111599','39121106','41112407','21101593','60131303','43221733','41111938','39121011','43201802','47101516')
-                GROUP BY CILT.UNTY_CNTRCT_NO
-            ),
-                 FirstData AS (
-                     SELECT
-                         req_no,
-                         MIN(cntrct_date) AS FirstCntrctDate,
-                         MIN(thtm_cntrct_amt) AS FirstCntrctAmt
-                     FROM
-                         RankedData
-                     GROUP BY
-                         req_no
-                 )
-            SELECT
-                SUBSTRING_INDEX(SUBSTRING_INDEX(rd.corp_list, '^', 4), '^', -1) AS cmpNm,
-                rd.cntrct_nm AS cntrctNm,
-                SUBSTRING_INDEX(SUBSTRING_INDEX(rd.dminstt_list, '^', 3), '^', -1) AS dminsttNm,
-                rd.cntrct_instt_nm AS dminsttNmDetail,
-                rd.prdct_clsfc_no AS prdctClsfcNo,
-                rd.cntrct_cncls_mthd_nm AS cntctCnclsMthdNm,
-                rd.ntce_no AS ntceNo,
-                date_format(fd.FirstCntrctDate, '%Y-%m-%d') AS firstCntrctDate,
-                fd.FirstCntrctAmt AS firstCntrctAmt,
-                date_format(rd.cntrct_date, '%Y-%m-%d') AS cntrctDate,
-                rd.thtm_cntrct_amt AS thtmCntrctAmt,
-                rd.CntrctCnt AS cntrctCnt,
-                CASE WHEN rd.ReverseRank = 1 THEN 'Y' ELSE 'N' END AS finalCntrctYn,
-                rd.unty_cntrct_no,
-                rd.req_no,
-                rd.cntrct_prd,
-                rd.base_dtls,
-                REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(rd.corp_list, '^', 10), '^', -1), ']', '') AS cmpNo
-            FROM
-                RankedData rd
-                    LEFT JOIN
-                FirstData fd
-                ON rd.req_no = fd.req_no
-            ORDER BY
-                rd.req_no DESC, rd.cntrct_date DESC
+        SELECT
+        *
+        FROM
+        daily_contracts_things
+        ORDER BY
+        firstCntrctDate DESC
         ) as T
     </select>
 
@@ -176,95 +195,58 @@
             COUNT(*)
         FROM
             (
-                WITH RankedData AS (
-                    SELECT
-                        cilt.unty_cntrct_no,
-                        cilt.req_no,
-                        cilt.cntrct_date,
-                        cilt.thtm_cntrct_amt,
-                        cidlt.prdct_clsfc_no,
-                        cilt.cntrct_nm,
-                        cilt.dminstt_list,
-                        cilt.cntrct_instt_nm,
-                        cilt.cntrct_cncls_mthd_nm,
-                        cilt.ntce_no,
-                        cilt.cntrct_prd,
-                        cilt.base_dtls,
-                        cilt.corp_list,
-                        ROW_NUMBER() OVER (PARTITION BY cilt.req_no ORDER BY cilt.cntrct_date ASC) AS RowNum,
-                            RANK() OVER (PARTITION BY cilt.req_no ORDER BY cilt.cntrct_date ASC) AS CntrctCnt,
-                            RANK() OVER (PARTITION BY cilt.req_no ORDER BY cilt.cntrct_date DESC) AS ReverseRank
-                    FROM
-                        contract_info_list_thing cilt
-                            INNER JOIN
-                        contract_info_detail_list_thing cidlt
-                        ON cidlt.unty_cntrct_no = cilt.unty_cntrct_no
-                    WHERE
-                        cidlt.prdct_clsfc_no IN ('39121103','39121189','41112498','41113319','39121801','39121104','39121101','39121006','46171622','41112501','39121198','43232499','81111599','39121106','41112407','21101593','60131303','43221733','41111938','39121011','43201802','47101516')
-                        <if test="dminsttNm != null and dminsttNm != ''">
-                            AND cilt.dminstt_list LIKE CONCAT('%', #{dminsttNm}, '%')
-                        </if>
-                        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
-                            AND cilt.cntrct_instt_nm LIKE CONCAT('%', #{dminsttNmDetail}, '%')
-                        </if>
-                        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
-                            AND cidlt.prdct_clsfc_no LIKE CONCAT('%', #{prdctClsfcNo}, '%')
-                        </if>
-                        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
-                            AND cilt.cntrct_cncls_mthd_nm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
-                        </if>
-                        <if test="firstCntrctDate != null and firstCntrctDate != ''">
-                            AND DATE(cilt.cntrct_date) = #{firstCntrctDate}
-                        </if>
+        SELECT
+            cmpNm as cmpNm,
+            cntrctNm as cntrctNm,
+            dminsttNm as dminsttNm,
+            dminsttNmDetail as dminsttNmDetail,
+            prdctClsfcNo as prdctClsfcNo,
+            cntctCnclsMthdNm as cntctCnclsMthdNm,
+            ntceNo as ntceNo,
+            date_format(firstCntrctDate, '%Y-%m-%-d') as firstCntrctDate,
+            firstCntrctAmt as firstCntrctAmt,
+            date_format(LastCntrctDate, '%Y-%m-%-d') as cntrctDate,
+            LastCntrctAmt as thtmCntrctAmt,
+            LastCntrctCnt as cntrctCnt,
+            finalCntrctYn as finalCntrctYn,
+            id as id,
+            checked as checked
+        FROM
+        daily_contracts_things
+        WHERE
+        1=1
+        <if test="dminsttNm != null and dminsttNm != ''">
+            AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
+        </if>
+        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
+            AND dminsttNmDetail LIKE CONCAT('%', #{dminsttNmDetail}, '%')
+        </if>
+        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
+            AND prdctClsfcNo LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        </if>
+        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
+            AND cntctCnclsMthdNm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND firstCntrctDate = #{firstCntrctDate}
+        </if>
 
-                        <!-- 계약일자 조건 처리 -->
-                        <if test="year != null">
-                            AND YEAR(cilt.cntrct_date) = #{year}
-                        </if>
-                        <if test="month != null and month != ''">
-                            AND DATE_FORMAT(cilt.cntrct_date, '%Y-%m') = #{month}
-                        </if>
-                        <if test="rangeStart != null and rangeEnd != null">
-                            AND DATE_FORMAT(cilt.cntrct_date, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
-                        </if>
-                    GROUP BY CILT.UNTY_CNTRCT_NO
-                ),
-                     FirstData AS (
-                         SELECT
-                             req_no,
-                             MIN(cntrct_date) AS FirstCntrctDate,
-                             MIN(thtm_cntrct_amt) AS FirstCntrctAmt
-                         FROM
-                             RankedData
-                         GROUP BY
-                             req_no
-                     )
-                SELECT
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(rd.corp_list, '^', 4), '^', -1) AS cmpNm,
-                    rd.cntrct_nm AS cntrctNm,
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(rd.dminstt_list, '^', 3), '^', -1) AS dminsttNm,
-                    rd.cntrct_instt_nm AS dminsttNmDetail,
-                    rd.prdct_clsfc_no AS prdctClsfcNo,
-                    rd.cntrct_cncls_mthd_nm AS cntctCnclsMthdNm,
-                    rd.ntce_no AS ntceNo,
-                    date_format(fd.FirstCntrctDate, '%Y-%m-%d') AS firstCntrctDate,
-                    fd.FirstCntrctAmt AS firstCntrctAmt,
-                    date_format(rd.cntrct_date, '%Y-%m-%d') AS cntrctDate,
-                    rd.thtm_cntrct_amt AS thtmCntrctAmt,
-                    rd.CntrctCnt AS cntrctCnt,
-                    CASE WHEN rd.ReverseRank = 1 THEN 'Y' ELSE 'N' END AS finalCntrctYn,
-                    rd.unty_cntrct_no,
-                    rd.req_no,
-                    rd.cntrct_prd,
-                    rd.base_dtls,
-                    REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(rd.corp_list, '^', 10), '^', -1), ']', '') AS cmpNo
-                FROM
-                    RankedData rd
-                        LEFT JOIN
-                    FirstData fd
-                    ON rd.req_no = fd.req_no
-                ORDER BY
-                    rd.req_no DESC, rd.cntrct_date DESC
+        <!-- 계약일자 조건 처리 -->
+        <if test="year != null">
+            AND YEAR(firstCntrctDate) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeEnd != null">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+
+        <if test="showSavedOnly == 1">
+            AND checked = 1
+        </if>
+        ORDER BY
+        firstCntrctDate DESC
             ) as T
     </select>
 
@@ -580,4 +562,10 @@
         </if>
         ) as derived_table_alias
     </select>
+
+    <update id="updateChecked">
+        UPDATE daily_contracts_things
+        SET checked = #{checked}
+        WHERE id = #{id}
+    </update>
 </mapper>

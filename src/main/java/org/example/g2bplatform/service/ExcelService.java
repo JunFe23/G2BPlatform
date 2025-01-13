@@ -24,8 +24,8 @@ public class ExcelService {
 
             // 헤더 생성
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"cmpNm", "cntrctNm", "dminsttNm", "dminsttNmDetail", "prdctClsfcNo", "cntctCnclsMthdNm", "ntceNo", "firstCntrctDate", "firstCntrctAmt", "cntrctDate", "thtmCntrctAmt", "cntrctCnt", "finalCntrctYn"};
-            String[] headerNames = {"업체명", "계약건명", "수요기관명", "수요기관지역명", "품명내용", "입찰계약방법", "입찰공고번호", "최초계약일자", "계약금액", "계약일자", "계약금액", "계약변경차수", "최종계약여부"};
+            String[] headers = {"cmpNm", "cntrctNm", "dminsttNm", "dminsttNmDetail", "prdctClsfcNo", "cntctCnclsMthdNm", "ntceNo", "firstCntrctDate", "firstCntrctAmt", "cntrctDate", "thtmCntrctAmt", "cntrctCnt"};
+            String[] headerNames = {"업체명", "계약건명", "수요기관명", "수요기관지역명", "품명내용", "입찰계약방법", "입찰공고번호", "최초계약일자", "계약금액", "계약일자", "계약금액", "계약변경차수"};
 
             for (int i = 0; i < headerNames.length; i++) {
                 Cell cell = headerRow.createCell(i);
