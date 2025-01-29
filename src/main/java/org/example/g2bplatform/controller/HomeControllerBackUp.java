@@ -4,13 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
-import org.example.g2bplatform.DTO.ContractInfoDTO;
-import org.example.g2bplatform.DTO.ContractInfoDetailDTO;
-import org.example.g2bplatform.mapper.DataDownloadMapper;
-import org.example.g2bplatform.mapper.DataMapper;
 import org.example.g2bplatform.model.*;
 import org.example.g2bplatform.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -45,9 +40,6 @@ public class HomeController {
     private final ContractInfoServcRepository contractInfoServcRepository;
     private final ObjectMapper objectMapper;
 
-    @Autowired
-    private DataDownloadMapper dataDownloadMapper;
-
     // 생성자에서 ObjectMapper를 주입받도록 수정
     public HomeController(WebClient.Builder webClientBuilder,
                           ContractInfoRepository contractInfoRepository,
@@ -56,8 +48,7 @@ public class HomeController {
                           ContractInfoPPSSrchRepository contractInfoPPSSrchRepository,
                           ContractInfoCnstwkRepository contractInfoCnstwkRepository,
                           ContractInfoServcRepository contractInfoServcRepository,
-                          ObjectMapper objectMapper,
-                          DataDownloadMapper dataDownloadMapper) {
+                          ObjectMapper objectMapper) {
         this.webClient = webClientBuilder
                 .baseUrl("https://apis.data.go.kr")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -69,7 +60,6 @@ public class HomeController {
         this.contractInfoCnstwkRepository = contractInfoCnstwkRepository;
         this.contractInfoServcRepository = contractInfoServcRepository;
         this.objectMapper = objectMapper; // 주입받은 ObjectMapper 사용
-        this.dataDownloadMapper = dataDownloadMapper;
     }
 
     @PostMapping("/fetch")
@@ -161,17 +151,17 @@ public class HomeController {
                         JsonNode bodyNode = jsonNode.path("response").path("body").path("items");
 
                         // 엔드포인트에 따라 다른 처리 메소드 호출
-                        if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThng".equals(endpoint)) { // 계약현황에 대한 물품조회
+                        if ("/1230000/CntrctInfoService01/getCntrctInfoListThng01".equals(endpoint)) { // 계약현황에 대한 물품조회
                             return processContractInfo(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngDetail".equals(endpoint)) { // 계약현황에 대한 물품세부조회
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngDetail01".equals(endpoint)) { // 계약현황에 대한 물품세부조회
                             return processContractInfoDetail(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngChgHstry".equals(endpoint)) { // 계약현황에 대한 물품변경이력조회
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngChgHstry01".equals(endpoint)) { // 계약현황에 대한 물품변경이력조회
                             return processContractInfoChangeHistory(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngPPSSrch".equals(endpoint)) { // 나라장터검색조건에 의한 계약현황 물품조회
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01".equals(endpoint)) { // 나라장터검색조건에 의한 계약현황 물품조회
                             return processContractInfoPPSSrch(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListCnstwk".equals(endpoint)) { // 계약현황에 대한 공사조회
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListCnstwk01".equals(endpoint)) { // 계약현황에 대한 공사조회
                             return processContractInfoCnstwk(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListServc".equals(endpoint)) { // 계약현황에 대한 공사조회
+                        } else if ("/1230000/CntrctInfoService01/getCntrctInfoListServc01".equals(endpoint)) { // 계약현황에 대한 공사조회
                             return processContractInfoServc(bodyNode);
                         }else {
                             return Mono.empty(); // 해당 엔드포인트가 없을 경우 빈 응답 처리
@@ -192,27 +182,27 @@ public class HomeController {
 
     // ContractInfo 엔티티 처리
     private Mono<Void> processContractInfo(JsonNode bodyNode) throws JsonProcessingException {
-        List<ContractInfoDTO> contractInfos = new ArrayList<>();
+        List<ContractInfo> contractInfos = new ArrayList<>();
         for (JsonNode itemNode : bodyNode) {
-            ContractInfoDTO contractInfo = objectMapper.treeToValue(itemNode, ContractInfoDTO.class);
+            ContractInfo contractInfo = objectMapper.treeToValue(itemNode, ContractInfo.class);
             contractInfos.add(contractInfo);
         }
         return Flux.fromIterable(contractInfos)
                 .buffer(2000)
-                .flatMap(batch -> Mono.fromRunnable(() -> dataDownloadMapper.insertContractInfoBatch(batch)))
+                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoRepository.saveAll(batch)))
                 .then();
     }
 
     // ContractInfoDetail 엔티티 처리
     private Mono<Void> processContractInfoDetail(JsonNode bodyNode) throws JsonProcessingException {
-        List<ContractInfoDetailDTO> contractInfoDetails = new ArrayList<>();
+        List<ContractInfoDetail> contractInfoDetails = new ArrayList<>();
         for (JsonNode itemNode : bodyNode) {
-            ContractInfoDetailDTO contractInfoDetail = objectMapper.treeToValue(itemNode, ContractInfoDetailDTO.class);
+            ContractInfoDetail contractInfoDetail = objectMapper.treeToValue(itemNode, ContractInfoDetail.class);
             contractInfoDetails.add(contractInfoDetail);
         }
         return Flux.fromIterable(contractInfoDetails)
                 .buffer(2000)
-                .flatMap(batch -> Mono.fromRunnable(() -> dataDownloadMapper.insertContractInfoDetailBatch(batch)))
+                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoDetailRepository.saveAll(batch)))
                 .then();
     }
 
