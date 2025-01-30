@@ -44,10 +44,14 @@
         )
         VALUES
         <foreach collection="contractInfoDetails" item="detail" separator=",">
-            (#{detail.cntrctCnclsDate}, #{detail.untyCntrctNo}, #{detail.dcsnCntrctNo}, #{detail.cntrctRefNo}, #{detail.prdctClsfcNo},
-            #{detail.prdctIdntNo}, #{detail.prdctClsfcNoNm}, #{detail.krnPrdctNm}, #{detail.orgplceCd}, #{detail.orgplceNm},
-            #{detail.qtyUprcAmt}, #{detail.prdctQty}, #{detail.prdctAmt}, #{detail.dlvryCndtnCd}, #{detail.dlvryCndtnNm},
-            #{detail.dlvrDaynum}, #{detail.dlvrTmlmt}, #{detail.rgstDt}, #{detail.chgDt}, DATE_FORMAT(#{detail.rgstDt}, '%Y%m')
+            (#{detail.cntrctCnclsDate}, #{detail.untyCntrctNo}, #{detail.dcsnCntrctNo}, #{detail.cntrctRefNo},
+            #{detail.prdctClsfcNo},
+            #{detail.prdctIdntNo}, #{detail.prdctClsfcNoNm}, #{detail.krnPrdctNm}, #{detail.orgplceCd},
+            #{detail.orgplceNm},
+            #{detail.qtyUprcAmt}, #{detail.prdctQty}, #{detail.prdctAmt}, #{detail.dlvryCndtnCd},
+            #{detail.dlvryCndtnNm},
+            #{detail.dlvrDaynum}, #{detail.dlvrTmlmt}, #{detail.rgstDt}, #{detail.chgDt}, DATE_FORMAT(#{detail.rgstDt},'%Y%m')
+            )
         </foreach>
     </insert>
 

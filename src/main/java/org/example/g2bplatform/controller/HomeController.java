@@ -10,6 +10,7 @@ import org.example.g2bplatform.mapper.DataDownloadMapper;
 import org.example.g2bplatform.mapper.DataMapper;
 import org.example.g2bplatform.model.*;
 import org.example.g2bplatform.repository.*;
+import org.example.g2bplatform.service.DataDownloadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -45,8 +46,7 @@ public class HomeController {
     private final ContractInfoServcRepository contractInfoServcRepository;
     private final ObjectMapper objectMapper;
 
-    @Autowired
-    private DataDownloadMapper dataDownloadMapper;
+    private final DataDownloadService dataDownloadService;
 
     // 생성자에서 ObjectMapper를 주입받도록 수정
     public HomeController(WebClient.Builder webClientBuilder,
@@ -57,7 +57,7 @@ public class HomeController {
                           ContractInfoCnstwkRepository contractInfoCnstwkRepository,
                           ContractInfoServcRepository contractInfoServcRepository,
                           ObjectMapper objectMapper,
-                          DataDownloadMapper dataDownloadMapper) {
+                          DataDownloadService dataDownloadService) {
         this.webClient = webClientBuilder
                 .baseUrl("https://apis.data.go.kr")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -69,7 +69,7 @@ public class HomeController {
         this.contractInfoCnstwkRepository = contractInfoCnstwkRepository;
         this.contractInfoServcRepository = contractInfoServcRepository;
         this.objectMapper = objectMapper; // 주입받은 ObjectMapper 사용
-        this.dataDownloadMapper = dataDownloadMapper;
+        this.dataDownloadService = dataDownloadService;
     }
 
     @PostMapping("/fetch")
@@ -197,10 +197,7 @@ public class HomeController {
             ContractInfoDTO contractInfo = objectMapper.treeToValue(itemNode, ContractInfoDTO.class);
             contractInfos.add(contractInfo);
         }
-        return Flux.fromIterable(contractInfos)
-                .buffer(2000)
-                .flatMap(batch -> Mono.fromRunnable(() -> dataDownloadMapper.insertContractInfoBatch(batch)))
-                .then();
+        return dataDownloadService.insertContractInfo(contractInfos);
     }
 
     // ContractInfoDetail 엔티티 처리
@@ -210,10 +207,12 @@ public class HomeController {
             ContractInfoDetailDTO contractInfoDetail = objectMapper.treeToValue(itemNode, ContractInfoDetailDTO.class);
             contractInfoDetails.add(contractInfoDetail);
         }
-        return Flux.fromIterable(contractInfoDetails)
-                .buffer(2000)
-                .flatMap(batch -> Mono.fromRunnable(() -> dataDownloadMapper.insertContractInfoDetailBatch(batch)))
-                .then();
+        logger.info("▶ ContractInfoDetail 데이터 크기: {}", contractInfoDetails.size());
+
+        return dataDownloadService.insertContractInfoDetails(contractInfoDetails)
+                .doOnSubscribe(s -> logger.info("▶ insertContractInfoDetails 실행됨"))
+                .doOnError(e -> logger.error("▶ insertContractInfoDetails 실행 중 오류 발생", e))
+                .doOnSuccess(v -> logger.info("▶ insertContractInfoDetails 성공"));
     }
 
     // ContractInfoChangeHistory 엔티티 처리

@@ -84,7 +84,8 @@
     <h1>G2B 조회 프로그램</h1>
     <div id="serviceKeyContainer">
         <label for="serviceKey" style="margin-right: 10px;">Service Key 입력:</label>
-        <input type="text" id="serviceKey" name="serviceKey" value="%2FwZoB2Eujc4Y0tk%2Fd8HcpY9mrcupnHiFHTHwXNTZ9LZSXXwcbYfHwi7%2Fedrq%2B7eXV%2BkP1TIriT3BbKQX4kQKSQ%3D%3D" required style="width: 400px;">
+<!--        <input type="text" id="serviceKey" name="serviceKey" value="%2FwZoB2Eujc4Y0tk%2Fd8HcpY9mrcupnHiFHTHwXNTZ9LZSXXwcbYfHwi7%2Fedrq%2B7eXV%2BkP1TIriT3BbKQX4kQKSQ%3D%3D" required style="width: 400px;">-->
+        <input type="text" id="serviceKey" name="serviceKey" value="Ofrfq%2FwMIHSeTKEn9w46COlSuj5N%2Bk8F6ummdKC%2FOOVO3K9jSl4%2FnI6jzfUQ%2BgfNLdfMuzMuUxrJg9v6e%2B6u6w%3D%3D" required style="width: 400px;">
     </div>
 </div>
 
@@ -92,11 +93,11 @@
     <h2>엔드포인트 선택</h2>
     <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListThng')">계약현황에 대한 물품조회</a>
     <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListThngDetail')">계약현황에 대한 물품세부조회</a>
-    <a href="#" onclick="loadEndpoint('/1230000/CntrctInfoService01/getCntrctInfoListThngChgHstry01')">계약현황에 대한 물품변경이력조회</a>
-    <a href="#" onclick="loadEndpoint('/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01')">나라장터검색조건에 의한 계약현황 물품조회</a>
-    <a href="#" onclick="loadEndpoint('/1230000/CntrctInfoService01/getCntrctInfoListCnstwk01')">계약현황에 대한 공사조회</a>
-    <a href="#" onclick="loadEndpoint('/1230000/CntrctInfoService01/getCntrctInfoListServc01')">계약현황에 대한 용역조회</a>
-    <a href="#" onclick="loadEndpoint('/1230000/CntrctInfoService01/getCntrctInfoListServcPPSSrch01')">나라장터검색조건에 의한 계약현황 용역조회</a>
+<!--    <a href="#" onclick="loadEndpoint('/1230000/CntrctInfoService01/getCntrctInfoListThngChgHstry01')">계약현황에 대한 물품변경이력조회</a>-->
+<!--    <a href="#" onclick="loadEndpoint('/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01')">나라장터검색조건에 의한 계약현황 물품조회</a>-->
+    <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListCnstwk')">계약현황에 대한 공사조회</a>
+    <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListServc')">계약현황에 대한 용역조회</a>
+<!--    <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListServcPPSSrch01')">나라장터검색조건에 의한 계약현황 용역조회</a>-->
 </div>
 
 <div id="content">
@@ -106,7 +107,7 @@
         <input type="text" id="inqryBgnDt" name="inqryBgnDt" placeholder="202401010000" maxlength="12" required>
 
         <label for="inqryEndDt">종료일 입력:</label>
-        <input type="text" id="inqryEndDt" name="inqryEndDt" placeholder="202401011159" maxlength="12" required>
+        <input type="text" id="inqryEndDt" name="inqryEndDt" placeholder="202401012359" maxlength="12" required>
 
         <button type="button" onclick="fetchData()">데이터 가져오기</button>
     </form>
