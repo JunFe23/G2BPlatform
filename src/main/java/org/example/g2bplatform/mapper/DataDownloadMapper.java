@@ -1,8 +1,10 @@
 package org.example.g2bplatform.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.example.g2bplatform.DTO.ContractInfoCnstwkDTO;
 import org.example.g2bplatform.DTO.ContractInfoDTO;
 import org.example.g2bplatform.DTO.ContractInfoDetailDTO;
+import org.example.g2bplatform.DTO.ContractInfoServcDTO;
 import org.example.g2bplatform.model.*;
 import org.springframework.data.repository.query.Param;
 
@@ -15,6 +17,6 @@ public interface DataDownloadMapper {
     void insertContractInfoDetailBatch(@Param("contractInfoDetails") List<ContractInfoDetailDTO> contractInfoDetails);
     void insertContractInfoChangeHistoryBatch(@Param("contractInfoChangeHistories") List<ContractInfoChangeHistory> contractInfoChangeHistories);
     void insertContractInfoPPSSrchBatch(@Param("contractInfoPPSSrches") List<ContractInfoPPSSrch> contractInfoPPSSrches);
-    void insertContractInfoCnstwkBatch(@Param("contractInfoCnstwks") List<ContractInfoCnstwk> contractInfoCnstwks);
-    void insertContractInfoServcBatch(@Param("contractInfoServcs") List<ContractInfoServc> contractInfoServcs);
+    void insertContractInfoCnstwkBatch(@Param("contractInfoCnstwks") List<ContractInfoCnstwkDTO> contractInfoCnstwks);
+    void insertContractInfoServcBatch(@Param("contractInfoServcs") List<ContractInfoServcDTO> contractInfoServcs);
 }

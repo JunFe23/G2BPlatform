@@ -4,8 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import org.example.g2bplatform.DTO.ContractInfoCnstwkDTO;
 import org.example.g2bplatform.DTO.ContractInfoDTO;
 import org.example.g2bplatform.DTO.ContractInfoDetailDTO;
+import org.example.g2bplatform.DTO.ContractInfoServcDTO;
 import org.example.g2bplatform.mapper.DataDownloadMapper;
 import org.example.g2bplatform.mapper.DataMapper;
 import org.example.g2bplatform.model.*;
@@ -207,12 +209,7 @@ public class HomeController {
             ContractInfoDetailDTO contractInfoDetail = objectMapper.treeToValue(itemNode, ContractInfoDetailDTO.class);
             contractInfoDetails.add(contractInfoDetail);
         }
-        logger.info("▶ ContractInfoDetail 데이터 크기: {}", contractInfoDetails.size());
-
-        return dataDownloadService.insertContractInfoDetails(contractInfoDetails)
-                .doOnSubscribe(s -> logger.info("▶ insertContractInfoDetails 실행됨"))
-                .doOnError(e -> logger.error("▶ insertContractInfoDetails 실행 중 오류 발생", e))
-                .doOnSuccess(v -> logger.info("▶ insertContractInfoDetails 성공"));
+        return dataDownloadService.insertContractInfoDetails(contractInfoDetails);
     }
 
     // ContractInfoChangeHistory 엔티티 처리
@@ -243,28 +240,22 @@ public class HomeController {
 
     // ContractInfoCnstwk 처리
     private Mono<Void> processContractInfoCnstwk(JsonNode bodyNode) throws JsonProcessingException {
-        List<ContractInfoCnstwk> contractInfoCnstwks = new ArrayList<>();
+        List<ContractInfoCnstwkDTO> contractInfoCnstwks = new ArrayList<>();
         for (JsonNode itemNode : bodyNode) {
-            ContractInfoCnstwk contractInfoCnstwk = objectMapper.treeToValue(itemNode, ContractInfoCnstwk.class); // ContractInfoCnstwk 엔티티로 변환
+            ContractInfoCnstwkDTO contractInfoCnstwk = objectMapper.treeToValue(itemNode, ContractInfoCnstwkDTO.class); // ContractInfoCnstwk 엔티티로 변환
             contractInfoCnstwks.add(contractInfoCnstwk);
         }
-        return Flux.fromIterable(contractInfoCnstwks)
-                .buffer(2000) // 대량 데이터 처리 시 배치 처리
-                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoCnstwkRepository.saveAll(batch))) // 저장 처리
-                .then();
+        return dataDownloadService.ContractInfoCnstwk(contractInfoCnstwks);
     }
 
     // ContractInfoServc 처리
     private Mono<Void> processContractInfoServc(JsonNode bodyNode) throws JsonProcessingException {
-        List<ContractInfoServc> contractInfoServcs = new ArrayList<>();
+        List<ContractInfoServcDTO> contractInfoServcs = new ArrayList<>();
         for (JsonNode itemNode : bodyNode) {
-            ContractInfoServc contractInfoServc = objectMapper.treeToValue(itemNode, ContractInfoServc.class); // ContractInfoCnstwk 엔티티로 변환
+            ContractInfoServcDTO contractInfoServc = objectMapper.treeToValue(itemNode, ContractInfoServcDTO.class); // ContractInfoCnstwk 엔티티로 변환
             contractInfoServcs.add(contractInfoServc);
         }
-        return Flux.fromIterable(contractInfoServcs)
-                .buffer(2000) // 대량 데이터 처리 시 배치 처리
-                .flatMap(batch -> Mono.fromRunnable(() -> contractInfoServcRepository.saveAll(batch))) // 저장 처리
-                .then();
+        return dataDownloadService.ContractInfoServc(contractInfoServcs);
     }
 
     // URL 생성 메소드

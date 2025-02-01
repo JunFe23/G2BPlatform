@@ -5,7 +5,7 @@
 
 <mapper namespace="org.example.g2bplatform.mapper.DataDownloadMapper">
 
-    <!-- 계약정보(ContractInfo) 저장 -->
+    <!-- 물품 계약정보(ContractInfo) 저장 -->
     <insert id="insertContractInfoBatch" parameterType="java.util.List">
         INSERT INTO contract_info_list_thing (
         unty_cntrct_no, bsns_div_nm, dcsn_cntrct_no, cntrct_ref_no, cntrct_nm, cmmn_cntrct_yn,
@@ -34,7 +34,7 @@
         </foreach>
     </insert>
 
-    <!-- 계약정보상세(ContractInfoDetail) 저장 -->
+    <!-- 물품 계약정보상세(ContractInfoDetail) 저장 -->
     <insert id="insertContractInfoDetailBatch" parameterType="java.util.List">
         INSERT INTO contract_info_detail_list_thing (
         cntrct_cncls_date, unty_cntrct_no, dcsn_cntrct_no, cntrct_ref_no, prdct_clsfc_no,
@@ -51,6 +51,68 @@
             #{detail.qtyUprcAmt}, #{detail.prdctQty}, #{detail.prdctAmt}, #{detail.dlvryCndtnCd},
             #{detail.dlvryCndtnNm},
             #{detail.dlvrDaynum}, #{detail.dlvrTmlmt}, #{detail.rgstDt}, #{detail.chgDt}, DATE_FORMAT(#{detail.rgstDt},'%Y%m')
+            )
+        </foreach>
+    </insert>
+
+    <!-- 공사 계약정보(ContractInfoCnstwk) 저장 -->
+    <insert id="insertContractInfoCnstwkBatch" parameterType="java.util.List">
+        INSERT INTO contract_info_construction_work (
+        unty_cntrct_no, bsns_div_nm, dcsn_cntrct_no, cntrct_ref_no, cnstwk_nm,
+        cmmn_cntrct_yn, lngtrm_ctnu_div_nm, cntrct_cncls_date, cntrct_prd, base_law_nm,
+        tot_cntrct_amt, thtm_cntrct_amt, grntymny_rate, cntrct_info_url, pay_div_nm,
+        req_no, ntce_no, cntrct_instt_cd, cntrct_instt_nm, cntrct_instt_jrsdctn_div_nm,
+        cntrct_instt_chrg_dept_nm, cntrct_instt_ofcl_nm, cntrct_instt_ofcl_tel_no, cntrct_instt_ofcl_fax_no,
+        dminstt_list, corp_list, cntrct_dtl_info_url, crdtr_nm, base_dtls,
+        cntrct_cncls_mthd_nm, prces_change_apl_bss_cd, prces_change_apl_bss_nm, rgst_dt, chg_dt,
+        dfrcmpnst_rt, cbgn_date, thtm_ccmplt_date, ttal_ccmplt_date, link_instt_nm,
+        d2b_mng_cntrct_sttus_nm, d2b_mng_prearng_amt, d2b_mng_bid_mthd_nm, d2b_mng_cnstwk_no,
+        pub_prcrmnt_lrgclsfc_nm, pub_prcrmnt_midclsfc_nm, pub_prcrmnt_clsfc_no, pub_prcrmnt_clsfc_nm,
+        cntrct_date, yyyymm
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.untyCntrctNo}, #{item.bsnsDivNm}, #{item.dcsnCntrctNo}, #{item.cntrctRefNo}, #{item.cnstwkNm},
+            #{item.cmmnCntrctYn}, #{item.lngtrmCtnuDivNm}, #{item.cntrctCnclsDate}, #{item.cntrctPrd}, #{item.baseLawNm},
+            #{item.totCntrctAmt}, #{item.thtmCntrctAmt}, #{item.grntymnyRate}, #{item.cntrctInfoUrl}, #{item.payDivNm},
+            #{item.reqNo}, #{item.ntceNo}, #{item.cntrctInsttCd}, #{item.cntrctInsttNm}, #{item.cntrctInsttJrsdctnDivNm},
+            #{item.cntrctInsttChrgDeptNm}, #{item.cntrctInsttOfclNm}, #{item.cntrctInsttOfclTelNo}, #{item.cntrctInsttOfclFaxNo},
+            #{item.dminsttList}, #{item.corpList}, #{item.cntrctDtlInfoUrl}, #{item.crdtrNm}, #{item.baseDtls},
+            #{item.cntrctCnclsMthdNm}, #{item.prcesChangeAplBssCd}, #{item.prcesChangeAplBssNm}, #{item.rgstDt}, #{item.chgDt},
+            #{item.dfrcmpnstRt}, #{item.cbgnDate}, #{item.thtmCcmpltDate}, #{item.ttalCcmpltDate}, #{item.linkInsttNm},
+            #{item.d2bMngCntrctSttusNm}, #{item.d2bMngPrearngAmt}, #{item.d2bMngBidMthdNm}, #{item.d2bMngCnstwkNo},
+            #{item.pubPrcrmntLrgClsfcNm}, #{item.pubPrcrmntMidClsfcNm}, #{item.pubPrcrmntClsfcNo}, #{item.pubPrcrmntClsfcNm},
+            #{item.cntrctDate}, DATE_FORMAT(#{item.rgstDt},'%Y%m')
+            )
+        </foreach>
+    </insert>
+
+    <!-- 용역 계약정보(ContractInfoServc) 저장 -->
+    <insert id="insertContractInfoServcBatch" parameterType="java.util.List">
+        INSERT INTO contract_info_service (
+        unty_cntrct_no, bsns_div_nm, dcsn_cntrct_no, cntrct_ref_no, cntrct_nm,
+        cmmn_cntrct_yn, lngtrm_ctnu_div_nm, cntrct_cncls_date, cntrct_prd, base_law_nm,
+        tot_cntrct_amt, thtm_cntrct_amt, grntymny_rate, cntrct_info_url, pay_div_nm,
+        req_no, ntce_no, cntrct_instt_cd, cntrct_instt_nm, cntrct_instt_jrsdctn_div_nm,
+        cntrct_instt_chrg_dept_nm, cntrct_instt_ofcl_nm, cntrct_instt_ofcl_tel_no, cntrct_instt_ofcl_fax_no,
+        dminstt_list, corp_list, cntrct_dtl_info_url, crdtr_nm, base_dtls,
+        cntrct_cncls_mthd_nm, rgst_dt, chg_dt, dfrcmpnst_rt, wbgn_date,
+        thtm_scmplt_date, ttal_scmplt_date, link_instt_nm, d2b_mng_cntrct_sttus_nm, d2b_mng_prearng_amt,
+        d2b_mng_bid_mthd_nm, d2b_mng_dcsn_no, d2b_mng_cnstwk_no, pub_prcrmnt_lrgclsfc_nm, pub_prcrmnt_midclsfc_nm,
+        pub_prcrmnt_clsfc_no, pub_prcrmnt_clsfc_nm, cntrct_date, info_biz_yn, yyyymm
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.untyCntrctNo}, #{item.bsnsDivNm}, #{item.dcsnCntrctNo}, #{item.cntrctRefNo}, #{item.cntrctNm},
+            #{item.cmmnCntrctYn}, #{item.lngtrmCtnuDivNm}, #{item.cntrctCnclsDate}, #{item.cntrctPrd}, #{item.baseLawNm},
+            #{item.totCntrctAmt}, #{item.thtmCntrctAmt}, #{item.grntymnyRate}, #{item.cntrctInfoUrl}, #{item.payDivNm},
+            #{item.reqNo}, #{item.ntceNo}, #{item.cntrctInsttCd}, #{item.cntrctInsttNm}, #{item.cntrctInsttJrsdctnDivNm},
+            #{item.cntrctInsttChrgDeptNm}, #{item.cntrctInsttOfclNm}, #{item.cntrctInsttOfclTelNo}, #{item.cntrctInsttOfclFaxNo},
+            #{item.dminsttList}, #{item.corpList}, #{item.cntrctDtlInfoUrl}, #{item.crdtrNm}, #{item.baseDtls},
+            #{item.cntrctCnclsMthdNm}, #{item.rgstDt}, #{item.chgDt}, #{item.dfrcmpnstRt}, #{item.wbgnDate},
+            #{item.thtmScmpltDate}, #{item.ttalScmpltDate}, #{item.linkInsttNm}, #{item.d2bMngCntrctSttusNm}, #{item.d2bMngPrearngAmt},
+            #{item.d2bMngBidMthdNm}, #{item.d2bMngDcsnNo}, #{item.d2bMngCnstwkNo}, #{item.pubPrcrmntLrgClsfcNm}, #{item.pubPrcrmntMidClsfcNm},
+            #{item.pubPrcrmntClsfcNo}, #{item.pubPrcrmntClsfcNm}, #{item.cntrctDate}, #{item.infoBizYn}, #{item.yyyymm}
             )
         </foreach>
     </insert>

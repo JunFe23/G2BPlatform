@@ -172,4 +172,6 @@ public class ContractInfoServc {
 
     @Column(name = "info_biz_yn", length = 1)
     private String infoBizYn;
+
+    private String yyyymm;
 }

@@ -1,8 +1,10 @@
 package org.example.g2bplatform.service;
 
 import jakarta.transaction.Transactional;
+import org.example.g2bplatform.DTO.ContractInfoCnstwkDTO;
 import org.example.g2bplatform.DTO.ContractInfoDTO;
 import org.example.g2bplatform.DTO.ContractInfoDetailDTO;
+import org.example.g2bplatform.DTO.ContractInfoServcDTO;
 import org.example.g2bplatform.mapper.DataDownloadMapper;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -32,6 +34,22 @@ public class DataDownloadService {
         return Flux.fromIterable(contractInfoDetails)
                 .buffer(2000) // 2000개씩 배치 처리
                 .flatMap(batch -> Mono.fromRunnable(() -> dataDownloadMapper.insertContractInfoDetailBatch(batch)))
+                .then();
+    }
+
+    @Transactional
+    public Mono<Void> ContractInfoCnstwk(List<ContractInfoCnstwkDTO> contractInfoDetails) {
+        return Flux.fromIterable(contractInfoDetails)
+                .buffer(2000) // 2000개씩 배치 처리
+                .flatMap(batch -> Mono.fromRunnable(() -> dataDownloadMapper.insertContractInfoCnstwkBatch(batch)))
+                .then();
+    }
+
+    @Transactional
+    public Mono<Void> ContractInfoServc(List<ContractInfoServcDTO> contractInfoDetails) {
+        return Flux.fromIterable(contractInfoDetails)
+                .buffer(2000) // 2000개씩 배치 처리
+                .flatMap(batch -> Mono.fromRunnable(() -> dataDownloadMapper.insertContractInfoServcBatch(batch)))
                 .then();
     }
 }
