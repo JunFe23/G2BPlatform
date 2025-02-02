@@ -127,12 +127,11 @@
             prdctClsfcNo as prdctClsfcNo,
             cntctCnclsMthdNm as cntctCnclsMthdNm,
             ntceNo as ntceNo,
-            date_format(firstCntrctDate, '%Y-%m-%d') as firstCntrctDate,
+            ifnull(date_format(firstCntrctDate, '%Y-%m-%d'),'-') as firstCntrctDate,
             firstCntrctAmt as firstCntrctAmt,
-            date_format(LastCntrctDate, '%Y-%m-%d') as cntrctDate,
+            ifnull(date_format(LastCntrctDate, '%Y-%m-%d'),'-') as cntrctDate,
             LastCntrctAmt as thtmCntrctAmt,
             LastCntrctCnt as cntrctCnt,
-            finalCntrctYn as finalCntrctYn,
             id as id,
             checked as checked
         FROM
@@ -208,7 +207,6 @@
             date_format(LastCntrctDate, '%Y-%m-%-d') as cntrctDate,
             LastCntrctAmt as thtmCntrctAmt,
             LastCntrctCnt as cntrctCnt,
-            finalCntrctYn as finalCntrctYn,
             id as id,
             checked as checked
         FROM
@@ -252,27 +250,56 @@
 
     <select id="getServicesData" resultType="map">
         SELECT
-        unty_cntrct_no,
-        cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
+        cmpNm as cmpNm,
+        cntrctNm as cntrctNm,
+        dminsttNm as dminsttNm,
+        dminsttNmDetail as dminsttNmDetail,
+        prdctClsfcNo as prdctClsfcNo,
+        cntctCnclsMthdNm as cntctCnclsMthdNm,
+        ntceNo as ntceNo,
+        ifnull(date_format(firstCntrctDate, '%Y-%m-%d'),'-') as firstCntrctDate,
+        firstCntrctAmt as firstCntrctAmt,
+        ifnull(date_format(LastCntrctDate, '%Y-%m-%d'),'-') as cntrctDate,
+        LastCntrctAmt as thtmCntrctAmt,
+        LastCntrctCnt as cntrctCnt,
+        id as id,
+        checked as checked
         FROM
-        contract_info_service
+        daily_contracts_services
         WHERE
         1=1
-        and pub_prcrmnt_clsfc_no in ('80161599','80161590','81111599','72101597','81111899')
-        <if test="search != null and search != ''">
-            AND (
-            cntrct_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="dminsttNm != null and dminsttNm != ''">
+            AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
         </if>
+        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
+            AND dminsttNmDetail LIKE CONCAT('%', #{dminsttNmDetail}, '%')
+        </if>
+        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
+            AND prdctClsfcNo LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        </if>
+        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
+            AND cntctCnclsMthdNm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND firstCntrctDate = #{firstCntrctDate}
+        </if>
+
+        <!-- 계약일자 조건 처리 -->
+        <if test="year != null">
+            AND YEAR(firstCntrctDate) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeEnd != null">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+
+        <if test="showSavedOnly == 1">
+            AND checked = 1
+        </if>
+        ORDER BY
+        firstCntrctDate DESC
         LIMIT #{start}, #{length}
     </select>
 
@@ -291,41 +318,113 @@
         SELECT
         COUNT(*)
         FROM
-        contract_info_service
+        (
+        SELECT
+        cmpNm as cmpNm,
+        cntrctNm as cntrctNm,
+        dminsttNm as dminsttNm,
+        dminsttNmDetail as dminsttNmDetail,
+        prdctClsfcNo as prdctClsfcNo,
+        cntctCnclsMthdNm as cntctCnclsMthdNm,
+        ntceNo as ntceNo,
+        date_format(firstCntrctDate, '%Y-%m-%-d') as firstCntrctDate,
+        firstCntrctAmt as firstCntrctAmt,
+        date_format(LastCntrctDate, '%Y-%m-%-d') as cntrctDate,
+        LastCntrctAmt as thtmCntrctAmt,
+        LastCntrctCnt as cntrctCnt,
+        id as id,
+        checked as checked
+        FROM
+        daily_contracts_services
         WHERE
         1=1
-        and pub_prcrmnt_clsfc_no in ('80161599','80161590','81111599','72101597','81111899')
-        <if test="search != null and search != ''">
-            AND (
-            cntrct_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="dminsttNm != null and dminsttNm != ''">
+            AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
         </if>
+        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
+            AND dminsttNmDetail LIKE CONCAT('%', #{dminsttNmDetail}, '%')
+        </if>
+        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
+            AND prdctClsfcNo LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        </if>
+        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
+            AND cntctCnclsMthdNm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND firstCntrctDate = #{firstCntrctDate}
+        </if>
+
+        <!-- 계약일자 조건 처리 -->
+        <if test="year != null">
+            AND YEAR(firstCntrctDate) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeEnd != null">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+
+        <if test="showSavedOnly == 1">
+            AND checked = 1
+        </if>
+        ORDER BY
+        firstCntrctDate DESC
+        ) as T
     </select>
 
     <select id="getConstructionsData" resultType="map">
         SELECT
-        unty_cntrct_no,
-        cnstwk_nm as cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
+        cmpNm as cmpNm,
+        cntrctNm as cntrctNm,
+        dminsttNm as dminsttNm,
+        dminsttNmDetail as dminsttNmDetail,
+        prdctClsfcNo as prdctClsfcNo,
+        cntctCnclsMthdNm as cntctCnclsMthdNm,
+        ntceNo as ntceNo,
+        ifnull(date_format(firstCntrctDate, '%Y-%m-%d'),'-') as firstCntrctDate,
+        firstCntrctAmt as firstCntrctAmt,
+        ifnull(date_format(LastCntrctDate, '%Y-%m-%d'),'-') as cntrctDate,
+        LastCntrctAmt as thtmCntrctAmt,
+        LastCntrctCnt as cntrctCnt,
+        id as id,
+        checked as checked
         FROM
-        contract_info_construction_work
+        daily_contracts_construction_work
         WHERE
         1=1
-        and pub_prcrmnt_clsfc_no in ('72151597','72151699','72151295','72101507')
-        <if test="search != null and search != ''">
-            AND (
-            cnstwk_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="dminsttNm != null and dminsttNm != ''">
+            AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
         </if>
+        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
+            AND dminsttNmDetail LIKE CONCAT('%', #{dminsttNmDetail}, '%')
+        </if>
+        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
+            AND prdctClsfcNo LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        </if>
+        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
+            AND cntctCnclsMthdNm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND firstCntrctDate = #{firstCntrctDate}
+        </if>
+
+        <!-- 계약일자 조건 처리 -->
+        <if test="year != null">
+            AND YEAR(firstCntrctDate) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeEnd != null">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+
+        <if test="showSavedOnly == 1">
+            AND checked = 1
+        </if>
+        ORDER BY
+        firstCntrctDate DESC
         LIMIT #{start}, #{length}
     </select>
 
@@ -343,16 +442,59 @@
         SELECT
         COUNT(*)
         FROM
-        contract_info_construction_work
+        (
+        SELECT
+        cmpNm as cmpNm,
+        cntrctNm as cntrctNm,
+        dminsttNm as dminsttNm,
+        dminsttNmDetail as dminsttNmDetail,
+        prdctClsfcNo as prdctClsfcNo,
+        cntctCnclsMthdNm as cntctCnclsMthdNm,
+        ntceNo as ntceNo,
+        date_format(firstCntrctDate, '%Y-%m-%-d') as firstCntrctDate,
+        firstCntrctAmt as firstCntrctAmt,
+        date_format(LastCntrctDate, '%Y-%m-%-d') as cntrctDate,
+        LastCntrctAmt as thtmCntrctAmt,
+        LastCntrctCnt as cntrctCnt,
+        id as id,
+        checked as checked
+        FROM
+        daily_contracts_construction_work
         WHERE
         1=1
-        and pub_prcrmnt_clsfc_no in ('72151597','72151699','72151295','72101507')
-        <if test="search != null and search != ''">
-            AND (
-            cnstwk_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="dminsttNm != null and dminsttNm != ''">
+            AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
         </if>
+        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
+            AND dminsttNmDetail LIKE CONCAT('%', #{dminsttNmDetail}, '%')
+        </if>
+        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
+            AND prdctClsfcNo LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        </if>
+        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
+            AND cntctCnclsMthdNm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND firstCntrctDate = #{firstCntrctDate}
+        </if>
+
+        <!-- 계약일자 조건 처리 -->
+        <if test="year != null">
+            AND YEAR(firstCntrctDate) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeEnd != null">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+
+        <if test="showSavedOnly == 1">
+            AND checked = 1
+        </if>
+        ORDER BY
+        firstCntrctDate DESC
+        ) as T
     </select>
 
     <!-- 탑인더스트리 데이터 -->
@@ -563,8 +705,20 @@
         ) as derived_table_alias
     </select>
 
-    <update id="updateChecked">
+    <update id="updateCheckedThings">
         UPDATE daily_contracts_things
+        SET checked = #{checked}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateCheckedServices">
+        UPDATE daily_contracts_services
+        SET checked = #{checked}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateCheckedConstructions">
+        UPDATE daily_contracts_construction_work
         SET checked = #{checked}
         WHERE id = #{id}
     </update>

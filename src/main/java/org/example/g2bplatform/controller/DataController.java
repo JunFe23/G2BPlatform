@@ -58,13 +58,13 @@ public class DataController {
             totalRecords = dataService.getThingsTotalCount(category);
             filteredRecords = dataService.getThingsFilteredCount(dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         } else if ("services".equals(category)) {
-            data = dataService.getServicesData(start, length, searchValue, category);
+            data = dataService.getServicesData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
             totalRecords = dataService.getServicesTotalCount(category);
-            filteredRecords = dataService.getServicesFilteredCount(searchValue, category);
+            filteredRecords = dataService.getServicesFilteredCount(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         } else if ("constructions".equals(category)) {
-            data = dataService.getConstructionsData(start, length, searchValue, category);
+            data = dataService.getConstructionsData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
             totalRecords = dataService.getConstructionsTotalCount(category);
-            filteredRecords = dataService.getConstructionsFilteredCount(searchValue, category);
+            filteredRecords = dataService.getConstructionsFilteredCount(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         } else if ("onlyTop".equals(category)) {
             data = dataService.getTopsData(start, length, searchValue, category);
             totalRecords = dataService.getTopsTotalCount(category);
@@ -124,7 +124,13 @@ public class DataController {
     public ResponseEntity<String> updateChecked(@RequestBody Map<String, Object> request) {
         try {
             // 데이터베이스에서 업데이트 처리
-            dataService.updateChecked((int) request.get("id"), (boolean) request.get("checked"));
+            if(request.get("category").equals("goods")) {
+                dataService.updateCheckedThings((int) request.get("id"), (boolean) request.get("checked"));
+            } else if(request.get("category").equals("services")){
+                dataService.updateCheckedServices((int) request.get("id"), (boolean) request.get("checked"));
+            } else if(request.get("category").equals("constructions")){
+                dataService.updateCheckedConstructions((int) request.get("id"), (boolean) request.get("checked"));
+            }
             return ResponseEntity.ok("체크박스 상태가 성공적으로 업데이트되었습니다.");
         } catch (Exception e) {
             e.printStackTrace();

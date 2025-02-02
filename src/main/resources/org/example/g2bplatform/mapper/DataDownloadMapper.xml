@@ -16,7 +16,7 @@
         crdtr_nm, base_dtls, cntrct_cncls_mthd_nm, rgst_dt, chg_dt, dfrcmpnst_rt, link_instt_nm,
         d2b_mng_cntrct_sttus_nm, d2b_mng_prearng_amt, d2b_mng_bid_mthd_nm, d2b_mng_dcsn_no,
         pub_prcrmnt_lrg_clsfc_nm, pub_prcrmnt_mid_clsfc_nm, pub_prcrmnt_clsfc_no, pub_prcrmnt_clsfc_nm,
-        cntrct_date, info_biz_yn, yyyymm
+        cntrct_date, info_biz_yn, cntrctNo, chgCnt, yyyymm
         )
         VALUES
         <foreach collection="contractInfos" item="info" separator=",">
@@ -29,7 +29,8 @@
             #{info.cntrctCnclsMthdNm}, #{info.rgstDt}, #{info.chgDt}, #{info.dfrcmpnstRt}, #{info.linkInsttNm},
             #{info.d2bMngCntrctSttusNm}, #{info.d2bMngPrearngAmt}, #{info.d2bMngBidMthdNm}, #{info.d2bMngDcsnNo},
             #{info.pubPrcrmntLrgClsfcNm}, #{info.pubPrcrmntMidClsfcNm}, #{info.pubPrcrmntClsfcNo}, #{info.pubPrcrmntClsfcNm},
-            #{info.cntrctDate}, #{info.infoBizYn}, DATE_FORMAT(#{info.rgstDt}, '%Y%m')
+            #{info.cntrctDate}, #{info.infoBizYn}, SUBSTRING(#{info.cntrctRefNo}, 1, LENGTH(#{info.cntrctRefNo}) - 2),
+            RIGHT(#{info.cntrctRefNo}, 2), DATE_FORMAT(#{info.rgstDt}, '%Y%m')
             )
         </foreach>
     </insert>

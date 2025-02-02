@@ -14,7 +14,7 @@
         }
 
         .sidebar {
-            width: 60px;
+            width: 75px;
             height: 100vh;
             background-color: #2c3e50;
             color: #ecf0f1;
@@ -145,16 +145,19 @@
             $('#data-table').html(`
                 <thead>
                     <tr>
-                        <th>통합계약번호</th>
-                        <th>계약명</th>
-                        <th>계약기간</th>
-                        <th>총계약금액</th>
-                        <th>금차계약금액</th>
-                        <th>계약기관명</th>
-                        <th>근거내역</th>
-                        <th>계약체결방법명</th>
-                        <th>공공조달분류명</th>
-                        <th>업체목록</th>
+                        <th>업체명</th>
+                        <th>계약건명</th>
+                        <th>수요기관명</th>
+                        <th>수요기관지역명</th>
+                        <th>품명내용</th>
+                        <th>입찰계약방법</th>
+                        <th>입찰공고번호</th>
+                        <th>최초계약일자</th>
+                        <th>최초계약금액</th>
+                        <th>최종계약일자</th>
+                        <th>최종계약금액</th>
+                        <th>계약변경차수</th>
+                        <th>저장</th>
                     </tr>
                 </thead>
             `);
@@ -163,12 +166,42 @@
             $('#data-table').DataTable({
                 processing: true,
                 serverSide: true,
+                searching: false, // 기본 검색창 비활성화
+                language: {
+                    processing: `
+                                <div class="loading-container">
+                                    <div class="loading-spinner"></div>
+                                    <span>데이터를 불러오는 중입니다...</span>
+                                </div>
+                            `
+                },
                 ajax: {
                     url: '/api/data',
                     type: 'GET',
                     data: function (d) {
                         d.category = category; // 요청 데이터에 카테고리 추가
                         console.log('DataTables request parameters:', d); // 요청 데이터 확인
+                        console.log('DataTables request parameters:', d); // 요청 데이터 확인
+                        d.dminsttNm = $('#search-dminsttNm').val(); // 수요기관명
+                        d.dminsttNmDetail = $('#search-dminsttNmDetail').val(); // 수요기관지역명
+                        d.prdctClsfcNo = $('#search-prdctClsfcNo').val(); // 품명내용
+                        d.cntctCnclsMthdNm = $('#search-cntctCnclsMthdNm').val(); // 입찰계약방법
+                        d.firstCntrctDate = $('#search-firstCntrctDate').val(); // 최초계약일자
+
+                        // 계약일자 조건 추가
+                        const dateType = $('#search-date-type').val();
+                        if (dateType === 'year') {
+                            d.year = $('#search-year').val(); // 연도 검색
+                        } else if (dateType === 'month') {
+                            d.month = $('#search-month').val(); // 특정 월 검색
+                        } else if (dateType === 'range') {
+                            d.rangeStart = $('#search-range-start').val(); // 시작 월
+                            d.rangeEnd = $('#search-range-end').val(); // 종료 월
+                        }
+
+                        // "저장된 데이터만 보기" 체크 상태 추가
+                        d.showSavedOnly = $('#show-saved-only').is(':checked') ? 1 : 0; // 체크된 경우 1, 아니면 0
+
                         return d;
                     },
                     error: function (xhr, error, code) {
@@ -176,17 +209,79 @@
                     }
                 },
                 columns: [
-                    { data: 'unty_cntrct_no', orderable: true },
-                    { data: 'cntrct_nm', orderable: true },
-                    { data: 'cntrct_prd' },
-                    { data: 'tot_cntrct_amt', orderable: true },
-                    { data: 'thtm_cntrct_amt', orderable: true },
-                    { data: 'cntrct_instt_nm' },
-                    { data: 'base_dtls' },
-                    { data: 'cntrct_cncls_mthd_nm' },
-                    { data: 'pub_prcrmnt_clsfc_nm' },
-                    { data: 'corp_list' }
+                    { data: 'cmpNm' },
+                    { data: 'cntrctNm' },
+                    { data: 'dminsttNm' },
+                    { data: 'dminsttNmDetail' },
+                    { data: 'prdctClsfcNo' },
+                    { data: 'cntctCnclsMthdNm' },
+                    { data: 'ntceNo' },
+                    {
+                        data: 'firstCntrctDate',
+                        render: function (data) {
+                            return data; // MySQL에서 조회된 날짜를 그대로 사용
+                        }
+                    },
+                    {
+                        data: 'firstCntrctAmt',
+                        render: function (data) {
+                            // 금액 포맷 (3자리마다 , 추가)
+                            return parseInt(data, 10).toLocaleString();
+                        }
+                    },
+                    {
+                        data: 'cntrctDate',
+                        render: function (data) {
+                            // 날짜 포맷 (yyyy-mm-dd)
+                            return data;
+                        }
+                    },
+                    {
+                        data: 'thtmCntrctAmt',
+                        render: function (data) {
+                            // 금액 포맷 (3자리마다 , 추가)
+                            return parseInt(data, 10).toLocaleString();
+                        }
+                    },
+                    { data: 'cntrctCnt' },
+                    {
+                        data: 'checked',
+                        render: function (data, type, row) {
+                            return `
+                        <input type="checkbox" class="save-checkbox" data-id="${row.id}" ${data ? 'checked' : ''}>
+                    `;
+                        },
+                        orderable: false
+                    },
+                ],
+                columnDefs: [
+                    { targets: 'id', visible: false } // id 컬럼 숨김 처리
                 ]
+            });
+
+            // 체크박스 변경 이벤트 처리
+            $('#data-table').on('change', '.save-checkbox', function () {
+                const id = $(this).data('id');
+                const checked = $(this).is(':checked');
+
+                $.ajax({
+                    url: '/api/update-checked',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ category: category, id: id, checked: checked }),
+                    success: function () {
+                        console.log(`ID: ${id}, Checked: ${checked} 업데이트 성공`);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('업데이트 실패:', xhr.responseText);
+                    }
+                });
+            });
+
+            // 검색 버튼 클릭 시 DataTable 새로고침
+            $('#search-button').on('click', function () {
+                console.log("Search button clicked. Refreshing DataTable...");
+                table.draw(); // DataTable 새로고침
             });
         });
 
@@ -246,6 +341,55 @@
 </div>
 <div id="content" class="content">
     <h1 class="services">관련업계 전체시장 DB - 용역</h1>
+
+    <!-- 검색 필드 추가 -->
+    <div id="search-container" style="margin-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+        <input type="text" id="search-dminsttNm" placeholder="수요기관명 검색">
+        <input type="text" id="search-dminsttNmDetail" placeholder="수요기관지역명 검색">
+        <input type="text" id="search-prdctClsfcNo" placeholder="품명내용 검색">
+        <input type="text" id="search-cntctCnclsMthdNm" placeholder="입찰계약방법 검색">
+        <input type="text" id="search-firstCntrctDate" placeholder="최초계약일자 검색">
+
+        <select id="search-date-type" style="padding: 8px;">
+            <option value="year">연도 검색</option>
+            <option value="month">특정 월 검색</option>
+            <option value="range">기간 검색</option>
+        </select>
+        <select id="search-year" style="padding: 8px;">
+            <option value="">선택</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+        </select>
+        <input type="month" id="search-month" style="display: none;">
+        <input type="month" id="search-range-start" placeholder="시작월" style="display: none;">
+        <input type="month" id="search-range-end" placeholder="종료월" style="display: none;">
+
+        <button id="search-button" style="padding: 8px 15px; background-color: #34495e; color: #ecf0f1; border: none; cursor: pointer;">
+            검색
+        </button>
+
+        <!-- 저장된 데이터만 보기 체크박스 -->
+        <label style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" id="show-saved-only" style="cursor: pointer;">
+            저장된 데이터만 보기
+        </label>
+
+        <!-- 엑셀 다운로드 버튼 -->
+        <button id="download-excel" style="padding: 8px 15px; background-color: #27ae60; color: #ecf0f1; border: none; cursor: pointer; margin-left: 10px;">
+            엑셀 다운로드
+        </button>
+
+        <!-- 로딩 스피너 -->
+        <div id="loading-spinner" style="display: none; margin-left: 10px;">
+            <div class="loading-spinner"></div>
+        </div>
+
+    </div>
+
     <table id="data-table" class="display" style="width:100%; margin-top: 20px;">
         <thead>
         <tr>

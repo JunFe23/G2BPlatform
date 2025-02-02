@@ -68,29 +68,65 @@ public interface DataMapper {
     List<Map<String, String>> getServicesData(
             @Param("start") int start,
             @Param("length") int length,
-            @Param("search") String search,
-            @Param("category") String category
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
     );
 
     int getServicesTotalCount(@Param("category") String category);
 
     int getServicesFilteredCount(
-            @Param("search") String search,
-            @Param("category") String category
+            @Param("start") int start,
+            @Param("length") int length,
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
     );
 
     List<Map<String, String>> getConstructionsData(
             @Param("start") int start,
             @Param("length") int length,
-            @Param("search") String search,
-            @Param("category") String category
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
     );
 
     int getConstructionsTotalCount(@Param("category") String category);
 
     int getConstructionsFilteredCount(
-            @Param("search") String search,
-            @Param("category") String category
+            @Param("start") int start,
+            @Param("length") int length,
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
     );
 
 
@@ -108,5 +144,7 @@ public interface DataMapper {
             @Param("category") String category
     );
 
-    int updateChecked(@Param("id") int id, @Param("checked") int checked);
+    int updateCheckedThings(@Param("id") int id, @Param("checked") int checked);
+    int updateCheckedServices(@Param("id") int id, @Param("checked") int checked);
+    int updateCheckedConstructions(@Param("id") int id, @Param("checked") int checked);
 }
