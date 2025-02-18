@@ -136,7 +136,7 @@ public class HomeController {
                     String url = buildUrl(endpoint, serviceKey, inqryBgnDt, inqryEndDt, pageNo);
                     return fetchAndSaveData(url, endpoint)
                             .doOnError(e -> logger.error("Error while processing page {}: {}", pageNo, e.getMessage())) // 에러 로깅
-                            .retry(10); // 페이지 처리 오류 시 최대 설정횟수만큼 재시도
+                            .retry(15); // 페이지 처리 오류 시 최대 설정횟수만큼 재시도
                 }, 30) // 병렬로 처리할 최대 개수 설정
                 .then(); // 모든 작업이 완료될 때까지 기다림
     }
