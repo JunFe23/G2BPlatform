@@ -69,7 +69,7 @@
         dfrcmpnst_rt, cbgn_date, thtm_ccmplt_date, ttal_ccmplt_date, link_instt_nm,
         d2b_mng_cntrct_sttus_nm, d2b_mng_prearng_amt, d2b_mng_bid_mthd_nm, d2b_mng_cnstwk_no,
         pub_prcrmnt_lrgclsfc_nm, pub_prcrmnt_midclsfc_nm, pub_prcrmnt_clsfc_no, pub_prcrmnt_clsfc_nm,
-        cntrct_date, yyyymm
+        cntrct_date, cntrctNo, chgCnt, yyyymm
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
@@ -83,7 +83,8 @@
             #{item.dfrcmpnstRt}, #{item.cbgnDate}, #{item.thtmCcmpltDate}, #{item.ttalCcmpltDate}, #{item.linkInsttNm},
             #{item.d2bMngCntrctSttusNm}, #{item.d2bMngPrearngAmt}, #{item.d2bMngBidMthdNm}, #{item.d2bMngCnstwkNo},
             #{item.pubPrcrmntLrgClsfcNm}, #{item.pubPrcrmntMidClsfcNm}, #{item.pubPrcrmntClsfcNo}, #{item.pubPrcrmntClsfcNm},
-            #{item.cntrctDate}, DATE_FORMAT(#{item.rgstDt},'%Y%m')
+            #{item.cntrctDate}, SUBSTRING(#{item.cntrctRefNo}, 1, LENGTH(#{item.cntrctRefNo}) - 2),
+            RIGHT(#{item.cntrctRefNo}, 2), DATE_FORMAT(#{item.rgstDt}, '%Y%m')
             )
         </foreach>
     </insert>
@@ -100,7 +101,7 @@
         cntrct_cncls_mthd_nm, rgst_dt, chg_dt, dfrcmpnst_rt, wbgn_date,
         thtm_scmplt_date, ttal_scmplt_date, link_instt_nm, d2b_mng_cntrct_sttus_nm, d2b_mng_prearng_amt,
         d2b_mng_bid_mthd_nm, d2b_mng_dcsn_no, d2b_mng_cnstwk_no, pub_prcrmnt_lrgclsfc_nm, pub_prcrmnt_midclsfc_nm,
-        pub_prcrmnt_clsfc_no, pub_prcrmnt_clsfc_nm, cntrct_date, info_biz_yn, yyyymm
+        pub_prcrmnt_clsfc_no, pub_prcrmnt_clsfc_nm, cntrct_date, info_biz_yn, cntrctNo, chgCnt, yyyymm
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
@@ -113,7 +114,8 @@
             #{item.cntrctCnclsMthdNm}, #{item.rgstDt}, #{item.chgDt}, #{item.dfrcmpnstRt}, #{item.wbgnDate},
             #{item.thtmScmpltDate}, #{item.ttalScmpltDate}, #{item.linkInsttNm}, #{item.d2bMngCntrctSttusNm}, #{item.d2bMngPrearngAmt},
             #{item.d2bMngBidMthdNm}, #{item.d2bMngDcsnNo}, #{item.d2bMngCnstwkNo}, #{item.pubPrcrmntLrgClsfcNm}, #{item.pubPrcrmntMidClsfcNm},
-            #{item.pubPrcrmntClsfcNo}, #{item.pubPrcrmntClsfcNm}, #{item.cntrctDate}, #{item.infoBizYn}, #{item.yyyymm}
+            #{item.pubPrcrmntClsfcNo}, #{item.pubPrcrmntClsfcNm}, #{item.cntrctDate}, #{item.infoBizYn}, SUBSTRING(#{item.cntrctRefNo}, 1, LENGTH(#{item.cntrctRefNo}) - 2),
+            RIGHT(#{item.cntrctRefNo}, 2), DATE_FORMAT(#{item.rgstDt}, '%Y%m')
             )
         </foreach>
     </insert>

@@ -44,7 +44,8 @@ public class DataController {
                                         @RequestParam(required = false) String month,
                                         @RequestParam(required = false) String rangeStart,
                                         @RequestParam(required = false) String rangeEnd,
-                                        @RequestParam(required = false) int showSavedOnly
+                                        @RequestParam(required = false) int showSavedOnly,
+                                        @RequestParam(required = false) String type
                                         ) {
         String searchValue = search.get("search[value]"); // DataTables가 전송하는 검색어
 
@@ -66,9 +67,9 @@ public class DataController {
             totalRecords = dataService.getConstructionsTotalCount(category);
             filteredRecords = dataService.getConstructionsFilteredCount(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         } else if ("onlyTop".equals(category)) {
-            data = dataService.getTopsData(start, length, searchValue, category);
+            data = dataService.getTopsData(type, start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
             totalRecords = dataService.getTopsTotalCount(category);
-            filteredRecords = dataService.getTopsFilteredCount(searchValue, category);
+            filteredRecords = dataService.getTopsFilteredCount( type, start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         }
         Map<String, Object> response = new HashMap<>();
         response.put("draw", draw);
@@ -91,20 +92,68 @@ public class DataController {
             }
         }
 
+        String category = requestData.get("category").toString();
+        List<Map<String, String>> data = new ArrayList<>();
+
         // 데이터 조회
-        List<Map<String, String>> data = dataService.getThingsData(
-                0, Integer.MAX_VALUE, // 전체 데이터를 가져옴
-                (String) requestData.get("dminsttNm"),
-                (String) requestData.get("dminsttNmDetail"),
-                (String) requestData.get("prdctClsfcNo"),
-                (String) requestData.get("cntctCnclsMthdNm"),
-                (String) requestData.get("firstCntrctDate"),
-                year,
-                (String) requestData.get("month"),
-                (String) requestData.get("rangeStart"),
-                (String) requestData.get("rangeEnd"),
-                (int) requestData.get("showSavedOnly")
-        );
+        if ("goods".equals(category)) {
+            data = dataService.getThingsData(
+                    0, Integer.MAX_VALUE, // 전체 데이터를 가져옴
+                    (String) requestData.get("dminsttNm"),
+                    (String) requestData.get("dminsttNmDetail"),
+                    (String) requestData.get("prdctClsfcNo"),
+                    (String) requestData.get("cntctCnclsMthdNm"),
+                    (String) requestData.get("firstCntrctDate"),
+                    year,
+                    (String) requestData.get("month"),
+                    (String) requestData.get("rangeStart"),
+                    (String) requestData.get("rangeEnd"),
+                    (int) requestData.get("showSavedOnly")
+            );
+        } else if ("services".equals(category)) {
+            data = dataService.getServicesData(
+                    0, Integer.MAX_VALUE, // 전체 데이터를 가져옴
+                    (String) requestData.get("dminsttNm"),
+                    (String) requestData.get("dminsttNmDetail"),
+                    (String) requestData.get("prdctClsfcNo"),
+                    (String) requestData.get("cntctCnclsMthdNm"),
+                    (String) requestData.get("firstCntrctDate"),
+                    year,
+                    (String) requestData.get("month"),
+                    (String) requestData.get("rangeStart"),
+                    (String) requestData.get("rangeEnd"),
+                    (int) requestData.get("showSavedOnly")
+            );
+        } else if ("constructions".equals(category)) {
+            data = dataService.getConstructionsData(
+                    0, Integer.MAX_VALUE, // 전체 데이터를 가져옴
+                    (String) requestData.get("dminsttNm"),
+                    (String) requestData.get("dminsttNmDetail"),
+                    (String) requestData.get("prdctClsfcNo"),
+                    (String) requestData.get("cntctCnclsMthdNm"),
+                    (String) requestData.get("firstCntrctDate"),
+                    year,
+                    (String) requestData.get("month"),
+                    (String) requestData.get("rangeStart"),
+                    (String) requestData.get("rangeEnd"),
+                    (int) requestData.get("showSavedOnly")
+            );
+        } else if ("onlyTop".equals(category)) {
+            data = dataService.getTopsData(
+                    (String) requestData.get("type"),
+                    0, Integer.MAX_VALUE, // 전체 데이터를 가져옴
+                    (String) requestData.get("dminsttNm"),
+                    (String) requestData.get("dminsttNmDetail"),
+                    (String) requestData.get("prdctClsfcNo"),
+                    (String) requestData.get("cntctCnclsMthdNm"),
+                    (String) requestData.get("firstCntrctDate"),
+                    year,
+                    (String) requestData.get("month"),
+                    (String) requestData.get("rangeStart"),
+                    (String) requestData.get("rangeEnd"),
+                    (int) requestData.get("showSavedOnly")
+            );
+        }
 
         // 엑셀 파일 생성
         ByteArrayOutputStream excelFile = excelService.createExcelFile(data);

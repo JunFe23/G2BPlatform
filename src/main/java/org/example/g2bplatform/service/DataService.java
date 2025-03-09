@@ -51,16 +51,16 @@ public class DataService {
     }
 
 
-    public List<Map<String, String>> getTopsData(int start, int length, String search, String category) {
-        return dataMapper.getTopsData(start, length, search, category);
+    public List<Map<String, String>> getTopsData(String type, int start, int length, String dminsttNm, String dminsttNmDetail, String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate, Integer year, String month, String rangeStart, String rangeEnd, int showSavedOnly) {
+        return dataMapper.getTopsData(type, start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
     }
 
     public int getTopsTotalCount(String category) {
         return dataMapper.getTopsTotalCount(category);
     }
 
-    public int getTopsFilteredCount(String search, String category) {
-        return dataMapper.getTopsFilteredCount(search, category);
+    public int getTopsFilteredCount(String type, int start, int length, String dminsttNm, String dminsttNmDetail, String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate, Integer year, String month, String rangeStart, String rangeEnd, int showSavedOnly) {
+        return dataMapper.getTopsFilteredCount(type, start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
     }
 
     @Transactional

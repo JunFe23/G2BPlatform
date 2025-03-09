@@ -308,9 +308,7 @@
         SELECT
             COUNT(*)
         FROM
-            contract_info_service
-            where
-                pub_prcrmnt_clsfc_no in ('80161599','80161590','81111599','72101597','81111899')
+            daily_contracts_services
     </select>
 
     <!-- 검색된 데이터 개수 조회 -->
@@ -433,8 +431,7 @@
         SELECT
             COUNT(*)
         FROM
-            contract_info_construction_work
-        where pub_prcrmnt_clsfc_no in ('72151597','72151699','72151295','72101507')
+            daily_contracts_construction_work
     </select>
 
     <!-- 검색된 데이터 개수 조회 -->
@@ -500,73 +497,60 @@
     <!-- 탑인더스트리 데이터 -->
     <select id="getTopsData" resultType="map">
         SELECT
-        unty_cntrct_no,
-        cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
+        type as type,
+        cmpNm as cmpNm,
+        cntrctNm as cntrctNm,
+        dminsttNm as dminsttNm,
+        dminsttNmDetail as dminsttNmDetail,
+        prdctClsfcNo as prdctClsfcNo,
+        cntctCnclsMthdNm as cntctCnclsMthdNm,
+        ntceNo as ntceNo,
+        ifnull(date_format(firstCntrctDate, '%Y-%m-%d'),'-') as firstCntrctDate,
+        firstCntrctAmt as firstCntrctAmt,
+        ifnull(date_format(LastCntrctDate, '%Y-%m-%d'),'-') as cntrctDate,
+        LastCntrctAmt as thtmCntrctAmt,
+        LastCntrctCnt as cntrctCnt,
+        id as id,
+        checked as checked
         FROM
-        contract_info_list_thing
+        daily_top_datas
         WHERE
         1=1
-        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
-        <if test="search != null and search != ''">
-            AND (
-            cntrct_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="type != null and type != ''">
+            AND type = #{type}
         </if>
-        UNION
-        SELECT
-        unty_cntrct_no,
-        cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
-        FROM
-        contract_info_service
-        WHERE
-        1=1
-        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
-        <if test="search != null and search != ''">
-            AND (
-            cntrct_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="dminsttNm != null and dminsttNm != ''">
+            AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
         </if>
-        UNION
-        SELECT
-        unty_cntrct_no,
-        cnstwk_nm as cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
-        FROM
-        contract_info_construction_work
-        WHERE
-        1=1
-        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
-        <if test="search != null and search != ''">
-            AND (
-            cnstwk_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
+            AND dminsttNmDetail LIKE CONCAT('%', #{dminsttNmDetail}, '%')
         </if>
+        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
+            AND prdctClsfcNo LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        </if>
+        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
+            AND cntctCnclsMthdNm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND firstCntrctDate = #{firstCntrctDate}
+        </if>
+
+        <!-- 계약일자 조건 처리 -->
+        <if test="year != null">
+            AND YEAR(firstCntrctDate) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeEnd != null">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+
+        <if test="showSavedOnly == 1">
+            AND checked = 1
+        </if>
+        ORDER BY
+        firstCntrctDate DESC
         LIMIT #{start}, #{length}
     </select>
 
@@ -575,57 +559,14 @@
         SELECT
             COUNT(*)
         FROM
-            (SELECT
-        unty_cntrct_no,
-        cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
-        FROM
-        contract_info_list_thing
-        WHERE
-        1=1
-        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
-        UNION
-        SELECT
-        unty_cntrct_no,
-        cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
-        FROM
-        contract_info_service
-        WHERE
-        1=1
-        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
-        UNION
-        SELECT
-        unty_cntrct_no,
-        cnstwk_nm as cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
-        FROM
-        contract_info_construction_work
-        WHERE
-        1=1
-        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
-    ) as derived_table_alias
+            (
+                SELECT
+                    *
+                FROM
+                    daily_top_datas
+                ORDER BY
+                    firstCntrctDate DESC
+            ) as T
     </select>
 
     <!-- 검색된 데이터 개수 조회 -->
@@ -635,74 +576,61 @@
         FROM
         (
         SELECT
-        unty_cntrct_no,
-        cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
+        type as type,
+        cmpNm as cmpNm,
+        cntrctNm as cntrctNm,
+        dminsttNm as dminsttNm,
+        dminsttNmDetail as dminsttNmDetail,
+        prdctClsfcNo as prdctClsfcNo,
+        cntctCnclsMthdNm as cntctCnclsMthdNm,
+        ntceNo as ntceNo,
+        date_format(firstCntrctDate, '%Y-%m-%-d') as firstCntrctDate,
+        firstCntrctAmt as firstCntrctAmt,
+        date_format(LastCntrctDate, '%Y-%m-%-d') as cntrctDate,
+        LastCntrctAmt as thtmCntrctAmt,
+        LastCntrctCnt as cntrctCnt,
+        id as id,
+        checked as checked
         FROM
-        contract_info_list_thing
+        daily_top_datas
         WHERE
         1=1
-        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
-        <if test="search != null and search != ''">
-            AND (
-            cntrct_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="type != null and type != ''">
+            AND type = #{type}
         </if>
-        UNION
-        SELECT
-        unty_cntrct_no,
-        cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
-        FROM
-        contract_info_service
-        WHERE
-        1=1
-        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
-        <if test="search != null and search != ''">
-            AND (
-            cntrct_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="dminsttNm != null and dminsttNm != ''">
+            AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
         </if>
-        UNION
-        SELECT
-        unty_cntrct_no,
-        cnstwk_nm as cntrct_nm,
-        cntrct_prd,
-        tot_cntrct_amt,
-        thtm_cntrct_amt,
-        cntrct_instt_nm,
-        base_dtls,
-        cntrct_cncls_mthd_nm,
-        pub_prcrmnt_clsfc_nm,
-        corp_list
-        FROM
-        contract_info_construction_work
-        WHERE
-        1=1
-        and RIGHT(corp_list, 11) IN ('1188117437]', '1188119624]')
-        <if test="search != null and search != ''">
-            AND (
-            cnstwk_nm LIKE CONCAT('%', #{search}, '%')
-            OR cntrct_instt_nm LIKE CONCAT('%', #{search}, '%')
-            )
+        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
+            AND dminsttNmDetail LIKE CONCAT('%', #{dminsttNmDetail}, '%')
         </if>
-        ) as derived_table_alias
+        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
+            AND prdctClsfcNo LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        </if>
+        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
+            AND cntctCnclsMthdNm LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND firstCntrctDate = #{firstCntrctDate}
+        </if>
+
+        <!-- 계약일자 조건 처리 -->
+        <if test="year != null">
+            AND YEAR(firstCntrctDate) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeEnd != null">
+            AND DATE_FORMAT(firstCntrctDate, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+
+        <if test="showSavedOnly == 1">
+            AND checked = 1
+        </if>
+        ORDER BY
+        firstCntrctDate DESC
+        ) as T
     </select>
 
     <update id="updateCheckedThings">

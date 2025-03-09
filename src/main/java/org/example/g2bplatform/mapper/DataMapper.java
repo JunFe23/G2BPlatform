@@ -131,17 +131,37 @@ public interface DataMapper {
 
 
     List<Map<String, String>> getTopsData(
+            @Param("type") String type,
             @Param("start") int start,
             @Param("length") int length,
-            @Param("search") String search,
-            @Param("category") String category
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
     );
 
     int getTopsTotalCount(@Param("category") String category);
 
     int getTopsFilteredCount(
-            @Param("search") String search,
-            @Param("category") String category
+            @Param("type") String type,
+            @Param("start") int start,
+            @Param("length") int length,
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
     );
 
     int updateCheckedThings(@Param("id") int id, @Param("checked") int checked);
