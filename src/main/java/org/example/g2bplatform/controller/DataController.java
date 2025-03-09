@@ -95,7 +95,7 @@ public class DataController {
         String category = requestData.get("category").toString();
         List<Map<String, String>> data = new ArrayList<>();
 
-        // 데이터 조회
+        // category 별 데이터 조회
         if ("goods".equals(category)) {
             data = dataService.getThingsData(
                     0, Integer.MAX_VALUE, // 전체 데이터를 가져옴
