@@ -35,14 +35,16 @@ public class GoogleSheetService {
 //        }
 
         // 테스트용 데이터 생성
-        List<List<Object>> values = new ArrayList<>();
-        values.add(Arrays.asList("이름", "나이", "국가"));
-        values.add(Arrays.asList("홍길동", "30", "대한민국"));
-        values.add(Arrays.asList("John Doe", "28", "USA"));
+        List<List<Object>> sheetData = new ArrayList<>();
+        sheetData.add(Arrays.asList(
+                "분류", "업체명", "계약건명", "수요기관명", "수요기관지역명",
+                "품명내용", "입찰계약방법", "입찰공고번호",
+                "최초계약일자", "최초계약금액", "최종계약일자", "최종계약금액", "계약변경차수"
+        ));
 
-        ValueRange body = new ValueRange().setValues(values);
+        ValueRange body = new ValueRange().setValues(sheetData);
         sheets.spreadsheets().values()
-                .update(spreadsheetId, sheetName + "!A1", body) // 여기가 포인트!
+                .update(spreadsheetId, sheetName + "!A1", body)
                 .setValueInputOption("RAW")
                 .execute();
     }
