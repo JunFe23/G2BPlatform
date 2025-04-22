@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.example.g2bplatform.mapper.GoogleSheetMapper">
+    <select id="getTopsDataForSheet" resultType="map">
+        SELECT
+            type as type,
+            cmpNm as cmpNm,
+            cntrctNm as cntrctNm,
+            dminsttNm as dminsttNm,
+            dminsttNmDetail as dminsttNmDetail,
+            prdctClsfcNo as prdctClsfcNo,
+            cntctCnclsMthdNm as cntctCnclsMthdNm,
+            ntceNo as ntceNo,
+            ifnull(date_format(firstCntrctDate, '%Y-%m-%d'),'-') as firstCntrctDate,
+            firstCntrctAmt as firstCntrctAmt,
+            ifnull(date_format(LastCntrctDate, '%Y-%m-%d'),'-') as cntrctDate,
+            LastCntrctAmt as thtmCntrctAmt,
+            LastCntrctCnt as cntrctCnt,
+            id as id,
+            checked as checked
+        FROM
+            daily_top_datas
+    </select>
+</mapper>
