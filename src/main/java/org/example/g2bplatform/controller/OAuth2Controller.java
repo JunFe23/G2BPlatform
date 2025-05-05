@@ -12,6 +12,7 @@ public class OAuth2Controller {
         this.authorizedClientService = authorizedClientService;
     }
 
+    // TODO 스프레드시트 연동 후 매일 자동 호출 되도록 해야함
     @GetMapping("/callback")
     public String callback(OAuth2AuthenticationToken authentication) {
         OAuth2AuthorizedClient client = authorizedClientService
