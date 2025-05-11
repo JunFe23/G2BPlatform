@@ -1,7 +1,9 @@
 package org.example.g2bplatform.service;
 
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.model.ClearValuesRequest;
 import com.google.api.services.sheets.v4.model.ValueRange;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.example.g2bplatform.config.GoogleSheetConfig;
 import org.example.g2bplatform.mapper.GoogleSheetMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,11 @@ public class GoogleSheetService {
 
     public GoogleSheetService(GoogleSheetConfig config) throws Exception {
         this.sheets = config.getSheetsService();
+    }
+
+    @Scheduled(cron = "0 0 7 * * ?") // 매일 오전 8시
+    public void updateSheetEveryMorning() throws IOException {
+        testWriteToSheet();
     }
 
     public void testWriteToSheet() throws IOException {
@@ -56,6 +63,12 @@ public class GoogleSheetService {
             ));
         }
 
+        // 기존 시트 내용 전체 삭제
+        sheets.spreadsheets().values()
+                .clear(spreadsheetId, sheetName, new ClearValuesRequest())
+                .execute();
+
+        // 시트 다시 입력
         ValueRange body = new ValueRange().setValues(sheetData);
         sheets.spreadsheets().values()
                 .update(spreadsheetId, sheetName + "!A1", body)

@@ -16,6 +16,7 @@ import java.util.List;
 @Configuration
 public class GoogleSheetConfig {
 
+    // TODO 추후에 josn key 받으면 교체 필요
     @Value("${google.service.account.key.path}")
     private String keyPath;
 
