@@ -14,9 +14,9 @@ import java.time.LocalDateTime;
 @Data
 public class ContractInfo {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    private Long id;
 
     @Transient
     private String resultCode;
@@ -33,6 +33,7 @@ public class ContractInfo {
     @Transient
     private int totalCount;
 
+    @Id
     @Column(name = "untyCntrctNo", length = 13, nullable = false)
     private String untyCntrctNo;
 

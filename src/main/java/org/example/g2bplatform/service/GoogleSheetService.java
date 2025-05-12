@@ -28,7 +28,7 @@ public class GoogleSheetService {
         this.sheets = config.getSheetsService();
     }
 
-    @Scheduled(cron = "0 0 7 * * ?") // 매일 오전 8시
+    @Scheduled(cron = "0 0 9 * * ?") // 매일 오전 9시
     public void updateSheetEveryMorning() throws IOException {
         testWriteToSheet();
     }

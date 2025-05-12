@@ -94,6 +94,13 @@ public class HomeController {
                 .bodyToMono(String.class)
                 .doOnNext(response -> logger.info("Received response: {}", response)) // 응답 로깅
                 .flatMap(initialResponse -> {
+                    logger.info("💬 Raw API response:\n{}", initialResponse); // 👈 요거 추가
+
+                    if (initialResponse.startsWith("<")) {
+                        logger.error("❌ HTML 응답 수신됨! (보통은 인증 문제, 잘못된 요청)");
+                        return Mono.just(ResponseEntity.status(500).body("{\"error\":\"Received HTML instead of JSON.\"}"));
+                    }
+
                     try {
                         // JSON 응답을 파싱하여 resultCode와 resultMsg를 확인
                         JsonNode initialJsonNode = objectMapper.readTree(initialResponse);

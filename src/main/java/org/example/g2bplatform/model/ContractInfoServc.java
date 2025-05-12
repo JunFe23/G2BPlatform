@@ -16,11 +16,12 @@ import java.time.LocalDateTime;
 @Data
 public class ContractInfoServc {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    @Column(name = "id")
+//    private Long id;
 
+    @Id
     @Column(name = "unty_cntrct_no", nullable = false, length = 13)
     private String untyCntrctNo;
 
