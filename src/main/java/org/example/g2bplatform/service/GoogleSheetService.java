@@ -18,7 +18,8 @@ import java.util.Map;
 @Service
 public class GoogleSheetService {
     private final Sheets sheets;
-    private final String spreadsheetId = "1eIjkSF2RGMfRmpmA0JtOko-5DDlud7Luo3h1a6Mq7kA";
+//    private final String spreadsheetId = "1eIjkSF2RGMfRmpmA0JtOko-5DDlud7Luo3h1a6Mq7kA";
+    private final String spreadsheetId = "1SrVCuagp9Yyuv3B854IC90do9iWz4_Z1ptxj66BHwX8";
     private final String sheetName = "시트1"; // 구글 시트 탭 이름 확인!
 
     @Autowired
