@@ -35,7 +35,7 @@ public class ContractInfoServc {
     private String cntrctRefNo;
 
     @JsonProperty("cntrctNm")
-    @Column(name = "cntrct_nm", length = 100)
+    @Column(name = "cntrct_nm", length = 300)
     private String cntrctNm;
 
     @Column(name = "cmmn_cntrct_yn", length = 1)
