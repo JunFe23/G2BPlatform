@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>G2B 조회 프로그램</title>
+    <style>
+        /* 로딩 표시 스타일 */
+        #loading {
+            display: none; /* 기본적으로 숨김 */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #333;
+            z-index: 1000; /* 다른 요소 위에 표시 */
+        }
+
+        /* 배경 블러 효과 */
+        #overlay {
+            display: none; /* 기본적으로 숨김 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* 반투명 검정 배경 */
+            z-index: 999; /* 로딩 표시 바로 아래 */
+        }
+
+        /* 메뉴 스타일 */
+        #sidebar {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            width: 200px;
+            height: calc(100% - 80px);
+            background-color: #f4f4f4;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        #content {
+            margin-left: 220px;
+            margin-top: 80px;
+            padding: 20px;
+        }
+
+        #header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 101;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        a {
+            display: block;
+            margin-bottom: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        a:hover {
+            color: #007bff;
+        }
+
+        #serviceKeyContainer {
+            display: flex;
+            align-items: center;
+            margin-right: 50%;
+        }
+    </style>
+</head>
+<body>
+<div id="header">
+    <h1>G2B 조회 프로그램</h1>
+    <div id="serviceKeyContainer">
+        <label for="serviceKey" style="margin-right: 10px;">Service Key 입력:</label>
+        <input type="text" id="serviceKey" name="serviceKey" value="%2FwZoB2Eujc4Y0tk%2Fd8HcpY9mrcupnHiFHTHwXNTZ9LZSXXwcbYfHwi7%2Fedrq%2B7eXV%2BkP1TIriT3BbKQX4kQKSQ%3D%3D" required style="width: 400px;">
+<!--        <input type="text" id="serviceKey" name="serviceKey" value="Ofrfq%2FwMIHSeTKEn9w46COlSuj5N%2Bk8F6ummdKC%2FOOVO3K9jSl4%2FnI6jzfUQ%2BgfNLdfMuzMuUxrJg9v6e%2B6u6w%3D%3D" required style="width: 400px;">-->
+    </div>
+</div>
+
+<div id="sidebar">
+    <h2>엔드포인트 선택</h2>
+    <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListThng')">계약현황에 대한 물품조회</a>
+    <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListThngDetail')">계약현황에 대한 물품세부조회</a>
+<!--    <a href="#" onclick="loadEndpoint('/1230000/CntrctInfoService01/getCntrctInfoListThngChgHstry01')">계약현황에 대한 물품변경이력조회</a>-->
+<!--    <a href="#" onclick="loadEndpoint('/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01')">나라장터검색조건에 의한 계약현황 물품조회</a>-->
+    <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListCnstwk')">계약현황에 대한 공사조회</a>
+    <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListServc')">계약현황에 대한 용역조회</a>
+<!--    <a href="#" onclick="loadEndpoint('/1230000/ao/CntrctInfoService/getCntrctInfoListServcPPSSrch01')">나라장터검색조건에 의한 계약현황 용역조회</a>-->
+</div>
+
+<div id="content">
+    <!-- 엔드포인트와 serviceKey 입력을 위한 폼 -->
+    <form id="apiForm">
+        <label for="inqryBgnDt">시작일 입력:</label>
+        <input type="text" id="inqryBgnDt" name="inqryBgnDt" placeholder="202401010000" maxlength="12" required>
+
+        <label for="inqryEndDt">종료일 입력:</label>
+        <input type="text" id="inqryEndDt" name="inqryEndDt" placeholder="202401012359" maxlength="12" required>
+
+        <button type="button" onclick="fetchData()">데이터 가져오기</button>
+    </form>
+</div>
+
+<!-- 로딩 표시 및 오버레이 -->
+<div id="overlay"></div>
+<div id="loading">로딩 중</div>
+
+<script>
+    let selectedEndpoint = '';
+    let loadingInterval; // 로딩 애니메이션을 위한 인터벌 변수
+    let startTime; // 데이터 가져오기 시작 시간
+
+    function loadEndpoint(endpoint) {
+        selectedEndpoint = endpoint;
+        alert(`선택된 엔드포인트: ${endpoint}`); // 선택된 엔드포인트 표시
+    }
+
+    function showLoading() {
+        document.getElementById('overlay').style.display = 'block'; // 오버레이 표시
+        document.getElementById('loading').style.display = 'block'; // 로딩 표시 표시
+
+        // 로딩 애니메이션 시작
+        let dotCount = 0;
+        loadingInterval = setInterval(() => {
+            dotCount = (dotCount + 1) % 4; // 점의 개수는 0, 1, 2, 3의 반복
+            document.getElementById('loading').textContent = '로딩 중' + '.'.repeat(dotCount); // 점을 추가하여 텍스트 변경
+        }, 500); // 0.5초마다 점 추가
+    }
+
+    function hideLoading() {
+        clearInterval(loadingInterval); // 로딩 애니메이션 중지
+        document.getElementById('overlay').style.display = 'none'; // 오버레이 숨김
+        document.getElementById('loading').style.display = 'none'; // 로딩 표시 숨김
+    }
+
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}m ${remainingSeconds}s`;
+    }
+
+    function fetchData() {
+        if (!selectedEndpoint) {
+            alert('엔드포인트를 선택해주세요.');
+            return;
+        }
+
+        // 폼 데이터 수집
+        const serviceKey = document.getElementById('serviceKey').value;
+        const inqryBgnDt = document.getElementById('inqryBgnDt').value;
+        const inqryEndDt = document.getElementById('inqryEndDt').value;
+
+        // 로딩 표시 보여주기 및 시작 시간 기록
+        showLoading();
+        startTime = new Date(); // 시작 시간 기록
+
+        // Fetch API를 사용하여 POST 요청을 보냄
+        fetch('/fetch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ endpoint: selectedEndpoint, serviceKey: serviceKey, inqryBgnDt: inqryBgnDt, inqryEndDt: inqryEndDt })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    // 응답이 정상적이지 않으면 오류 처리
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.message) {
+                    // 데이터 성공적으로 가져왔음을 알림
+                    const endTime = new Date();
+                    const elapsedTime = Math.floor((endTime - startTime) / 1000); // 소요 시간 (초)
+                    const formattedTime = formatTime(elapsedTime);
+
+                    alert(`데이터를 성공적으로 가져왔습니다! (${formattedTime})`);
+                } else if (data.response && data.response.header) {
+                    // 오류 메시지 처리
+                    alert(`오류가 발생했습니다! (코드: ${data.response.header.resultCode}, 메시지: ${data.response.header.resultMsg})`);
+                } else {
+                    // 예상치 못한 응답 형식
+                    alert('예상치 못한 응답 형식입니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Fetch 작업에 문제가 발생했습니다:', error); // 오류 처리
+                alert('데이터를 가져오는 중 문제가 발생했습니다.');
+            })
+            .finally(() => {
+                hideLoading(); // 로딩 표시 숨기기
+            });
+    }
+</script>
+</body>
+</html>
