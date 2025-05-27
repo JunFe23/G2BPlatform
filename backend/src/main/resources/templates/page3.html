@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page 1</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 75px;
+            height: 100vh;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            position: fixed;
+            transition: width 0.3s ease;
+            overflow: hidden;
+        }
+
+        .sidebar:hover {
+            width: 300px;
+        }
+
+        .sidebar::after {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+            position: absolute;
+            right: 0;
+            top: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar:hover::after {
+            opacity: 1;
+        }
+
+        .sidebar:hover {
+            width: 300px;
+        }
+
+        .sidebar-header {
+            background-color: #34495e;
+            color: #ecf0f1;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-header.collapsed span {
+            display: block;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+        }
+
+        .sidebar-header.expanded span {
+            display: inline;
+        }
+
+        .menu-item {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            background-color: #34495e;
+        }
+
+        .menu-label {
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateX(-20px);
+        }
+
+        .sidebar:hover .menu-label {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .content {
+            margin-left: 60px;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+            width: calc(100% - 60px);
+        }
+
+        .sidebar:hover ~ .content {
+            margin-left: 300px;
+            width: calc(100% - 300px);
+        }
+
+        /* 새로운 H1 스타일 추가 */
+        .content h1 {
+            background-color: #34495e;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #2c3e50;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .content h1.goods {
+            border-left: 15px solid #3498db; /* 물품 페이지용 - 파란색 강조 */
+        }
+
+        .content h1.services {
+            border-left: 15px solid #e67e22; /* 용역 페이지용 - 주황색 강조 */
+        }
+
+        .content h1.construction {
+            border-left: 15px solid #27ae60; /* 공사 페이지용 - 초록색 강조 */
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+
+            // 기본 설정: 연도 검색 필드 표시
+            $('#search-date-type').val('year');
+            $('#search-year').show();
+            $('#search-month, #search-range-start, #search-range-end').hide();
+
+            // 계약일자 검색 옵션 변경 시 입력 필드 표시
+            $('#search-date-type').on('change', function () {
+                const dateType = $(this).val();
+                $('#search-year, #search-month, #search-range-start, #search-range-end').hide(); // 모든 입력 필드 숨기기
+                if (dateType === 'year') {
+                    $('#search-year').show(); // 연도 검색
+                } else if (dateType === 'month') {
+                    $('#search-month').show(); // 특정 월 검색
+                } else if (dateType === 'range') {
+                    $('#search-range-start, #search-range-end').show(); // 기간 검색
+                }
+            });
+
+            // "저장된 데이터만 보기" 체크박스 상태에 따른 데이터 테이블 필터링
+            $('#show-saved-only').on('change', function () {
+                table.draw(); // DataTable 새로고침
+            });
+
+            // 엑셀다운로드
+            $('#download-excel').on('click', function () {
+                const dateType = $('#search-date-type').val();
+                const requestData = {
+                    category: 'constructions',
+                    dminsttNm: $('#search-dminsttNm').val(),
+                    dminsttNmDetail: $('#search-dminsttNmDetail').val(),
+                    prdctClsfcNo: $('#search-prdctClsfcNo').val(),
+                    cntctCnclsMthdNm: $('#search-cntctCnclsMthdNm').val(),
+                    firstCntrctDate: $('#search-firstCntrctDate').val(),
+                    year: dateType === 'year' ? $('#search-year').val() : null,
+                    month: dateType === 'month' ? $('#search-month').val() : null,
+                    rangeStart: dateType === 'range' ? $('#search-range-start').val() : null,
+                    rangeEnd: dateType === 'range' ? $('#search-range-end').val() : null,
+                    showSavedOnly: $('#show-saved-only').is(':checked') ? 1 : 0
+                };
+
+                // 로딩 스피너 표시
+                $('#loading-spinner').show();
+
+                // 엑셀 다운로드 요청
+                $.ajax({
+                    url: '/api/data/excel',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(requestData),
+                    xhrFields: {
+                        responseType: 'blob' // 바이너리 데이터로 응답 받기
+                    },
+                    success: function (response) {
+                        const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        const link = document.createElement('a');
+                        link.href = window.URL.createObjectURL(blob);
+                        link.download = '조회결과.xlsx';
+                        link.click();
+
+                        // 로딩 스피너 숨김
+                        $('#loading-spinner').hide();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('엑셀 다운로드 실패:', error);
+                        alert('엑셀 다운로드 중 오류가 발생했습니다.');
+
+                        // 로딩 스피너 숨김
+                        $('#loading-spinner').hide();
+                    }
+                });
+            });
+
+            console.log("Document is ready. Initializing DataTable...");
+
+            // 카테고리 변수 정의
+            let category = 'constructions';
+
+            // 기존 DataTable 파괴
+            if ($.fn.DataTable.isDataTable('#data-table')) {
+                console.log("Destroying existing DataTable...");
+                $('#data-table').DataTable().destroy(); // DataTable 인스턴스 파괴
+                $('#data-table').empty(); // 테이블 헤더와 데이터를 초기화
+            }
+
+            $('#data-table').html(`
+                <thead>
+                    <tr>
+                        <th>업체명</th>
+                        <th>계약건명</th>
+                        <th>수요기관명</th>
+                        <th>수요기관지역명</th>
+                        <th>품명내용</th>
+                        <th>입찰계약방법</th>
+                        <th>입찰공고번호</th>
+                        <th>최초계약일자</th>
+                        <th>최초계약금액</th>
+                        <th>최종계약일자</th>
+                        <th>최종계약금액</th>
+                        <th>계약변경차수</th>
+                        <th>저장</th>
+                    </tr>
+                </thead>
+            `);
+
+            // 새 DataTable 초기화
+            let table = $('#data-table').DataTable({
+                processing: true,
+                serverSide: true,
+                searching: false, // 기본 검색창 비활성화
+                language: {
+                    processing: `
+                                <div class="loading-container">
+                                    <div class="loading-spinner"></div>
+                                    <span>데이터를 불러오는 중입니다...</span>
+                                </div>
+                            `
+                },
+                ajax: {
+                    url: '/api/data',
+                    type: 'GET',
+                    data: function (d) {
+                        d.category = category; // 요청 데이터에 카테고리 추가
+                        console.log('DataTables request parameters:', d); // 요청 데이터 확인
+                        d.dminsttNm = $('#search-dminsttNm').val(); // 수요기관명
+                        d.dminsttNmDetail = $('#search-dminsttNmDetail').val(); // 수요기관지역명
+                        d.prdctClsfcNo = $('#search-prdctClsfcNo').val(); // 품명내용
+                        d.cntctCnclsMthdNm = $('#search-cntctCnclsMthdNm').val(); // 입찰계약방법
+                        d.firstCntrctDate = $('#search-firstCntrctDate').val(); // 최초계약일자
+
+                        // 계약일자 조건 추가
+                        const dateType = $('#search-date-type').val();
+                        if (dateType === 'year') {
+                            d.year = $('#search-year').val(); // 연도 검색
+                        } else if (dateType === 'month') {
+                            d.month = $('#search-month').val(); // 특정 월 검색
+                        } else if (dateType === 'range') {
+                            d.rangeStart = $('#search-range-start').val(); // 시작 월
+                            d.rangeEnd = $('#search-range-end').val(); // 종료 월
+                        }
+
+                        // "저장된 데이터만 보기" 체크 상태 추가
+                        d.showSavedOnly = $('#show-saved-only').is(':checked') ? 1 : 0; // 체크된 경우 1, 아니면 0
+
+                        return d;
+                    },
+                    error: function (xhr, error, code) {
+                        console.error('Ajax Error:', xhr.responseText, error, code); // 에러 발생 시 확인
+                    }
+                },
+                columns: [
+                    { data: 'cmpNm' },
+                    { data: 'cntrctNm' },
+                    { data: 'dminsttNm' },
+                    { data: 'dminsttNmDetail' },
+                    { data: 'prdctClsfcNo' },
+                    { data: 'cntctCnclsMthdNm' },
+                    { data: 'ntceNo' },
+                    {
+                        data: 'firstCntrctDate',
+                        render: function (data) {
+                            return data; // MySQL에서 조회된 날짜를 그대로 사용
+                        }
+                    },
+                    {
+                        data: 'firstCntrctAmt',
+                        render: function (data) {
+                            // 금액 포맷 (3자리마다 , 추가)
+                            return parseInt(data, 10).toLocaleString();
+                        }
+                    },
+                    {
+                        data: 'cntrctDate',
+                        render: function (data) {
+                            // 날짜 포맷 (yyyy-mm-dd)
+                            return data;
+                        }
+                    },
+                    {
+                        data: 'thtmCntrctAmt',
+                        render: function (data) {
+                            // 금액 포맷 (3자리마다 , 추가)
+                            return parseInt(data, 10).toLocaleString();
+                        }
+                    },
+                    { data: 'cntrctCnt' },
+                    {
+                        data: 'checked',
+                        render: function (data, type, row) {
+                            return `
+                        <input type="checkbox" class="save-checkbox" data-id="${row.id}" ${data ? 'checked' : ''}>
+                    `;
+                        },
+                        orderable: false
+                    },
+                ],
+                columnDefs: [
+                    { targets: 'id', visible: false } // id 컬럼 숨김 처리
+                ]
+            });
+            // 체크박스 변경 이벤트 처리
+            $('#data-table').on('change', '.save-checkbox', function () {
+                const id = $(this).data('id');
+                const checked = $(this).is(':checked');
+
+                $.ajax({
+                    url: '/api/update-checked',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ category:category, id: id, checked: checked }),
+                    success: function () {
+                        console.log(`ID: ${id}, Checked: ${checked} 업데이트 성공`);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('업데이트 실패:', xhr.responseText);
+                    }
+                });
+            });
+
+            // 검색 버튼 클릭 시 DataTable 새로고침
+            $('#search-button').on('click', function () {
+                console.log("Search button clicked. Refreshing DataTable...");
+                table.draw(); // DataTable 새로고침
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const header = document.querySelector('.sidebar-header');
+            const dataTable = $('#data-table').DataTable();
+
+            function updateHeader() {
+                if (sidebar.offsetWidth > 60) {
+                    header.classList.remove('collapsed');
+                    header.classList.add('expanded');
+                    header.innerHTML = '<span>G2B PROJECT</span>';
+                } else {
+                    header.classList.remove('expanded');
+                    header.classList.add('collapsed');
+                    header.innerHTML = '<span>G2B</span>';
+                }
+            }
+
+            sidebar.addEventListener('transitionend', updateHeader);
+            updateHeader();
+
+            // "관련업계 전체시장 DB" 클릭 시 하위 메뉴 펼치기/접기
+            $('#toggle-related-market-db').on('click', function () {
+                $('#related-market-submenu').slideToggle();
+            });
+
+        });
+    </script>
+</head>
+<body>
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header collapsed"><span>G2B</span></div>
+    <ul>
+        <li id="toggle-related-market-db" class="menu-item">
+            <span class="menu-label">관련업계 전체시장 DB</span>
+        </li>
+        <ul id="related-market-submenu" class="submenu" style="display: none; padding-left: 20px;">
+            <li id="goods-item" class="menu-item">
+                <a href="/page1" class="menu-label">물품</a>
+            </li>
+            <li id="services-item" class="menu-item">
+                <a href="/page2" class="menu-label">용역</a>
+            </li>
+            <li id="construction-item" class="menu-item">
+                <a href="/page3" class="menu-label">공사</a>
+            </li>
+        </ul>
+        <li class="menu-item">
+            <a href="/page4" class="menu-label">탑인더스트리 & 탑정보통신 수주현황DB</a>
+        </li>
+        <li class="menu-item">
+            <a href="/imsi" class="menu-label">수주대상 사업탐색</a>
+        </li>
+    </ul>
+</div>
+<div id="content" class="content">
+    <h1 class="construction">관련업계 전체시장 DB - 공사</h1>
+
+
+    <!-- 검색 필드 추가 -->
+    <div id="search-container" style="margin-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+        <input type="text" id="search-dminsttNm" placeholder="수요기관명 검색">
+        <input type="text" id="search-dminsttNmDetail" placeholder="수요기관지역명 검색">
+        <input type="text" id="search-prdctClsfcNo" placeholder="품명내용 검색">
+        <input type="text" id="search-cntctCnclsMthdNm" placeholder="입찰계약방법 검색">
+        <input type="text" id="search-firstCntrctDate" placeholder="최초계약일자 검색">
+
+        <select id="search-date-type" style="padding: 8px;">
+            <option value="year">연도 검색</option>
+            <option value="month">특정 월 검색</option>
+            <option value="range">기간 검색</option>
+        </select>
+        <select id="search-year" style="padding: 8px;">
+            <option value="">선택</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+            <option value="2019">2019</option>
+            <option value="2018">2018</option>
+            <option value="2017">2017</option>
+        </select>
+        <input type="month" id="search-month" style="display: none;">
+        <input type="month" id="search-range-start" placeholder="시작월" style="display: none;">
+        <input type="month" id="search-range-end" placeholder="종료월" style="display: none;">
+
+        <button id="search-button" style="padding: 8px 15px; background-color: #34495e; color: #ecf0f1; border: none; cursor: pointer;">
+            검색
+        </button>
+
+        <!-- 저장된 데이터만 보기 체크박스 -->
+        <label style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" id="show-saved-only" style="cursor: pointer;">
+            저장된 데이터만 보기
+        </label>
+
+        <!-- 엑셀 다운로드 버튼 -->
+        <button id="download-excel" style="padding: 8px 15px; background-color: #27ae60; color: #ecf0f1; border: none; cursor: pointer; margin-left: 10px;">
+            엑셀 다운로드
+        </button>
+
+        <!-- 로딩 스피너 -->
+        <div id="loading-spinner" style="display: none; margin-left: 10px;">
+            <div class="loading-spinner"></div>
+        </div>
+
+    </div>
+
+    <table id="data-table" class="display" style="width:100%; margin-top: 20px;">
+        <thead>
+        <tr>
+            <th>업체명</th>
+            <th>계약건명</th>
+            <th>수요기관명</th>
+            <th>수요기관지역명</th>
+            <th>품명내용</th>
+            <th>입찰계약방법</th>
+            <th>입찰공고번호</th>
+            <th>최초계약일자</th>
+            <th>최초계약금액</th>
+            <th>최종계약일자</th>
+            <th>최종계약금액</th>
+            <th>계약변경차수</th>
+            <th>저장</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- 데이터는 JavaScript에서 동적으로 추가됩니다 -->
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
