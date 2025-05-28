@@ -40,9 +40,9 @@ public class PageController {
         return "page4"; // templates/page3.html을 렌더링
     }
 
-    @GetMapping("/imsi")
+    @GetMapping("/page5")
     public String imsi(Model model) {
-        model.addAttribute("pageTitle", "개발중");
+        model.addAttribute("pageTitle", "Page 5");
         return "imsi"; // templates/page3.html을 렌더링
     }
 }

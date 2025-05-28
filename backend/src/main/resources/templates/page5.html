@@ -399,6 +399,9 @@
             <li id="construction-item" class="menu-item">
                 <a href="/page3" class="menu-label">공사</a>
             </li>
+            <li id="shoppingmall-item" class="menu-item">
+                <a href="/page5" class="menu-label">3자단가</a>
+            </li>
         </ul>
         <li class="menu-item">
             <a href="/page4" class="menu-label">탑인더스트리 & 탑정보통신 수주현황DB</a>
@@ -409,15 +412,11 @@
     </ul>
 </div>
 <div id="content" class="content">
-    <h1 class="construction">탑인더스트리 & 탑정보통신 수주현황DB</h1>
+    <h1 class="construction">관련업계 전체시장 DB - 3자단가</h1>
+
 
     <!-- 검색 필드 추가 -->
     <div id="search-container" style="margin-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
-        <select id="search-type" style="padding: 8px;">
-            <option value="물품">물품</option>
-            <option value="용역">용역</option>
-            <option value="공사">공사</option>
-        </select>
         <input type="text" id="search-dminsttNm" placeholder="수요기관명 검색">
         <input type="text" id="search-dminsttNmDetail" placeholder="수요기관지역명 검색">
         <input type="text" id="search-prdctClsfcNo" placeholder="품명내용 검색">
@@ -470,7 +469,6 @@
     <table id="data-table" class="display" style="width:100%; margin-top: 20px;">
         <thead>
         <tr>
-            <th>분류</th>
             <th>업체명</th>
             <th>계약건명</th>
             <th>수요기관명</th>
