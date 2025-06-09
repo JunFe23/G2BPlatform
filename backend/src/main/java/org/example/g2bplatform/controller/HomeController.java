@@ -180,7 +180,7 @@ public class HomeController {
                             return processContractInfoPPSSrch(bodyNode);
                         } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListCnstwk".equals(endpoint)) { // 계약현황에 대한 공사조회
                             return processContractInfoCnstwk(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListServc".equals(endpoint)) { // 계약현황에 대한 공사조회
+                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListServc".equals(endpoint)) { // 계약현황에 대한 용역조회
                             return processContractInfoServc(bodyNode);
                         }else {
                             return Mono.empty(); // 해당 엔드포인트가 없을 경우 빈 응답 처리
