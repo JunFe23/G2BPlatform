@@ -56,7 +56,7 @@ public class ContractInfoDetail {
     @Column(name = "prdct_amt", precision = 25, scale = 2)
     private BigDecimal prdctAmt; // 물품 금액 (원화)
 
-    @Column(name = "dlvry_cndtn_cd", length = 3)
+    @Column(name = "dlvry_cndtn_cd", length = 25)
     private String dlvryCndtnCd; // 인도 조건 코드
 
     @Column(name = "dlvry_cndtn_nm", length = 200)
