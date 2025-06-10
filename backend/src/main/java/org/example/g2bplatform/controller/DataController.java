@@ -66,6 +66,10 @@ public class DataController {
             data = dataService.getConstructionsData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
             totalRecords = dataService.getConstructionsTotalCount(category);
             filteredRecords = dataService.getConstructionsFilteredCount(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+        } else if ("shoppingmall".equals(category)) {
+            data = dataService.getConstructionsData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+            totalRecords = dataService.getConstructionsTotalCount(category);
+            filteredRecords = dataService.getConstructionsFilteredCount(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         } else if ("onlyTop".equals(category)) {
             data = dataService.getTopsData(type, start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
             totalRecords = dataService.getTopsTotalCount(category);

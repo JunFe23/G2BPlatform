@@ -4,10 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
-import org.example.g2bplatform.DTO.ContractInfoCnstwkDTO;
-import org.example.g2bplatform.DTO.ContractInfoDTO;
-import org.example.g2bplatform.DTO.ContractInfoDetailDTO;
-import org.example.g2bplatform.DTO.ContractInfoServcDTO;
+import org.example.g2bplatform.DTO.*;
 import org.example.g2bplatform.mapper.DataDownloadMapper;
 import org.example.g2bplatform.mapper.DataMapper;
 import org.example.g2bplatform.model.*;
@@ -22,6 +19,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.slf4j.Logger;
@@ -60,10 +58,19 @@ public class HomeController {
                           ContractInfoServcRepository contractInfoServcRepository,
                           ObjectMapper objectMapper,
                           DataDownloadService dataDownloadService) {
+
+        ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(configurer -> configurer
+                        .defaultCodecs()
+                        .maxInMemorySize(10 * 1024 * 1024)) // 10MB로 설정
+                .build();
+
         this.webClient = webClientBuilder
                 .baseUrl("https://apis.data.go.kr")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .exchangeStrategies(strategies)
                 .build();
+
         this.contractInfoRepository = contractInfoRepository;
         this.contractInfoDetailRepository =  contractInfoDetailRepository;
         this.contractInfoChangeHistoryRepository =  contractInfoChangeHistoryRepository;
@@ -182,6 +189,8 @@ public class HomeController {
                             return processContractInfoCnstwk(bodyNode);
                         } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListServc".equals(endpoint)) { // 계약현황에 대한 용역조회
                             return processContractInfoServc(bodyNode);
+                        } else if ("/1230000/at/ShoppingMallPrdctInfoService/getThptyUcntrctPrdctInfoList".equals(endpoint)) { // 계약현황에 대한 3자단가 조회
+                                return processContractShoppingmall(bodyNode);
                         }else {
                             return Mono.empty(); // 해당 엔드포인트가 없을 경우 빈 응답 처리
                         }
@@ -265,6 +274,16 @@ public class HomeController {
         return dataDownloadService.ContractInfoServc(contractInfoServcs);
     }
 
+    // ContractInfoShppingmall 처리
+    private Mono<Void> processContractShoppingmall(JsonNode bodyNode) throws JsonProcessingException {
+        List<ContractShoppingmallDTO> contractInfoShoppingmalls = new ArrayList<>();
+        for (JsonNode itemNode : bodyNode) {
+            ContractShoppingmallDTO contractInfoShoppingmall = objectMapper.treeToValue(itemNode, ContractShoppingmallDTO.class); // ContractInfoCnstwk 엔티티로 변환
+            contractInfoShoppingmalls.add(contractInfoShoppingmall);
+        }
+        return dataDownloadService.ContractInfoShoppingmall(contractInfoShoppingmalls);
+    }
+
     // URL 생성 메소드
     private String buildUrl(String endpoint, String serviceKey, String inqryBgnDt, String inqryEndDt, int pageNo) {
         String beginDateParam = "inqryBgnDt"; // 기본적으로 inqryBgnDt 사용
@@ -277,13 +296,22 @@ public class HomeController {
         }
 
         // URL 생성
-        return "https://apis.data.go.kr" + endpoint +
+        StringBuilder url = new StringBuilder("https://apis.data.go.kr" + endpoint +
                 "?serviceKey=" + serviceKey +
                 "&numOfRows=100" +
                 "&pageNo=" + pageNo +
-                "&inqryDiv=1" +
-                "&" + beginDateParam + "=" + inqryBgnDt +
-                "&" + endDateParam + "=" + inqryEndDt +
-                "&type=json";
+                "&inqryDiv=1");
+
+        if (inqryBgnDt != null && !inqryBgnDt.isBlank()) {
+            url.append("&").append(beginDateParam).append("=").append(inqryBgnDt);
+        }
+
+        if (inqryEndDt != null && !inqryEndDt.isBlank()) {
+            url.append("&").append(endDateParam).append("=").append(inqryEndDt);
+        }
+
+        url.append("&type=json");
+
+        return url.toString();
     }
 }
