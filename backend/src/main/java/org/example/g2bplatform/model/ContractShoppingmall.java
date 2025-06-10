@@ -31,7 +31,7 @@ public class ContractShoppingmall {
     private String entrprsDivNm; // 기업구분명
 
     @Column(length = 1)
-    private String drctPrdctnCnfrmCertHoldCorpYn; // 직접생산확인증명서 보유업체 여부
+    private String drctPrdctnCnfrmCertHoldCorpYn; // 직접생산확인증명서 보유여부
 
     @Column(length = 100)
     private String entrprsDivInfrmtn; // 기업구분안내
@@ -67,13 +67,106 @@ public class ContractShoppingmall {
     private String orgplceMainCmpnt1Cntnts; // 원산지 주요부품1내용
 
     @Column(length = 100)
-    private String orgplceMainCmpnt1Nm; // 주요부품1 원산지명
+    private String orgplceMainCmpnt1Nm; // 원산지 주요부품1명
 
     @Column(length = 100)
     private String orgplceMainCmpnt2Cntnts; // 원산지 주요부품2내용
 
     @Column(length = 100)
-    private String orgplceMainCmpnt2Nm; // 주요부품2 원산지명
+    private String orgplceMainCmpnt2Nm; // 원산지 주요부품2명
 
+    @Column(length = 100)
+    private String orgplceCoreCmpntCntnts; // 원산지 핵심부품내용
+
+    @Column(length = 100)
+    private String orgplceCoreCmpntNm; // 원산지 핵심부품명
+
+    @Column(length = 100)
+    private String assmblCntryMainCmpnt1Cntnts; // 조립국가 주요부품1 내용
+
+    @Column(length = 100)
+    private String assmblCntryMainCmpnt1Nm; // 조립국가 주요부품1 명
+
+    @Column(length = 100)
+    private String assmblCntryMainCmpnt2Cntnts; // 조립국가 주요부품2 내용
+
+    @Column(length = 100)
+    private String assmblCntryMainCmpnt2Nm; // 조립국가 주요부품2 명
+
+    @Column(length = 100)
+    private String assmblCntryCoreCmpntCntnts; // 조립국가 핵심부품 내용
+
+    @Column(length = 100)
+    private String assmblCntryCoreCmpntNm; // 조립국가 핵심부품 명
+
+    @Column(length = 100)
+    private String prdctMakrNm; // 물품제조사명
+
+    @Column(length = 100)
+    private String prdctDlvrPlceNm; // 물품납품장소명
+
+    @Column(length = 100)
+    private String prdctDlvryCndtnNm; // 물품인도조건명
+
+    @Column(length = 100)
+    private String prdctSplyRgnNm; // 물품공급지역명
+
+    @Column(length = 100)
+    private String vatAplDivNm; // 부가가치세적용구분명
+
+    @Column(length = 100)
+    private String dlvrTmlmtDaynum; // 납품기한일수
+
+    @Column(length = 100)
+    private String dlvrTmlmtDscrpt; // 납품기한설명
+
+    @Column(length = 1000)
+    private String prcrmntFeeInclsnCntnts; // 조달수수료포함내용
+
+    @Column(length = 20)
+    private String dscntBgnDate; // 할인시작일자
+
+    @Column(length = 20)
+    private String dscntEndDate; // 할인종료일자
+
+    @Column(length = 50)
+    private String remndrQty; // 잔여수량
+
+    @Column(length = 500)
+    private String cntrctDeptNm; // 계약부서명
+
+    @Column(length = 100)
+    private String cntrctDeptTelNo; // 계약부서 전화번호
+
+    @Column(length = 100)
+    private String cntrctOfclNm; // 계약담당자명
+
+    @Column(length = 100)
+    private String cntrctOfclEmail; // 계약담당자 이메일
+
+    @Column(length = 1000)
+    private String splyTmlmtCntnts; // 공급기한내용
+
+    @Column(length = 100)
+    private String acptncInsttNm; // 검수기관명
+
+    @Column(length = 100)
+    private String inspctInsttNm; // 검사기관명
+
+    @Column(length = 100)
+    private String cntrctSpcmntMtr; // 계약특기사항
+
+    @Column(length = 1000)
+    private String prodctChrInfoIntrcn; // 제품특성정보소개
+
+    @Column(length = 1000)
+    private String prodctCertList; // 제품인증목록
+
+    @Column(length = 100)
+    private String cntrctCorpNo; // 계약업체번호
+
+    private LocalDateTime rgstDt; // 등록일시
+
+    private LocalDateTime chgDt; // 변경일시
 }
 
