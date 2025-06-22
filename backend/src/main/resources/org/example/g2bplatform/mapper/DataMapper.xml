@@ -169,7 +169,7 @@
             AND checked = 1
         </if>
         ORDER BY
-            firstCntrctDate DESC
+            firstCntrctDate DESC, id ASC
         LIMIT #{start}, #{length}
     </select>
 
