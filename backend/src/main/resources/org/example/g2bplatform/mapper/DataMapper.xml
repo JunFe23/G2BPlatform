@@ -244,7 +244,7 @@
             AND checked = 1
         </if>
         ORDER BY
-        firstCntrctDate DESC
+        firstCntrctDate DESC, id ASC
             ) as T
     </select>
 
@@ -299,7 +299,7 @@
             AND checked = 1
         </if>
         ORDER BY
-        firstCntrctDate DESC
+        firstCntrctDate DESC, id ASC
         LIMIT #{start}, #{length}
     </select>
 
@@ -422,7 +422,7 @@
             AND checked = 1
         </if>
         ORDER BY
-        firstCntrctDate DESC
+        firstCntrctDate DESC, id ASC
         LIMIT #{start}, #{length}
     </select>
 
@@ -490,7 +490,7 @@
             AND checked = 1
         </if>
         ORDER BY
-        firstCntrctDate DESC
+        firstCntrctDate DESC, id ASC
         ) as T
     </select>
 
@@ -550,7 +550,7 @@
             AND checked = 1
         </if>
         ORDER BY
-        firstCntrctDate DESC
+        firstCntrctDate DESC, id ASC
         LIMIT #{start}, #{length}
     </select>
 
