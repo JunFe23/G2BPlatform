@@ -12,6 +12,7 @@ public class WebhookController {
     @PostMapping("/webhook")
     public ResponseEntity<String> deployProject() {
         try {
+            // 수정필요
             // 자동배포를 위한 웹훅설정
             // 1. git pull
             ProcessBuilder pull = new ProcessBuilder("git", "pull");
