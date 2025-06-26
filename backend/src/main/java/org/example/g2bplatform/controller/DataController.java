@@ -225,4 +225,15 @@ public class DataController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("❌ 공사 데이터 생성 실패: " + e.getMessage());
         }
     }
+
+    @PostMapping("/manual-process/dailyTopDatas")
+    public ResponseEntity<String> manualProcessTopDatas() {
+        try {
+            dataService.callProcedure("g2b.update_daily_contracts_topDatas");
+            return ResponseEntity.ok("✅ 탑 데이터 생성 완료");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("❌ 탑 데이터 생성 실패: " + e.getMessage());
+        }
+    }
 }
