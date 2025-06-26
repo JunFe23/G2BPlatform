@@ -8,7 +8,7 @@ services:
       - "8080:8080"
     restart: always
     volumes:
-      - ./sheet/top-457604-19d42e0b0ac2.json:/app/config/top-service-account.json
+      - ../sheet/top-457604-19d42e0b0ac2.json:/app/config/top-service-account.json
 
   web:
     build:
