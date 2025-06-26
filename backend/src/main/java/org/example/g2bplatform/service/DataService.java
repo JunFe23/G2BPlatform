@@ -1,18 +1,23 @@
 package org.example.g2bplatform.service;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.example.g2bplatform.mapper.DataMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class DataService {
 
     @Autowired
     private DataMapper dataMapper;
+
+    private final JdbcTemplate jdbcTemplate;
 
     public List<Map<String, String>> getThingsData(int start, int length, String dminsttNm, String dminsttNmDetail, String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate, Integer year, String month, String rangeStart, String rangeEnd, int showSavedOnly) {
         return dataMapper.getThingsData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
@@ -88,5 +93,9 @@ public class DataService {
         if (updatedRows == 0) {
             throw new RuntimeException("업데이트에 실패했습니다. ID: " + id);
         }
+    }
+
+    public void callProcedure(String procedureFullName) {
+        jdbcTemplate.execute("CALL " + procedureFullName + "()");
     }
 }

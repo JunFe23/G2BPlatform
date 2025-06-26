@@ -191,4 +191,38 @@ public class DataController {
                     .body("체크박스 상태 업데이트 중 오류가 발생했습니다.");
         }
     }
+
+    // 물품 데이터 통합 가공 처리
+    @PostMapping("/manual-process/dailyThings")
+    public ResponseEntity<String> manualProcessGoods() {
+        try {
+            dataService.callProcedure("g2b.update_daily_contracts_things");
+            return ResponseEntity.ok("✅ 물품 데이터 생성 완료");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("❌ 물품 데이터 생성 실패: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/manual-process/dailyServices")
+    public ResponseEntity<String> manualProcessServices() {
+        try {
+            dataService.callProcedure("g2b.update_daily_contracts_services");
+            return ResponseEntity.ok("✅ 용역 데이터 생성 완료");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("❌ 용역 데이터 생성 실패: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/manual-process/dailyConstructions")
+    public ResponseEntity<String> manualProcessConstructions() {
+        try {
+            dataService.callProcedure("g2b.update_daily_contracts_constructions");
+            return ResponseEntity.ok("✅ 공사 데이터 생성 완료");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("❌ 공사 데이터 생성 실패: " + e.getMessage());
+        }
+    }
 }
