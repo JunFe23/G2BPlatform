@@ -2,6 +2,7 @@ package org.example.g2bplatform.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import org.example.g2bplatform.service.ScheduledDownloadService;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 public class DataDownloadScheduler {
 
     private final ScheduledDownloadService scheduledDownloadService;
+    private final JdbcTemplate jdbcTemplate;
 
     // 매일 새벽 3시 (물품)
     @Scheduled(cron = "0 0 3 * * *")
@@ -33,5 +35,11 @@ public class DataDownloadScheduler {
     @Scheduled(cron = "0 0 6 * * *")
     public void downloadServc() {
         scheduledDownloadService.download("getCntrctInfoListServc", "/1230000/ao/CntrctInfoService/getCntrctInfoListServc");
+    }
+
+    // 매일 새벽 7시 (물품 데이터 통합 처리)
+    @Scheduled(cron = "0 0 7 * * *")
+    public void runUpdateProcedure() {
+        jdbcTemplate.execute("CALL g2b.update_daily_contracts_things()");
     }
 }

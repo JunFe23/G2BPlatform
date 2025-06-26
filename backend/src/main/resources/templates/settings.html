@@ -112,6 +112,12 @@
 
         <button type="button" onclick="fetchData()">데이터 가져오기</button>
     </form>
+
+    <div style="margin-top: 20px;">
+        <button type="button" onclick="runThingProcedure()">물품 데이터 수동생성</button>
+        <button type="button" onclick="runServcProcedure()">용역 데이터 수동생성</button>
+        <button type="button" onclick="runCnstwkProcedure()">공사 데이터 수동생성</button>
+    </div>
 </div>
 
 <!-- 로딩 표시 및 오버레이 -->
@@ -206,6 +212,28 @@
                 hideLoading(); // 로딩 표시 숨기기
             });
     }
+
+    function runThingProcedure() {
+        callManualProcess('/api/manual-process/dailyThings');
+    }
+    function runServcProcedure() {
+        callManualProcess('/api/manual-process/dailyServices');
+    }
+    function runCnstwkProcedure() {
+        callManualProcess('/api/manual-process/dailyConstructions');
+    }
+
+    function callManualProcess(endpoint) {
+        if (!confirm("정말 실행하시겠습니까?")) return;
+
+        showLoading();
+        fetch(endpoint, { method: 'POST' })
+            .then(res => res.text())
+            .then(msg => alert(msg))
+            .catch(err => alert("실패: " + err))
+            .finally(() => hideLoading());
+    }
+
 </script>
 </body>
 </html>
