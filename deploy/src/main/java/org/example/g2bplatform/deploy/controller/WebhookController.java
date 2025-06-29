@@ -16,9 +16,7 @@ public class WebhookController {
     @PostMapping("/webhook")
     public String triggerDeployment() {
         try {
-            String[] commands = {
-                    "cmd.exe", "/c", "cd ../ && git pull && cd backend && ./gradlew bootJar && docker-compose down && docker-compose up --build -d"
-            };
+            String[] commands = { "sh", "-c", "./deploy.sh" };
 
             ProcessBuilder builder = new ProcessBuilder(commands);
             builder.redirectErrorStream(true);
