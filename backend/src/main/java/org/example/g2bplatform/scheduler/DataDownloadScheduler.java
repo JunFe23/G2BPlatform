@@ -1,6 +1,7 @@
 package org.example.g2bplatform.scheduler;
 
 import lombok.RequiredArgsConstructor;
+import org.example.g2bplatform.service.DataService;
 import org.example.g2bplatform.service.ScheduledDownloadService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,6 +13,7 @@ public class DataDownloadScheduler {
 
     private final ScheduledDownloadService scheduledDownloadService;
     private final JdbcTemplate jdbcTemplate;
+    private final DataService dataService;
 
     // 매일 새벽 3시 (물품)
     @Scheduled(cron = "0 0 3 * * *")
@@ -38,10 +40,15 @@ public class DataDownloadScheduler {
     }
 
     // 매일 새벽 7시 (물품 데이터 통합 처리)
-    @Scheduled(cron = "0 53 22 * * *")
+    @Scheduled(cron = "0 01 23 * * *")
     public void runUpdateThingsProcedure() {
-        jdbcTemplate.execute("CALL g2b.update_daily_contracts_things()");
-        System.out.println("DataDownloadScheduler.runUpdateThingsProcedure");
+        try {
+            dataService.callProcedure("g2b.update_daily_contracts_things");
+            System.out.println("✅ [Scheduler] 물품 데이터 통합 처리 완료");
+        } catch (Exception e) {
+            System.err.println("❌ [Scheduler] 물품 데이터 통합 처리 실패: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     // 매일 새벽 7시 20분 (용역 데이터 통합 처리)
