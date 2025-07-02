@@ -7,6 +7,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Component
 @RequiredArgsConstructor
 public class DataDownloadScheduler {
@@ -40,15 +42,16 @@ public class DataDownloadScheduler {
     }
 
     // 매일 새벽 7시 (물품 데이터 통합 처리)
-    @Scheduled(cron = "0 01 23 * * *")
+    @Scheduled(cron = "0 * * * * *")
     public void runUpdateThingsProcedure() {
-        try {
-            dataService.callProcedure("g2b.update_daily_contracts_things");
-            System.out.println("✅ [Scheduler] 물품 데이터 통합 처리 완료");
-        } catch (Exception e) {
-            System.err.println("❌ [Scheduler] 물품 데이터 통합 처리 실패: " + e.getMessage());
-            e.printStackTrace();
-        }
+//        try {
+//            dataService.callProcedure("g2b.update_daily_contracts_things");
+//            System.out.println("✅ [Scheduler] 물품 데이터 통합 처리 완료");
+//        } catch (Exception e) {
+//            System.err.println("❌ [Scheduler] 물품 데이터 통합 처리 실패: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+        System.out.println("📌 [Scheduler Triggered] runUpdateThingsProcedure at " + LocalDateTime.now());
     }
 
     // 매일 새벽 7시 20분 (용역 데이터 통합 처리)
