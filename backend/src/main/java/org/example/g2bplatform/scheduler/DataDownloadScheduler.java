@@ -38,9 +38,10 @@ public class DataDownloadScheduler {
     }
 
     // 매일 새벽 7시 (물품 데이터 통합 처리)
-    @Scheduled(cron = "0 0 7 * * *")
+    @Scheduled(cron = "0 53 22 * * *")
     public void runUpdateThingsProcedure() {
         jdbcTemplate.execute("CALL g2b.update_daily_contracts_things()");
+        System.out.println("DataDownloadScheduler.runUpdateThingsProcedure");
     }
 
     // 매일 새벽 7시 20분 (용역 데이터 통합 처리)
