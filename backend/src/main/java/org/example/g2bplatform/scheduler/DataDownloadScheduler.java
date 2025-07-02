@@ -45,6 +45,7 @@ public class DataDownloadScheduler {
     @Scheduled(cron = "0 13 14 * * *")
     public void runUpdateThingsProcedure() {
         try {
+            System.out.println("✅ [Scheduler] 물품 데이터 통합 처리 시작");
             dataService.callProcedure("g2b.update_daily_contracts_things");
             System.out.println("✅ [Scheduler] 물품 데이터 통합 처리 완료");
         } catch (Exception e) {
@@ -54,7 +55,7 @@ public class DataDownloadScheduler {
     }
 
     // 매일 새벽 7시 20분 (용역 데이터 통합 처리)
-    @Scheduled(cron = "0 20 22 * * *")
+    @Scheduled(cron = "0 16 14 * * *")
     public void runUpdateServicesProcedure() {
         jdbcTemplate.execute("CALL g2b.update_daily_contracts_services()");
     }
