@@ -16,15 +16,8 @@ public class WebhookController {
     @PostMapping("/webhook")
     public String triggerDeployment() {
         try {
-            String os = System.getProperty("os.name").toLowerCase();
-            ProcessBuilder builder;
-
-            if (os.contains("win")) {
-                builder = new ProcessBuilder("cmd.exe", "/c", "deploy\\deploy.bat");
-            } else {
-                builder = new ProcessBuilder("bash", "deploy/deploy.sh");
-            }
-
+            ProcessBuilder builder = new ProcessBuilder("bash", "/app/deploy.sh");
+g
             builder.redirectErrorStream(true);
             Process process = builder.start();
 
