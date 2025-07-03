@@ -16,7 +16,7 @@ public class WebhookController {
     @PostMapping("/webhook")
     public String triggerDeployment() {
         try {
-            ProcessBuilder builder = new ProcessBuilder("bash", "/app/deploy.sh");
+            ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "deploy\\deploy.bat");
 
             builder.redirectErrorStream(true);
             Process process = builder.start();
