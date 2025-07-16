@@ -46,7 +46,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names'
 
     // DB & MyBatis
-    runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+    implementation 'mysql:mysql-connector-java:8.0.33'
     implementation 'javax.persistence:javax.persistence-api:2.2'
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
 
