@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -68,6 +69,18 @@ public class DataService {
         return dataMapper.getTopsFilteredCount(type, start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
     }
 
+    public List<Map<String, String>> getServicesSelectedData(int start, int length, String dminsttNm, String dminsttNmDetail, String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate, Integer year, String month, String rangeStart, String rangeEnd, int showSavedOnly) {
+        return dataMapper.getServicesSelectedData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+    }
+
+    public int getServicesSelectedTotalCount(String category) {
+        return dataMapper.getServicesSelectedTotalCount(category);
+    }
+
+    public int getServicesSelectedFilteredCount(int start, int length, String dminsttNm, String dminsttNmDetail, String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate, Integer year, String month, String rangeStart, String rangeEnd, int showSavedOnly) {
+        return dataMapper.getServicesSelectedFilteredCount(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+    }
+
     @Transactional
     public void updateCheckedThings(int id, boolean checked) {
         int checkedValue = checked ? 1 : 0; // true -> 1, false -> 0
@@ -97,5 +110,26 @@ public class DataService {
 
     public void callProcedure(String procedureFullName) {
         jdbcTemplate.execute("CALL " + procedureFullName + "()");
+    }
+
+    public List<Map<String, String>> getUnselectedServicesData(
+            String dminsttNm,
+            String dminsttNmDetail,
+            String prdctClsfcNo,
+            String cntctCnclsMthdNm,
+            String firstCntrctDate
+    ) {
+        List<Map<String, Object>> raw = dataMapper.getUnselectedServicesData(
+                dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate
+        );
+
+        // Object → String 변환
+        return raw.stream()
+                .map(row -> row.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                e -> e.getValue() == null ? "" : e.getValue().toString()
+                        ))
+                ).collect(Collectors.toList());
     }
 }
