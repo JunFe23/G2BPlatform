@@ -74,6 +74,10 @@ public class DataController {
             data = dataService.getTopsData(type, start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
             totalRecords = dataService.getTopsTotalCount(category);
             filteredRecords = dataService.getTopsFilteredCount( type, start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+        } else if ("servicesSelected".equals(category)) {
+            data = dataService.getServicesSelectedData(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+            totalRecords = dataService.getServicesSelectedTotalCount(category);
+            filteredRecords = dataService.getServicesSelectedFilteredCount(start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         }
         Map<String, Object> response = new HashMap<>();
         response.put("draw", draw);
@@ -235,5 +239,23 @@ public class DataController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("❌ 탑 데이터 생성 실패: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/modal-service-data")
+    public List<Map<String, String>> getModalServiceData(
+            @RequestParam String category,
+            @RequestParam(required = false) String dminsttNm,
+            @RequestParam(required = false) String dminsttNmDetail,
+            @RequestParam(required = false) String prdctClsfcNo,
+            @RequestParam(required = false) String cntctCnclsMthdNm,
+            @RequestParam(required = false) String firstCntrctDate
+    ) {
+        if ("services".equals(category)) {
+            return dataService.getUnselectedServicesData(
+                    dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate
+            );
+        }
+        // 필요시 goods, constructions 등 추가
+        return List.of(); // 비어있는 리스트 반환
     }
 }

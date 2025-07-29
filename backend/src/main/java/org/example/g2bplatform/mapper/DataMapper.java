@@ -164,7 +164,48 @@ public interface DataMapper {
             @Param("showSavedOnly") int showSavedOnly
     );
 
+    List<Map<String, String>> getServicesSelectedData(
+            @Param("start") int start,
+            @Param("length") int length,
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
+    );
+
+    int getServicesSelectedTotalCount(@Param("category") String category);
+
+    int getServicesSelectedFilteredCount(
+            @Param("start") int start,
+            @Param("length") int length,
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") int showSavedOnly
+    );
+
+
     int updateCheckedThings(@Param("id") int id, @Param("checked") int checked);
     int updateCheckedServices(@Param("id") int id, @Param("checked") int checked);
     int updateCheckedConstructions(@Param("id") int id, @Param("checked") int checked);
+
+    List<Map<String, Object>> getUnselectedServicesData(
+            @Param("dminsttNm") String dminsttNm,
+            @Param("dminsttNmDetail") String dminsttNmDetail,
+            @Param("prdctClsfcNo") String prdctClsfcNo,
+            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
+            @Param("firstCntrctDate") String firstCntrctDate
+    );
 }

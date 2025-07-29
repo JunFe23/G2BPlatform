@@ -37,12 +37,18 @@ public class PageController {
     @GetMapping("/page4")
     public String page4(Model model) {
         model.addAttribute("pageTitle", "Page 4");
-        return "page4"; // templates/page3.html을 렌더링
+        return "page4"; // templates/page4.html을 렌더링
     }
 
     @GetMapping("/page5")
-    public String imsi(Model model) {
+    public String page5(Model model) {
         model.addAttribute("pageTitle", "Page 5");
-        return "imsi"; // templates/page3.html을 렌더링
+        return "imsi"; // templates/imsi.html을 렌더링
+    }
+
+    @GetMapping("/page6")
+    public String page6(Model model) {
+        model.addAttribute("pageTitle", "Page 6");
+        return "page6"; // templates/page6.html을 렌더링
     }
 }
