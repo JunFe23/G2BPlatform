@@ -242,22 +242,18 @@ public class DataController {
     }
 
     @GetMapping("/modal-service-data")
-    public List<Map<String, String>> getModalServiceData(
+    public List<Map<String, Object>> getModalServiceData(
             @RequestParam String category,
-            @RequestParam(required = false) String dminsttNm,
-            @RequestParam(required = false) String dminsttNmDetail,
-            @RequestParam(required = false) String prdctClsfcNo,
-            @RequestParam(required = false) String cntctCnclsMthdNm,
-            @RequestParam(required = false) String firstCntrctDate,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "50") int limit
+            @RequestParam(defaultValue = "20") int limit
     ) {
-        if ("services".equals(category)) {
-            return dataService.getUnselectedServicesData(
-                    dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate,
-                    offset, limit
-            );
-        }
-        return List.of();
+        return dataService.getModalServiceData(category, keyword, offset, limit);
+    }
+
+    @PostMapping("/update-is-selected")
+    public void updateIsSelected(@RequestBody Map<String, List<Long>> payload) {
+        List<Long> ids = payload.get("ids");
+        dataService.updateIsSelected(ids);
     }
 }

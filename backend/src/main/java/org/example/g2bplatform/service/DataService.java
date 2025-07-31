@@ -112,26 +112,13 @@ public class DataService {
         jdbcTemplate.execute("CALL " + procedureFullName + "()");
     }
 
-    public List<Map<String, String>> getUnselectedServicesData(
-            String dminsttNm,
-            String dminsttNmDetail,
-            String prdctClsfcNo,
-            String cntctCnclsMthdNm,
-            String firstCntrctDate,
-            int offset,
-            int limit
-    ) {
-        List<Map<String, Object>> raw = dataMapper.getUnselectedServicesData(
-                dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate,
-                offset, limit
-        );
+    public List<Map<String, Object>> getModalServiceData(String category, String keyword, int offset, int limit) {
+        return dataMapper.selectModalServiceData(category, keyword, offset, limit);
+    }
 
-        return raw.stream()
-                .map(row -> row.entrySet().stream()
-                        .collect(Collectors.toMap(
-                                Map.Entry::getKey,
-                                e -> e.getValue() == null ? "" : e.getValue().toString()
-                        ))
-                ).collect(Collectors.toList());
+    public void updateIsSelected(List<Long> ids) {
+        if (ids != null && !ids.isEmpty()) {
+            dataMapper.updateIsSelected(ids);
+        }
     }
 }
