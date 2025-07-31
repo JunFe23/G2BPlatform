@@ -117,13 +117,15 @@ public class DataService {
             String dminsttNmDetail,
             String prdctClsfcNo,
             String cntctCnclsMthdNm,
-            String firstCntrctDate
+            String firstCntrctDate,
+            int offset,
+            int limit
     ) {
         List<Map<String, Object>> raw = dataMapper.getUnselectedServicesData(
-                dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate
+                dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate,
+                offset, limit
         );
 
-        // Object → String 변환
         return raw.stream()
                 .map(row -> row.entrySet().stream()
                         .collect(Collectors.toMap(

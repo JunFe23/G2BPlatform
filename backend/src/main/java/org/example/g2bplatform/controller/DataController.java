@@ -248,14 +248,16 @@ public class DataController {
             @RequestParam(required = false) String dminsttNmDetail,
             @RequestParam(required = false) String prdctClsfcNo,
             @RequestParam(required = false) String cntctCnclsMthdNm,
-            @RequestParam(required = false) String firstCntrctDate
+            @RequestParam(required = false) String firstCntrctDate,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "50") int limit
     ) {
         if ("services".equals(category)) {
             return dataService.getUnselectedServicesData(
-                    dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate
+                    dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate,
+                    offset, limit
             );
         }
-        // 필요시 goods, constructions 등 추가
-        return List.of(); // 비어있는 리스트 반환
+        return List.of();
     }
 }
