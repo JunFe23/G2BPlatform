@@ -799,6 +799,7 @@
             AND firstCntrctDate = #{firstCntrctDate}
         </if>
         ORDER BY id DESC
+        LIMIT #{limit} OFFSET #{offset}
     </select>
 
 </mapper>

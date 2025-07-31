@@ -17,10 +17,4 @@ public class G2BPlatformApplication {
         SpringApplication.run(G2BPlatformApplication.class, args);
     }
 
-    @Bean
-    public ObjectMapper objectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        return objectMapper;
-    }
 }

@@ -206,6 +206,8 @@ public interface DataMapper {
             @Param("dminsttNmDetail") String dminsttNmDetail,
             @Param("prdctClsfcNo") String prdctClsfcNo,
             @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
-            @Param("firstCntrctDate") String firstCntrctDate
+            @Param("firstCntrctDate") String firstCntrctDate,
+            @Param("offset") int offset,
+            @Param("limit") int limit
     );
 }
