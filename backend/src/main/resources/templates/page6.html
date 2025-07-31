@@ -156,6 +156,7 @@
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
     <script>
         $(document).ready(function () {
+            let searchTerm = "";
 
             // 기본 설정: 연도 검색 필드 표시
             $('#search-date-type').val('year');
@@ -421,6 +422,15 @@
             const dataList = document.getElementById("modal-data-list");
             const selectedList = document.getElementById("modal-selected-list");
             const modalSearch = document.getElementById("modal-search");
+
+            modalSearch.addEventListener("input", () => {
+                offset = 0;
+                allLoaded = false;
+                isLoading = false;
+                dataList.innerHTML = ""; // 기존 목록 초기화
+                fetchModalData(); // 다시 로드
+            });
+
             let selectedItems = new Map();
 
             openModalBtn.addEventListener("click", () => {
@@ -450,7 +460,8 @@
                     data: {
                         category: "services",
                         offset: offset,
-                        limit: limit
+                        limit: limit,
+                        keyword: modalSearch.value
                     },
                     success: function (response) {
                         if (response.length === 0) {

@@ -779,27 +779,26 @@
         WHERE id = #{id}
     </update>
 
-    <select id="getUnselectedServicesData" resultType="map">
+    <select id="selectModalServiceData" resultType="map">
         SELECT *
         FROM daily_contracts_services
         WHERE is_selected = 0
-        <if test="dminsttNm != null and dminsttNm != ''">
-            AND dminsttNm = #{dminsttNm}
-        </if>
-        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
-            AND dminsttNmDetail = #{dminsttNmDetail}
-        </if>
-        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
-            AND prdctClsfcNo = #{prdctClsfcNo}
-        </if>
-        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
-            AND cntctCnclsMthdNm = #{cntctCnclsMthdNm}
-        </if>
-        <if test="firstCntrctDate != null and firstCntrctDate != ''">
-            AND firstCntrctDate = #{firstCntrctDate}
+        <if test="keyword != null and keyword != ''">
+            AND (cmpNm LIKE CONCAT('%', #{keyword}, '%')
+            OR cntrctNm LIKE CONCAT('%', #{keyword}, '%')
+            OR dminsttNm LIKE CONCAT('%', #{keyword}, '%'))
         </if>
         ORDER BY id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
+
+    <update id="updateIsSelected">
+        UPDATE daily_contracts_services
+        SET is_selected = 1
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
 
 </mapper>

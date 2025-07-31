@@ -201,13 +201,13 @@ public interface DataMapper {
     int updateCheckedServices(@Param("id") int id, @Param("checked") int checked);
     int updateCheckedConstructions(@Param("id") int id, @Param("checked") int checked);
 
-    List<Map<String, Object>> getUnselectedServicesData(
-            @Param("dminsttNm") String dminsttNm,
-            @Param("dminsttNmDetail") String dminsttNmDetail,
-            @Param("prdctClsfcNo") String prdctClsfcNo,
-            @Param("cntctCnclsMthdNm") String cntctCnclsMthdNm,
-            @Param("firstCntrctDate") String firstCntrctDate,
+    List<Map<String, Object>> selectModalServiceData(
+            @Param("category") String category,
+            @Param("keyword") String keyword,
             @Param("offset") int offset,
             @Param("limit") int limit
     );
+
+    void updateIsSelected(@Param("ids") List<Long> ids);
+
 }
