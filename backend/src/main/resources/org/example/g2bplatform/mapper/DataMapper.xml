@@ -647,13 +647,16 @@
         ifnull(date_format(LastCntrctDate, '%Y-%m-%d'),'-') as cntrctDate,
         LastCntrctAmt as thtmCntrctAmt,
         LastCntrctCnt as cntrctCnt,
-        id as id,
+        d.id as id,
         checked as checked
         FROM
-        daily_contracts_services
+        daily_contracts_services d
+        INNER JOIN selected_contracts sc
+            ON sc.unty_cntrct_no = d.untyCntrctNo
+            AND sc.table_name = 'daily_contracts_services'
+            AND sc.is_selected = '2'
         WHERE
         1=1
-        and is_selected = 1
         <if test="dminsttNm != null and dminsttNm != ''">
             AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
         </if>
@@ -694,9 +697,11 @@
         SELECT
             COUNT(*)
         FROM
-            daily_contracts_services
-        where
-            is_selected = 1
+            daily_contracts_services d
+        INNER JOIN selected_contracts sc
+                   ON sc.unty_cntrct_no = d.untyCntrctNo
+                       AND sc.table_name = 'daily_contracts_services'
+                       AND sc.is_selected = '2'
     </select>
 
     <!-- 검색된 데이터 개수 조회 -->
@@ -718,14 +723,16 @@
         date_format(LastCntrctDate, '%Y-%m-%-d') as cntrctDate,
         LastCntrctAmt as thtmCntrctAmt,
         LastCntrctCnt as cntrctCnt,
-        id as id,
+        d.id as id,
         checked as checked
         FROM
-        daily_contracts_services
+        daily_contracts_services d
+        INNER JOIN selected_contracts sc
+            ON sc.unty_cntrct_no = d.untyCntrctNo
+            AND sc.table_name = 'daily_contracts_services'
+            AND sc.is_selected = '2'
         WHERE
         1=1
-        and
-            is_selected = 1
         <if test="dminsttNm != null and dminsttNm != ''">
             AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
         </if>
@@ -780,9 +787,12 @@
     </update>
 
     <select id="selectModalServiceData" resultType="map">
-        SELECT *
-        FROM daily_contracts_services
-        WHERE is_selected = 0
+        SELECT d.*
+        FROM daily_contracts_services d
+        LEFT JOIN selected_contracts sc
+        ON sc.unty_cntrct_no = d.untyCntrctNo
+        AND sc.table_name = 'daily_contracts_services'
+        WHERE sc.id IS NULL
         <if test="keyword != null and keyword != ''">
             AND (cmpNm LIKE CONCAT('%', #{keyword}, '%')
             OR cntrctNm LIKE CONCAT('%', #{keyword}, '%')
@@ -792,13 +802,15 @@
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
-    <update id="updateIsSelected">
-        UPDATE daily_contracts_services
-        SET is_selected = 1
-        WHERE id IN
-        <foreach collection="ids" item="id" open="(" separator="," close=")">
-            #{id}
+    <insert id="insertSelectedContracts">
+        INSERT INTO selected_contracts (table_name, unty_cntrct_no, is_selected, selected_at)
+        VALUES
+        <foreach collection="untyCntrctNos" item="no" separator=",">
+            (#{tableName}, #{no}, 2, NOW())
         </foreach>
-    </update>
+        ON DUPLICATE KEY UPDATE
+        is_selected = VALUES(is_selected),
+        selected_at = VALUES(selected_at)
+    </insert>
 
 </mapper>

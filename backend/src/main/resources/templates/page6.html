@@ -474,16 +474,12 @@
                             li.className = "modal-list-item";
                             li.textContent = `${item.cmpNm} | ${item.cntrctNm} | ${item.dminsttNm} | ${item.firstCntrctDate}`;
                             li.style.cursor = "pointer";
-                            li.dataset.id = item.id;
+                            li.dataset.untyCntrctNo = item.untyCntrctNo; // ✅ 여기 중요
                             li.addEventListener("click", () => selectItem(item));
                             dataList.appendChild(li);
                         });
 
                         offset += limit;
-                        isLoading = false;
-                    },
-                    error: function (xhr) {
-                        console.error("모달 데이터 가져오기 실패:", xhr.responseText);
                         isLoading = false;
                     }
                 });
@@ -497,19 +493,20 @@
             });
 
             function selectItem(item) {
-                if (selectedItems.has(item.id)) return;
+                if (selectedItems.has(item.untyCntrctNo)) return;
 
-                selectedItems.set(item.id, item);
+                selectedItems.set(item.untyCntrctNo, item);
+
                 const li = document.createElement("li");
-                li.className = "modal-list-item"; // ✅ 동일한 스타일 적용
+                li.className = "modal-list-item";
                 li.textContent = `${item.cmpNm} | ${item.cntrctNm} | ${item.dminsttNm} | ${item.firstCntrctDate}`;
-                li.dataset.id = item.id;
+                li.dataset.untyCntrctNo = item.untyCntrctNo;
 
                 const removeBtn = document.createElement("button");
                 removeBtn.textContent = "제거";
                 removeBtn.style.marginLeft = "10px";
                 removeBtn.addEventListener("click", () => {
-                    selectedItems.delete(item.id);
+                    selectedItems.delete(item.untyCntrctNo);
                     selectedList.removeChild(li);
                 });
 
@@ -518,14 +515,17 @@
             }
 
             document.getElementById("save-selected").addEventListener("click", function () {
-                const ids = Array.from(selectedItems.keys());
-                if (ids.length === 0) return alert("선택된 항목이 없습니다.");
+                const untyCntrctNos = Array.from(selectedItems.keys());
+                if (untyCntrctNos.length === 0) return alert("선택된 항목이 없습니다.");
 
                 $.ajax({
                     url: "/api/update-is-selected",
                     type: "POST",
                     contentType: "application/json",
-                    data: JSON.stringify({ ids }),
+                    data: JSON.stringify({
+                        tableName: "daily_contracts_services", // or "things", "construction_work"
+                        untyCntrctNos: untyCntrctNos
+                    }),
                     success: function () {
                         alert("선택 항목 저장 완료");
                         modal.style.display = "none";

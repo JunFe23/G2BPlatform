@@ -208,6 +208,7 @@ public interface DataMapper {
             @Param("limit") int limit
     );
 
-    void updateIsSelected(@Param("ids") List<Long> ids);
+    void insertSelectedContracts(@Param("tableName") String tableName,
+                                 @Param("untyCntrctNos") List<String> untyCntrctNos);
 
 }
