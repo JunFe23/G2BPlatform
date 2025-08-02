@@ -116,9 +116,9 @@ public class DataService {
         return dataMapper.selectModalServiceData(category, keyword, offset, limit);
     }
 
-    public void updateIsSelected(List<Long> ids) {
-        if (ids != null && !ids.isEmpty()) {
-            dataMapper.updateIsSelected(ids);
+    public void updateIsSelected(String tableName, List<String> untyCntrctNos) {
+        if (untyCntrctNos != null && !untyCntrctNos.isEmpty()) {
+            dataMapper.insertSelectedContracts(tableName, untyCntrctNos);
         }
     }
 }

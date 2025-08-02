@@ -252,8 +252,10 @@ public class DataController {
     }
 
     @PostMapping("/update-is-selected")
-    public void updateIsSelected(@RequestBody Map<String, List<Long>> payload) {
-        List<Long> ids = payload.get("ids");
-        dataService.updateIsSelected(ids);
+    public void updateIsSelected(@RequestBody Map<String, Object> payload) {
+        String tableName = (String) payload.get("tableName");
+        List<String> untyCntrctNos = (List<String>) payload.get("untyCntrctNos");
+
+        dataService.updateIsSelected(tableName, untyCntrctNos);
     }
 }
