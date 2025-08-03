@@ -161,6 +161,20 @@ public class DataController {
                     (String) requestData.get("rangeEnd"),
                     (int) requestData.get("showSavedOnly")
             );
+        } else if ("servicesSelected".equals(category)) {
+            data = dataService.getServicesSelectedData(
+                    0, Integer.MAX_VALUE, // 전체 데이터를 가져옴
+                    (String) requestData.get("dminsttNm"),
+                    (String) requestData.get("dminsttNmDetail"),
+                    (String) requestData.get("prdctClsfcNo"),
+                    (String) requestData.get("cntctCnclsMthdNm"),
+                    (String) requestData.get("firstCntrctDate"),
+                    year,
+                    (String) requestData.get("month"),
+                    (String) requestData.get("rangeStart"),
+                    (String) requestData.get("rangeEnd"),
+                    (int) requestData.get("showSavedOnly")
+            );
         }
 
         // 엑셀 파일 생성

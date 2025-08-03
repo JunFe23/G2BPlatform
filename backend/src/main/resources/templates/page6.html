@@ -185,7 +185,7 @@
             $('#download-excel').on('click', function () {
                 const dateType = $('#search-date-type').val();
                 const requestData = {
-                    category: 'services',
+                    category: 'servicesSelected',
                     dminsttNm: $('#search-dminsttNm').val(),
                     dminsttNmDetail: $('#search-dminsttNmDetail').val(),
                     prdctClsfcNo: $('#search-prdctClsfcNo').val(),
@@ -257,7 +257,7 @@
                         <th>최종계약일자</th>
                         <th>최종계약금액</th>
                         <th>계약변경차수</th>
-                        <th>저장</th>
+<!--                        <th>저장</th>-->
                     </tr>
                 </thead>
             `);
@@ -344,15 +344,15 @@
                         }
                     },
                     { data: 'cntrctCnt' },
-                    {
-                        data: 'checked',
-                        render: function (data, type, row) {
-                            return `
-                        <input type="checkbox" class="save-checkbox" data-id="${row.id}" ${data ? 'checked' : ''}>
-                    `;
-                        },
-                        orderable: false
-                    },
+                    // {
+                    //     data: 'checked',
+                    //     render: function (data, type, row) {
+                    //         return `
+                    //     <input type="checkbox" class="save-checkbox" data-id="${row.id}" ${data ? 'checked' : ''}>
+                    // `;
+                    //     },
+                    //     orderable: false
+                    // },
                 ],
                 columnDefs: [
                     { targets: 'id', visible: false } // id 컬럼 숨김 처리
@@ -605,10 +605,10 @@
         </button>
 
         <!-- 저장된 데이터만 보기 체크박스 -->
-        <label style="display: flex; align-items: center; gap: 5px;">
-            <input type="checkbox" id="show-saved-only" style="cursor: pointer;">
-            저장된 데이터만 보기
-        </label>
+<!--        <label style="display: flex; align-items: center; gap: 5px;">-->
+<!--            <input type="checkbox" id="show-saved-only" style="cursor: pointer;">-->
+<!--            저장된 데이터만 보기-->
+<!--        </label>-->
 
         <!-- 엑셀 다운로드 버튼 -->
         <button id="download-excel" style="padding: 8px 15px; background-color: #27ae60; color: #ecf0f1; border: none; cursor: pointer; margin-left: 10px;">
@@ -673,7 +673,7 @@
             <th>최종계약일자</th>
             <th>최종계약금액</th>
             <th>계약변경차수</th>
-            <th>저장</th>
+<!--            <th>저장</th>-->
         </tr>
         </thead>
         <tbody>
