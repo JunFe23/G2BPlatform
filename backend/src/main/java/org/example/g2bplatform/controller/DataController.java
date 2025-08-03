@@ -272,4 +272,31 @@ public class DataController {
 
         dataService.updateIsSelected(tableName, untyCntrctNos);
     }
+
+    @PostMapping("/unselect")
+    public ResponseEntity<?> unselect(@RequestBody Map<String, Object> payload) {
+        try {
+            String tableName = (String) payload.get("tableName");
+            String untyCntrctNo = (String) payload.get("untyCntrctNo");
+
+            if (tableName == null || untyCntrctNo == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "tableName과 untyCntrctNo는 필수입니다."
+                ));
+            }
+
+            // 항상 selectType=2 (수주대상)
+            int deletedCount = dataService.unselect(tableName, untyCntrctNo, 2);
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "deletedCount", deletedCount
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
 }
