@@ -211,4 +211,8 @@ public interface DataMapper {
     void insertSelectedContracts(@Param("tableName") String tableName,
                                  @Param("untyCntrctNos") List<String> untyCntrctNos);
 
+    int unselect(@Param("tableName") String tableName,
+                 @Param("untyCntrctNo") String untyCntrctNo,
+                 @Param("selectType") int selectType);
+
 }

@@ -648,6 +648,7 @@
         LastCntrctAmt as thtmCntrctAmt,
         LastCntrctCnt as cntrctCnt,
         d.id as id,
+        untyCntrctNo,
         checked as checked
         FROM
         daily_contracts_services d
@@ -812,5 +813,12 @@
         is_selected = VALUES(is_selected),
         selected_at = VALUES(selected_at)
     </insert>
+
+    <delete id="unselect">
+        DELETE FROM selected_contracts
+        WHERE table_name = #{tableName}
+          AND unty_cntrct_no = #{untyCntrctNo}
+          AND is_selected = #{selectType}
+    </delete>
 
 </mapper>

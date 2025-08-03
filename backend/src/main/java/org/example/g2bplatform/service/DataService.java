@@ -121,4 +121,8 @@ public class DataService {
             dataMapper.insertSelectedContracts(tableName, untyCntrctNos);
         }
     }
+
+    public int unselect(String tableName, String untyCntrctNo, int selectType) {
+        return dataMapper.unselect(tableName, untyCntrctNo, selectType);
+    }
 }

@@ -257,6 +257,7 @@
                         <th>최종계약일자</th>
                         <th>최종계약금액</th>
                         <th>계약변경차수</th>
+                        <th>선택해제</th>
 <!--                        <th>저장</th>-->
                     </tr>
                 </thead>
@@ -344,6 +345,13 @@
                         }
                     },
                     { data: 'cntrctCnt' },
+                    {
+                        data: 'untyCntrctNo',
+                        render: function(data, type, row) {
+                            return `<button class="unselect-btn" data-unty="${data}">선택 해제</button>`;
+                        },
+                        orderable: false
+                    },
                     // {
                     //     data: 'checked',
                     //     render: function (data, type, row) {
@@ -374,6 +382,30 @@
                     },
                     error: function (xhr, status, error) {
                         console.error('업데이트 실패:', xhr.responseText);
+                    }
+                });
+            });
+
+            $('#data-table').on('click', '.unselect-btn', function() {
+                const untyCntrctNo = $(this).data('unty');
+                if (!confirm("정말 선택을 취소하시겠습니까?")) return;
+
+                $.ajax({
+                    url: '/api/unselect',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        tableName: "daily_contracts_services",
+                        untyCntrctNo: untyCntrctNo,
+                        selectType: 2 // 수주대상 탐색
+                    }),
+                    success: function() {
+                        alert("선택이 해제되었습니다.");
+                        table.draw(); // DataTable 갱신
+                    },
+                    error: function(xhr) {
+                        alert("선택 해제 중 오류 발생");
+                        console.error(xhr.responseText);
                     }
                 });
             });
