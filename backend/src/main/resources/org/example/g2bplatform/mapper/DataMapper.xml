@@ -806,7 +806,7 @@
             OR cntrctNm LIKE CONCAT('%', #{keyword}, '%')
             OR dminsttNm LIKE CONCAT('%', #{keyword}, '%'))
         </if>
-        ORDER BY id DESC
+        ORDER BY firstCntrctDate DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
