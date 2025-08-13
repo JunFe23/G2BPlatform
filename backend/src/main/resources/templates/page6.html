@@ -178,6 +178,21 @@
             }
         }
 
+        .notice {
+            margin: 8px 10px 0 10px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #cfe0ff;
+            border-left: 4px solid #4c78ff;
+            background: #f0f5ff;
+            color: #1f3b7d;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .notice b {
+            font-weight: 700;
+        }
+
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
@@ -491,6 +506,13 @@
                 }
             }
 
+            function resetModalList() {
+                offset = 0;
+                allLoaded = false;
+                isLoading = false;
+                dataList.innerHTML = ""; // 좌측 리스트 비우기
+            }
+
             sidebar.addEventListener('transitionend', updateHeader);
             updateHeader();
 
@@ -519,12 +541,7 @@
 
             openModalBtn.addEventListener("click", () => {
                 modal.style.display = "flex";
-
-                // 무한스크롤 관련 초기화
-                offset = 0;
-                allLoaded = false;
-                isLoading = false;
-
+                resetModalList();
                 fetchModalData();
             });
 
@@ -532,7 +549,19 @@
                 modal.style.display = "none";
                 selectedItems.clear();
                 selectedList.innerHTML = "";
+                dataList.innerHTML = "";
             });
+
+            const nf = new Intl.NumberFormat('ko-KR'); // 1234 -> 1,234
+
+            function formatAmt(v) {
+                if (v == null || v === '') return '';                    // 빈값 처리
+                const num = typeof v === 'number'
+                    ? v
+                    : Number(String(v).replace(/[^\d.-]/g, ''));           // 쉼표 등 제거 후 숫자화
+                if (!isFinite(num)) return String(v);                    // 숫자 아님 -> 원본 반환
+                return nf.format(num);
+            }
 
             function fetchModalData() {
                 if (isLoading || allLoaded) return;
@@ -541,29 +570,36 @@
                 $.ajax({
                     url: "/api/modal-service-data",
                     type: "GET",
+                    cache: false, // 캐시 방지
                     data: {
                         category: "services",
                         offset: offset,
                         limit: limit,
-                        keyword: modalSearch.value
+                        keyword: modalSearch.value,
+                        _ts: Date.now() // 캐시 무력화
                     },
                     success: function (response) {
-                        if (response.length === 0) {
+                        if (!response || response.length === 0) {
                             allLoaded = true;
+                            isLoading = false;
                             return;
                         }
 
                         response.forEach(item => {
                             const li = document.createElement("li");
                             li.className = "modal-list-item";
-                            li.textContent = `${item.cmpNm} | ${item.cntrctNm} | ${item.dminsttNm} | ${item.firstCntrctDate}`;
+                            const amt = formatAmt(item.firstCntrctAmt);
+                            li.textContent = `${item.firstCntrctDate} | ${item.cntrctNm} | ${item.dminsttNm} | ${amt}`;
                             li.style.cursor = "pointer";
-                            li.dataset.untyCntrctNo = item.untyCntrctNo; // ✅ 여기 중요
+                            li.dataset.untyCntrctNo = item.untyCntrctNo;
                             li.addEventListener("click", () => selectItem(item));
                             dataList.appendChild(li);
                         });
 
                         offset += limit;
+                        isLoading = false;
+                    },
+                    error: function() {
                         isLoading = false;
                     }
                 });
@@ -583,7 +619,8 @@
 
                 const li = document.createElement("li");
                 li.className = "modal-list-item";
-                li.textContent = `${item.cmpNm} | ${item.cntrctNm} | ${item.dminsttNm} | ${item.firstCntrctDate}`;
+                const amt = formatAmt(item.firstCntrctAmt);
+                li.textContent = `${item.firstCntrctDate} | ${item.cntrctNm} | ${item.dminsttNm} | ${amt}`;
                 li.dataset.untyCntrctNo = item.untyCntrctNo;
 
                 const removeBtn = document.createElement("button");
@@ -716,6 +753,11 @@
                 <div style="padding: 10px; background: #34495e; color: #fff; display: flex; justify-content: space-between; align-items: center;">
                     <strong>수주대상 사업 탐색</strong>
                     <button id="close-modal" style="background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer;">&times;</button>
+                </div>
+
+                <!-- ✅ 안내 문구 -->
+                <div class="notice">
+                    <div><b>안내</b> — 이미 <b>수주대상 사업 선택하여 저장된 계약</b>은 좌측 목록에 표시되지 않습니다.</div>
                 </div>
 
                 <!-- 좌우 영역 -->
