@@ -281,14 +281,17 @@
                         <th>입찰공고번호</th>
                         <th>최초계약일자</th>
                         <th>최초계약금액</th>
+                        <th>계약변경차수</th>
                         <th>금차완수일자</th>
                         <th>총완수일자</th>
-                        <th>계약변경차수</th>
                         <th>선택해제</th>
 <!--                        <th>저장</th>-->
                     </tr>
                 </thead>
             `);
+
+            // DataTables의 기본 text 이스케이프 renderer
+            const esc = $.fn.dataTable.render.text().display;
 
             // 새 DataTable 초기화
             let table = $('#data-table').DataTable({
@@ -338,7 +341,15 @@
                 },
                 columns: [
                     { data: 'cmpNm' },
-                    { data: 'cntrctNm' },
+                    {
+                        data: 'cntrctNm',
+                        render: function (data, type, row) {
+                            if (type !== 'display') return data;          // 정렬/검색/엑셀 등은 원본 사용
+                            if (!row.cntrctDtlInfoUrl) return esc(data ?? '');
+                            const href = row.cntrctDtlInfoUrl;
+                            return `<a href="${encodeURI(href)}" target="_blank" rel="noopener noreferrer">${esc(data ?? '')}</a>`;
+                        }
+                    },
                     { data: 'dminsttNm' },
                     { data: 'dminsttNmDetail' },
                     { data: 'prdctClsfcNo' },
@@ -357,6 +368,7 @@
                             return parseInt(data, 10).toLocaleString();
                         }
                     },
+                    { data: 'cntrctCnt' },
                     {
                         data: 'thtmScmpltDate',
                         render: function (data) {
@@ -385,7 +397,6 @@
                     //         return parseInt(data, 10).toLocaleString();
                     //     }
                     // },
-                    { data: 'cntrctCnt' },
                     {
                         data: 'untyCntrctNo',
                         render: function(data, type, row) {
@@ -743,9 +754,9 @@
             <th>입찰공고번호</th>
             <th>최초계약일자</th>
             <th>최초계약금액</th>
+            <th>계약변경차수</th>
             <th>금차완수일자</th>
             <th>총완수일자</th>
-            <th>계약변경차수</th>
 <!--            <th>저장</th>-->
         </tr>
         </thead>

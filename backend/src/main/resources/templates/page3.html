@@ -265,6 +265,9 @@
                 </thead>
             `);
 
+            // DataTables의 기본 text 이스케이프 renderer
+            const esc = $.fn.dataTable.render.text().display;
+
             // 새 DataTable 초기화
             let table = $('#data-table').DataTable({
                 processing: true,
@@ -312,7 +315,15 @@
                 },
                 columns: [
                     { data: 'cmpNm' },
-                    { data: 'cntrctNm' },
+                    {
+                        data: 'cntrctNm',
+                        render: function (data, type, row) {
+                            if (type !== 'display') return data;          // 정렬/검색/엑셀 등은 원본 사용
+                            if (!row.cntrctDtlInfoUrl) return esc(data ?? '');
+                            const href = row.cntrctDtlInfoUrl;
+                            return `<a href="${encodeURI(href)}" target="_blank" rel="noopener noreferrer">${esc(data ?? '')}</a>`;
+                        }
+                    },
                     { data: 'dminsttNm' },
                     { data: 'dminsttNmDetail' },
                     { data: 'prdctClsfcNo' },

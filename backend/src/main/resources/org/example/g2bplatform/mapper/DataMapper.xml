@@ -133,7 +133,8 @@
             LastCntrctAmt as thtmCntrctAmt,
             LastCntrctCnt as cntrctCnt,
             id as id,
-            checked as checked
+            checked as checked,
+            cntrctDtlInfoUrl
         FROM
             daily_contracts_things
         WHERE
@@ -263,7 +264,8 @@
         LastCntrctAmt as thtmCntrctAmt,
         LastCntrctCnt as cntrctCnt,
         id as id,
-        checked as checked
+        checked as checked,
+        cntrctDtlInfoUrl
         FROM
         daily_contracts_services
         WHERE
@@ -386,7 +388,8 @@
         LastCntrctAmt as thtmCntrctAmt,
         LastCntrctCnt as cntrctCnt,
         id as id,
-        checked as checked
+        checked as checked,
+        cntrctDtlInfoUrl
         FROM
         daily_contracts_construction_work
         WHERE
@@ -511,7 +514,8 @@
         LastCntrctAmt as thtmCntrctAmt,
         LastCntrctCnt as cntrctCnt,
         id as id,
-        checked as checked
+        checked as checked,
+        cntrctDtlInfoUrl
         FROM
         daily_top_datas
         WHERE
@@ -649,7 +653,10 @@
         LastCntrctCnt as cntrctCnt,
         d.id as id,
         untyCntrctNo,
-        checked as checked
+        checked as checked,
+        thtmScmpltDate,
+        ttalScmpltDate,
+        cntrctDtlInfoUrl
         FROM
         daily_contracts_services d
         INNER JOIN selected_contracts sc
