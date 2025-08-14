@@ -274,6 +274,7 @@
             let table = $('#data-table').DataTable({
                 processing: true,
                 serverSide: true,
+                searching: false, // 기본 검색창 비활성화
                 ajax: {
                     url: '/api/data',
                     type: 'GET',
