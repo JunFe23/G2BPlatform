@@ -1,25 +1,41 @@
 package org.example.g2bplatform.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
-import org.springframework.http.codec.json.Jackson2JsonEncoder;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.HttpProtocol;
+import reactor.netty.http.client.HttpClient;
+
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class WebClientConfig {
 
     @Bean
-    public WebClient webClient(ObjectMapper objectMapper) {
-        objectMapper.registerModule(new JavaTimeModule()); // 다시 한 번 확인하여 모듈 등록
+    public WebClient webClient(WebClient.Builder builder) {
+        HttpClient httpClient = HttpClient.create()
+                .protocol(HttpProtocol.HTTP11) // ← HTTP/1.1로 강제
+                .secure(ssl -> ssl.sslContext(
+                        SslContextBuilder.forClient()
+                                .protocols("TLSv1.2") // ← TLS 1.2 고정 (상대 서버 호환성 ↑)
+                ))
+                .responseTimeout(Duration.ofSeconds(30))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10_000)
+                .doOnConnected(conn -> {
+                    conn.addHandlerLast(new ReadTimeoutHandler(30, TimeUnit.SECONDS));
+                    conn.addHandlerLast(new WriteTimeoutHandler(30, TimeUnit.SECONDS));
+                });
 
-        return WebClient.builder()
-                .codecs(clientCodecConfigurer -> {
-                    clientCodecConfigurer.defaultCodecs().jackson2JsonEncoder(new Jackson2JsonEncoder(objectMapper));
-                    clientCodecConfigurer.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper));
-                })
+        return builder
+                .defaultHeader(HttpHeaders.USER_AGENT, "G2BPlatform/1.0 (+contact:you@example.com)")
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }
 }

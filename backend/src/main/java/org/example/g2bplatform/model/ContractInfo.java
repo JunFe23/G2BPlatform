@@ -60,7 +60,7 @@ public class ContractInfo {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate cntrctCnclsDate;
 
-    @Column(name = "cntrctPrd", length = 70)
+    @Column(name = "cntrctPrd", length = 1000)
     private String cntrctPrd;
 
     @Column(name = "baseLawNm", length = 1200)
