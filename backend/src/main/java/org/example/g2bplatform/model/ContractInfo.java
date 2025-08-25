@@ -66,7 +66,7 @@ public class ContractInfo {
     @Column(name = "baseLawNm", length = 1200)
     private String baseLawNm;
 
-    @Column(name = "totCntrctAmt", precision = 15, scale = 2)
+    @Column(name = "totCntrctAmt", precision = 20, scale = 2)
     private BigDecimal totCntrctAmt;
 
     @Column(name = "thtmCntrctAmt", precision = 15, scale = 2)
