@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.example.g2bplatform.DTO.*;
+import org.example.g2bplatform.exception.ApiHttpException;
 import org.example.g2bplatform.mapper.DataDownloadMapper;
 import org.example.g2bplatform.mapper.DataMapper;
 import org.example.g2bplatform.model.*;
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.slf4j.Logger;
@@ -30,6 +33,7 @@ import reactor.util.retry.Retry;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -98,47 +102,69 @@ public class HomeController {
         return webClient.get()
                 .uri(URI.create(initialUrl))
                 .retrieve()
+                .onStatus(s -> s.isError(), cr ->
+                        cr.bodyToMono(String.class).defaultIfEmpty("")
+                                .flatMap(body -> {
+                                    logger.error("⬇️ Upstream HTTP {} for initialUrl \n{}", cr.statusCode().value(), body);
+                                    return Mono.error(new ApiHttpException(cr.statusCode().value(), body, "Upstream HTTP error"));
+                                })
+                )
                 .bodyToMono(String.class)
-                .doOnNext(response -> logger.info("Received response: {}", response)) // 응답 로깅
+                .timeout(Duration.ofSeconds(45))
+                .onErrorMap(java.util.concurrent.TimeoutException.class, e ->
+                        new ApiHttpException(
+                                598,                               // 임의의 네트워크 타임아웃 코드
+                                "request timed out (>=30s)",       // upstreamBody
+                                "Network timeout while calling upstream API"
+                        )
+                )
+                .doOnNext(resp -> logger.info("Received response: {}", resp))
                 .flatMap(initialResponse -> {
-                    logger.info("💬 Raw API response:\n{}", initialResponse); // 👈 요거 추가
+                    logger.info("💬 Raw API response:\n{}", initialResponse);
 
                     if (initialResponse.startsWith("<")) {
-                        logger.error("❌ HTML 응답 수신됨! (보통은 인증 문제, 잘못된 요청)");
-                        return Mono.just(ResponseEntity.status(500).body("{\"error\":\"Received HTML instead of JSON.\"}"));
+                        logger.error("❌ HTML 응답 수신됨! url={}", initialUrl);
+                        return Mono.error(new ApiHttpException(502, initialResponse, "Received HTML instead of JSON"));
                     }
 
                     try {
-                        // JSON 응답을 파싱하여 resultCode와 resultMsg를 확인
                         JsonNode initialJsonNode = objectMapper.readTree(initialResponse);
                         JsonNode headerNode = initialJsonNode.path("response").path("header");
-                        String resultCode = headerNode.path("resultCode").asText();
-                        String resultMsg = headerNode.path("resultMsg").asText();
-                        int totalCount = initialJsonNode.path("response").path("body").path("totalCount").asInt();
-                        int numOfRows = 100; // 최대 100개씩 가져오기
-                        int totalPages = (int) Math.ceil((double) totalCount / numOfRows);
+                        String resultCode = headerNode.path("resultCode").asText(null);
+                        String resultMsg  = headerNode.path("resultMsg").asText(null);
+                        int totalCount = initialJsonNode.path("response").path("body").path("totalCount").asInt(0);
 
-                        logger.info("Total Count: {}, Total Pages: {}", totalCount, totalPages);
-
-                        // resultCode가 "00"이면 성공, 아니면 오류 메시지를 포함하여 반환
-                        if ("00".equals(resultCode)) {
-                            // 모든 페이지에 대한 요청을 병렬로 처리
-                            return fetchAndSaveAllPages(endpoint, serviceKey, inqryBgnDt, inqryEndDt, totalPages)
-                                    .then(Mono.just(ResponseEntity.ok("{\"message\":\"All data fetched and saved successfully.\"}")));
-                        } else {
-                            logger.error("API Error: {}", resultMsg);
+                        if (!"00".equals(resultCode)) {
+                            logger.error("API Error: {} - {}", resultCode, resultMsg);
+                            // 프런트가 그대로 볼 수 있도록 200 바디로 반환
                             String errorResponse = String.format(
                                     "{\"response\": {\"header\": {\"resultCode\": \"%s\", \"resultMsg\": \"%s\"}}}",
-                                    resultCode, resultMsg);
+                                    String.valueOf(resultCode), String.valueOf(resultMsg)
+                            );
                             return Mono.just(ResponseEntity.status(200).body(errorResponse));
                         }
+
+                        int numOfRows = 100;
+                        int totalPages = (int) Math.ceil((double) totalCount / numOfRows);
+                        logger.info("Total Count: {}, Total Pages: {}", totalCount, totalPages);
+
+                        return fetchAndSaveAllPages(endpoint, serviceKey, inqryBgnDt, inqryEndDt, totalPages)
+                                .then(Mono.just(ResponseEntity.ok("{\"message\":\"All data fetched and saved successfully.\"}")));
+
                     } catch (Exception e) {
-                        logger.error("Error parsing JSON response: ", e);
-                        return Mono.just(ResponseEntity.status(500).body("{\"error\":\"Error parsing JSON response.\"}"));
+                        logger.error("Error parsing JSON response: raw={}", initialResponse, e);
+                        return Mono.error(new ApiHttpException(200, initialResponse, "Error parsing JSON response"));
                     }
                 })
                 .onErrorResume(e -> {
-                    logger.error("Error while fetching data: ", e);
+                    logger.error("Error while fetching data (initial): ", e);
+                    if (e instanceof ApiHttpException ahe) {
+                        Map<String, Object> payload = new LinkedHashMap<>();
+                        payload.put("error", ahe.getMessage());
+                        payload.put("status", ahe.getStatus());
+                        payload.put("upstreamBody", ahe.getBody());
+                        return Mono.just(ResponseEntity.status(502).body(new ObjectMapper().valueToTree(payload).toString()));
+                    }
                     return Mono.just(ResponseEntity.status(500).body("{\"error\":\"Error occurred while fetching data.\"}"));
                 });
     }
@@ -146,12 +172,14 @@ public class HomeController {
     // 모든 페이지를 병렬로 처리하는 메소드
     private Mono<Void> fetchAndSaveAllPages(String endpoint, String serviceKey, String inqryBgnDt, String inqryEndDt, int totalPages) {
         return Flux.range(1, totalPages) // 1부터 totalPages까지의 페이지 번호 생성
+                .delayElements(Duration.ofMillis(120))
                 .flatMap(pageNo -> {
                     String url = buildUrl(endpoint, serviceKey, inqryBgnDt, inqryEndDt, pageNo);
+                    logger.info("➡️ fetching page {}/{}: {}", pageNo, totalPages, url);
                     return fetchAndSaveData(url, endpoint)
-                            .doOnError(e -> logger.error("Error while processing page {}: {}", pageNo, e.getMessage())) // 에러 로깅
+                            .doOnError(e -> logger.error("페이지 {} 처리 실패: {}", pageNo, e.getMessage()))
                             .retry(15); // 페이지 처리 오류 시 최대 설정횟수만큼 재시도
-                }, 30) // 병렬로 처리할 최대 개수 설정
+                }, 6) // 병렬로 처리할 최대 개수 설정
                 .then(); // 모든 작업이 완료될 때까지 기다림
     }
 
@@ -160,52 +188,80 @@ public class HomeController {
         return webClient.get()
                 .uri(URI.create(url))
                 .retrieve()
+                .onStatus(s -> s.isError(), cr ->
+                        cr.bodyToMono(String.class).defaultIfEmpty("")
+                                .flatMap(body -> {
+                                    logger.error("⬇️ Upstream HTTP {} for {} \n{}", cr.statusCode().value(), url, body);
+                                    return Mono.error(new ApiHttpException(cr.statusCode().value(), body, "Upstream HTTP error"));
+                                })
+                )
                 .bodyToMono(String.class)
+                .timeout(Duration.ofSeconds(45))
+                .onErrorMap(java.util.concurrent.TimeoutException.class, e ->
+                        new ApiHttpException(
+                                598,                               // 임의의 네트워크 타임아웃 코드
+                                "request timed out (>=30s)",       // upstreamBody
+                                "Network timeout while calling upstream API"
+                        )
+                )
                 .flatMap(response -> {
+                    if (response.startsWith("<")) {
+                        logger.error("❌ HTML 응답 수신. url={}", url);
+                        return Mono.error(new ApiHttpException(502, response, "Received HTML instead of JSON"));
+                    }
                     try {
                         JsonNode jsonNode = objectMapper.readTree(response);
                         JsonNode headerNode = jsonNode.path("response").path("header");
-                        String resultCode = headerNode.path("resultCode").asText();
-                        String resultMsg = headerNode.path("resultMsg").asText();
+                        String resultCode = headerNode.path("resultCode").asText(null);
+                        String resultMsg  = headerNode.path("resultMsg").asText(null);
 
-                        // API 요청이 성공했는지 확인
                         if (!"00".equals(resultCode)) {
-                            logger.error("API Error for URL {}: {}", url, resultMsg);
-                            return Mono.error(new RuntimeException("API Error: " + resultMsg));
+                            logger.error("API Logic Error {} - {} for {}", resultCode, resultMsg, url);
+                            return Mono.error(new ApiHttpException(200, response,
+                                    "API returned non-success resultCode: " + resultCode));
                         }
 
                         JsonNode bodyNode = jsonNode.path("response").path("body").path("items");
+                        if (!bodyNode.isArray()) {
+                            logger.error("❌ items 배열 없음. raw={}", response);
+                            return Mono.error(new ApiHttpException(200, response, "Missing items array"));
+                        }
 
-                        // 엔드포인트에 따라 다른 처리 메소드 호출
-                        if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThng".equals(endpoint)) { // 계약현황에 대한 물품조회
+                        // 엔드포인트 라우팅
+                        if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThng".equals(endpoint)) {
                             return processContractInfo(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngDetail".equals(endpoint)) { // 계약현황에 대한 물품세부조회
+                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngDetail".equals(endpoint)) {
                             return processContractInfoDetail(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngChgHstry".equals(endpoint)) { // 계약현황에 대한 물품변경이력조회
+                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngChgHstry".equals(endpoint)) {
                             return processContractInfoChangeHistory(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngPPSSrch".equals(endpoint)) { // 나라장터검색조건에 의한 계약현황 물품조회
+                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngPPSSrch".equals(endpoint)) {
                             return processContractInfoPPSSrch(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListCnstwk".equals(endpoint)) { // 계약현황에 대한 공사조회
+                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListCnstwk".equals(endpoint)) {
                             return processContractInfoCnstwk(bodyNode);
-                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListServc".equals(endpoint)) { // 계약현황에 대한 용역조회
+                        } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListServc".equals(endpoint)) {
                             return processContractInfoServc(bodyNode);
-                        } else if ("/1230000/at/ShoppingMallPrdctInfoService/getThptyUcntrctPrdctInfoList".equals(endpoint)) { // 계약현황에 대한 3자단가 조회
-                                return processContractShoppingmall(bodyNode);
-                        }else {
-                            return Mono.empty(); // 해당 엔드포인트가 없을 경우 빈 응답 처리
+                        } else if ("/1230000/at/ShoppingMallPrdctInfoService/getThptyUcntrctPrdctInfoList".equals(endpoint)) {
+                            return processContractShoppingmall(bodyNode);
+                        } else {
+                            logger.warn("알 수 없는 endpoint: {}", endpoint);
+                            return Mono.empty();
                         }
 
                     } catch (Exception e) {
-                        logger.error("Error parsing JSON response for URL: {}", url, e);
-                        return Mono.error(new RuntimeException("Error parsing JSON response"));
+                        logger.error("JSON 파싱 실패 url={} raw={}", url, response, e);
+                        return Mono.error(new ApiHttpException(200, response, "Error parsing JSON"));
                     }
                 })
-                .retryWhen(Retry.backoff(5, Duration.ofSeconds(10))
-                        .filter(throwable -> throwable instanceof RuntimeException))
-                .onErrorResume(e -> {
-                    logger.error("Error while fetching data for URL: {}", url, e);
-                    return Mono.empty();
-                });
+                .retryWhen(
+                        reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(2))
+                                .maxBackoff(Duration.ofSeconds(15))
+                                .jitter(0.3)
+                                .filter(ex ->
+                                        (ex instanceof ApiHttpException ahe && (ahe.getStatus() == 598 || ahe.getStatus() == 599)) // timeout/handshake
+                                                || (ex instanceof ApiHttpException ahe2 && (ahe2.getStatus() == 429 || (ahe2.getStatus() >= 500 && ahe2.getStatus() < 600)))
+                                )
+                )
+                .doOnError(e -> logger.error("❌ fetchAndSaveData 실패 url={}", url, e));
     }
 
     // ContractInfo 엔티티 처리
@@ -286,32 +342,25 @@ public class HomeController {
 
     // URL 생성 메소드
     private String buildUrl(String endpoint, String serviceKey, String inqryBgnDt, String inqryEndDt, int pageNo) {
-        String beginDateParam = "inqryBgnDt"; // 기본적으로 inqryBgnDt 사용
-        String endDateParam = "inqryEndDt";   // 기본적으로 inqryEndDt 사용
-
-        // "나라장터검색조건에 의한 계약현황 물품조회" 엔드포인트일 경우 파라미터명을 inqryBgnDate와 inqryEndDate로 변경
+        String beginDateParam = "inqryBgnDt";
+        String endDateParam   = "inqryEndDt";
         if ("/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01".equals(endpoint)) {
             beginDateParam = "inqryBgnDate";
-            endDateParam = "inqryEndDate";
+            endDateParam   = "inqryEndDate";
         }
 
-        // URL 생성
-        StringBuilder url = new StringBuilder("https://apis.data.go.kr" + endpoint +
-                "?serviceKey=" + serviceKey +
-                "&numOfRows=100" +
-                "&pageNo=" + pageNo +
-                "&inqryDiv=1");
+        UriComponentsBuilder b = UriComponentsBuilder
+                .fromHttpUrl("https://apis.data.go.kr" + endpoint)
+                .queryParam("serviceKey", serviceKey)
+                .queryParam("numOfRows", 100)
+                .queryParam("pageNo", pageNo)
+                .queryParam("inqryDiv", 1)
+                .queryParam("type", "json");
 
-        if (inqryBgnDt != null && !inqryBgnDt.isBlank()) {
-            url.append("&").append(beginDateParam).append("=").append(inqryBgnDt);
-        }
+        if (inqryBgnDt != null && !inqryBgnDt.isBlank()) b.queryParam(beginDateParam, inqryBgnDt);
+        if (inqryEndDt != null && !inqryEndDt.isBlank()) b.queryParam(endDateParam, inqryEndDt);
 
-        if (inqryEndDt != null && !inqryEndDt.isBlank()) {
-            url.append("&").append(endDateParam).append("=").append(inqryEndDt);
-        }
-
-        url.append("&type=json");
-
-        return url.toString();
+        // 이미 인코딩된 값 허용
+        return b.build(true).toUriString();
     }
 }

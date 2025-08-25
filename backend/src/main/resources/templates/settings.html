@@ -177,41 +177,44 @@
         // Fetch API를 사용하여 POST 요청을 보냄
         fetch('/fetch', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ endpoint: selectedEndpoint, serviceKey: serviceKey, inqryBgnDt: inqryBgnDt, inqryEndDt: inqryEndDt })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: selectedEndpoint, serviceKey, inqryBgnDt, inqryEndDt })
         })
-            .then(response => {
-                if (!response.ok) {
-                    // 응답이 정상적이지 않으면 오류 처리
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.message) {
-                    // 데이터 성공적으로 가져왔음을 알림
-                    const endTime = new Date();
-                    const elapsedTime = Math.floor((endTime - startTime) / 1000); // 소요 시간 (초)
-                    const formattedTime = formatTime(elapsedTime);
+            .then(async (response) => {
+                const text = await response.text();
+                let data = null;
+                try { data = JSON.parse(text); } catch (_) {}
 
-                    alert(`데이터를 성공적으로 가져왔습니다! (${formattedTime})`);
-                } else if (data.response && data.response.header) {
-                    // 오류 메시지 처리
-                    alert(`오류가 발생했습니다! (코드: ${data.response.header.resultCode}, 메시지: ${data.response.header.resultMsg})`);
-                } else {
-                    // 예상치 못한 응답 형식
-                    alert('예상치 못한 응답 형식입니다.');
+                if (!response.ok) {
+                    const serverMsg = data?.error || data?.message || text || `HTTP ${response.status}`;
+                    throw new Error(`서버오류(${response.status}): ${serverMsg}`);
                 }
+
+                if (data?.response?.header) {
+                    alert(`오류 (코드: ${data.response.header.resultCode}, 메시지: ${data.response.header.resultMsg})`);
+                    return;
+                }
+
+                if (data?.message) {
+                    const endTime = new Date();
+                    const elapsedTime = Math.floor((endTime - startTime) / 1000);
+                    alert(`데이터를 성공적으로 가져왔습니다! (${formatTime(elapsedTime)})`);
+                    return;
+                }
+
+                if (!data) {
+                    console.error('Raw response text:', text);
+                    alert(`예상치 못한 응답 형식 (원문 일부): ${text.slice(0, 200)}...`);
+                    return;
+                }
+
+                alert('예상치 못한 응답 형식입니다.');
             })
-            .catch(error => {
-                console.error('Fetch 작업에 문제가 발생했습니다:', error); // 오류 처리
-                alert('데이터를 가져오는 중 문제가 발생했습니다.');
+            .catch((error) => {
+                console.error('Fetch 에러:', error);
+                alert(`데이터를 가져오는 중 문제가 발생했습니다.\n${error.message}`);
             })
-            .finally(() => {
-                hideLoading(); // 로딩 표시 숨기기
-            });
+            .finally(() => hideLoading());
     }
 
     function runThingProcedure() {
