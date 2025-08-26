@@ -46,7 +46,7 @@ public class ContractInfo {
     @Column(name = "cntrctRefNo", length = 35)
     private String cntrctRefNo;
 
-    @Column(name = "cntrctNm", length = 100)
+    @Column(name = "cntrctNm", length = 255)
     private String cntrctNm;
 
     @Column(name = "cmmnCntrctYn", length = 1)
