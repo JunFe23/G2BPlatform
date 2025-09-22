@@ -45,20 +45,20 @@ public class ContractShoppingmallDTO {
 
     private String prdctSpecNm;          // 물품규격명
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
     private LocalDate cntrctDate;        // 계약일자
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
     private LocalDate cntrctBgnDate;     // 계약시작일자
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
     private LocalDate cntrctEndDate;     // 계약종료일자
 
     private String cntrctDeptNm;         // 계약부서명
     private String prodctCertList;       // 제품인증목록
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime rgstDt;        // 등록일시
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
+    private LocalDate rgstDt;        // 등록일시
 
     private String cntrctCorpBizno;      // 계약업체 사업자등록번호
 }
