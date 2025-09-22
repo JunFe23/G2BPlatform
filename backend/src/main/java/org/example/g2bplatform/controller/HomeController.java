@@ -240,7 +240,7 @@ public class HomeController {
                             return processContractInfoCnstwk(bodyNode);
                         } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListServc".equals(endpoint)) {
                             return processContractInfoServc(bodyNode);
-                        } else if ("/1230000/at/ShoppingMallPrdctInfoService/getThptyUcntrctPrdctInfoList".equals(endpoint)) {
+                        } else if ("/1230000/at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList".equals(endpoint)) {
                             return processContractShoppingmall(bodyNode);
                         } else {
                             logger.warn("알 수 없는 endpoint: {}", endpoint);
