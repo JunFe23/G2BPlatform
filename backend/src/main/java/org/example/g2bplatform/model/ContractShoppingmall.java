@@ -3,170 +3,159 @@ package org.example.g2bplatform.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "contract_shoppingmall")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(name = "contract_shoppingmall",
+        indexes = {
+                @Index(name = "idx_prdct_clsfc_no", columnList = "prdctClsfcNo"),
+                @Index(name = "idx_dtil_prdct_clsfc_no", columnList = "dtilPrdctClsfcNo"),
+                @Index(name = "idx_prdct_idnt_no", columnList = "prdctIdntNo"),
+                @Index(name = "idx_cntrct_date", columnList = "cntrctDate")
+        })
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor @Builder
 public class ContractShoppingmall {
 
-    @Id
-    @Column(length = 11)
-    private String shopngCntrctNo; // 쇼핑계약번호 (PK)
+    /** 복합키: 쇼핑계약번호 + 쇼핑계약순번 */
+    @EmbeddedId
+    private ContractShoppingmallId id;
 
-    @Column(length = 22)
-    private String shopngCntrctSno; // 쇼핑계약순번
-
+    /** 상품이미지URL (선택) */
     @Column(length = 500)
-    private String prdctImgUrl; // 상품이미지URL
+    private String prdctImgUrl;
 
+    /** 계약업체명 (필수) */
+    @Column(length = 100, nullable = false)
+    private String cntrctCorpNm;
+
+    /** 기업구분명 (선택) */
     @Column(length = 100)
-    private String cntrctCorpNm; // 계약업체명
+    private String entrprsDivNm;
 
-    @Column(length = 100)
-    private String entrprsDivNm; // 기업구분명
+    /** 계약방법명 (필수) */
+    @Column(length = 100, nullable = false)
+    private String cntrctMthdNm;
 
+    /** 우수조달물품여부 (Y/N, 선택) */
     @Column(length = 1)
-    private String drctPrdctnCnfrmCertHoldCorpYn; // 직접생산확인증명서 보유여부
+    private String exclncPrcrmntPrdctYn;
 
+    /** 다수공급경쟁자여부 (Y/N, 선택) */
+    @Column(length = 1)
+    private String masYn;
+
+    /** 중소기업자간경쟁제품여부 (Y/N, 필수) */
+    @Column(length = 1, nullable = false)
+    private String smetprCmptProdctYn;
+
+    /** 계약가격금액 (정수 원화, 선택) */
+    @Column(precision = 30, scale = 0)
+    private BigDecimal cntrctPrceAmt;
+
+    /** 물품단위 (선택) */
     @Column(length = 100)
-    private String entrprsDivInfrmtn; // 기업구분안내
+    private String prdctUnit;
 
+    /** 물품제조사명 (선택, 스펙 200) */
     @Column(length = 200)
-    private String cntrctMthdNm; // 계약방법명
+    private String prdctMakrNm;
 
+    /** 물품납품장소명 (선택, 스펙 500) */
     @Column(length = 500)
-    private String prdctSpecNm; // 물품규격명
+    private String prdctDlvrPlceNm;
 
-    @Column(length = 1)
-    private String exclncPrcrmntPrdctYn; // 우수조달물품여부
+    /** 물품인도조건명 (선택, 스펙 200) */
+    @Column(length = 200)
+    private String prdctDlvryCndtnNm;
 
-    @Column(length = 1)
-    private String bndeFlawGrntyPrdctYn; // 일괄하자보증물품여부
+    /** 물품공급지역명 (선택, 스펙 200) */
+    @Column(length = 200)
+    private String prdctSplyRgnNm;
 
-    @Column(length = 1)
-    private String smetprCmptProdctYn; // 중소기업자간 경쟁제품여부
+    /** 납품기한일수 (선택, 스펙 10) */
+    @Column(length = 10)
+    private String dlvrTmlmtDaynum;
 
-    private BigDecimal cntrctPrceAmt; // 계약가격금액
+    /** 물품대분류코드 (선택, 2) */
+    @Column(length = 2)
+    private String prdctLrgclsfcCd;
 
-    private BigDecimal orderCalclPrceAmt; // 주문산정가격금액
-
-    private BigDecimal dscntAmt; // 할인금액
-
+    /** 물품대분류명 (선택, 100) */
     @Column(length = 100)
-    private String prdctUnit; // 물품단위
+    private String prdctLrgclsfcNm;
 
-    @Column(length = 50)
-    private String prdctOrgplceNm; // 물품원산지명
+    /** 물품중분류코드 (선택, 4) */
+    @Column(length = 4)
+    private String prdctMidclsfcCd;
 
+    /** 물품중분류명 (선택, 100) */
     @Column(length = 100)
-    private String orgplceMainCmpnt1Cntnts; // 원산지 주요부품1내용
+    private String prdctMidclsfcNm;
 
-    @Column(length = 100)
-    private String orgplceMainCmpnt1Nm; // 원산지 주요부품1명
+    /** 물품분류번호 (필수, 8) */
+    @Column(length = 8, nullable = false)
+    private String prdctClsfcNo;
 
-    @Column(length = 100)
-    private String orgplceMainCmpnt2Cntnts; // 원산지 주요부품2내용
+    /** 품명 (필수, 200) */
+    @Column(length = 200, nullable = false)
+    private String prdctClsfcNoNm;
 
-    @Column(length = 100)
-    private String orgplceMainCmpnt2Nm; // 원산지 주요부품2명
+    /** 세부품명번호 (필수, 10) */
+    @Column(length = 10, nullable = false)
+    private String dtilPrdctClsfcNo;
 
-    @Column(length = 100)
-    private String orgplceCoreCmpntCntnts; // 원산지 핵심부품내용
+    /** 세부품명 (필수, 200) */
+    @Column(length = 200, nullable = false)
+    private String dtilPrdctClsfcNoNm;
 
-    @Column(length = 100)
-    private String orgplceCoreCmpntNm; // 원산지 핵심부품명
+    /** 물품식별번호 (필수, 8) */
+    @Column(length = 8, nullable = false)
+    private String prdctIdntNo;
 
-    @Column(length = 100)
-    private String assmblCntryMainCmpnt1Cntnts; // 조립국가 주요부품1 내용
-
-    @Column(length = 100)
-    private String assmblCntryMainCmpnt1Nm; // 조립국가 주요부품1 명
-
-    @Column(length = 100)
-    private String assmblCntryMainCmpnt2Cntnts; // 조립국가 주요부품2 내용
-
-    @Column(length = 100)
-    private String assmblCntryMainCmpnt2Nm; // 조립국가 주요부품2 명
-
-    @Column(length = 100)
-    private String assmblCntryCoreCmpntCntnts; // 조립국가 핵심부품 내용
-
-    @Column(length = 100)
-    private String assmblCntryCoreCmpntNm; // 조립국가 핵심부품 명
-
-    @Column(length = 100)
-    private String prdctMakrNm; // 물품제조사명
-
-    @Column(length = 100)
-    private String prdctDlvrPlceNm; // 물품납품장소명
-
-    @Column(length = 100)
-    private String prdctDlvryCndtnNm; // 물품인도조건명
-
-    @Column(length = 100)
-    private String prdctSplyRgnNm; // 물품공급지역명
-
-    @Column(length = 100)
-    private String vatAplDivNm; // 부가가치세적용구분명
-
-    @Column(length = 100)
-    private String dlvrTmlmtDaynum; // 납품기한일수
-
-    @Column(length = 100)
-    private String dlvrTmlmtDscrpt; // 납품기한설명
-
-    @Column(length = 1000)
-    private String prcrmntFeeInclsnCntnts; // 조달수수료포함내용
-
-    @Column(length = 20)
-    private String dscntBgnDate; // 할인시작일자
-
-    @Column(length = 20)
-    private String dscntEndDate; // 할인종료일자
-
-    @Column(length = 50)
-    private String remndrQty; // 잔여수량
-
+    /** 물품규격명 (선택, 500) */
     @Column(length = 500)
-    private String cntrctDeptNm; // 계약부서명
+    private String prdctSpecNm;
 
+    /** 계약일자 (선택, 'YYYY-MM-DD') */
+    private LocalDate cntrctDate;
+
+    /** 계약시작일자 (선택) */
+    private LocalDate cntrctBgnDate;
+
+    /** 계약종료일자 (선택) */
+    private LocalDate cntrctEndDate;
+
+    /** 계약부서명 (선택, 100) */
     @Column(length = 100)
-    private String cntrctDeptTelNo; // 계약부서 전화번호
+    private String cntrctDeptNm;
 
-    @Column(length = 100)
-    private String cntrctOfclNm; // 계약담당자명
+    /** 제품인증목록 (선택, 4000) */
+    @Column(length = 4000)
+    private String prodctCertList;
 
-    @Column(length = 100)
-    private String cntrctOfclEmail; // 계약담당자 이메일
+    /** 등록일시 (필수) */
+    @Column(nullable = false)
+    private LocalDateTime rgstDt;
 
-    @Column(length = 1000)
-    private String splyTmlmtCntnts; // 공급기한내용
+    /** 계약업체 사업자등록번호 (선택, 10) */
+    @Column(length = 10)
+    private String cntrctCorpBizno;
 
-    @Column(length = 100)
-    private String acptncInsttNm; // 검수기관명
+    /* ===== EmbeddedId 클래스 ===== */
+    @Embeddable
+    @Getter @Setter
+    @NoArgsConstructor @AllArgsConstructor @EqualsAndHashCode
+    public static class ContractShoppingmallId implements Serializable {
+        /** 쇼핑계약번호 (필수, 20) */
+        @Column(length = 20, nullable = false)
+        private String shopngCntrctNo;
 
-    @Column(length = 100)
-    private String inspctInsttNm; // 검사기관명
-
-    @Column(length = 100)
-    private String cntrctSpcmntMtr; // 계약특기사항
-
-    @Column(length = 1000)
-    private String prodctChrInfoIntrcn; // 제품특성정보소개
-
-    @Column(length = 1000)
-    private String prodctCertList; // 제품인증목록
-
-    @Column(length = 100)
-    private String cntrctCorpNo; // 계약업체번호
-
-    private LocalDateTime rgstDt; // 등록일시
-
-    private LocalDateTime chgDt; // 변경일시
+        /** 쇼핑계약순번 (필수, 22) */
+        @Column(length = 22, nullable = false)
+        private String shopngCntrctSno;
+    }
 }
-
