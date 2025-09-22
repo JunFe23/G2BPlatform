@@ -80,40 +80,40 @@ public class ContractShoppingmall {
     @Column(length = 10)
     private String dlvrTmlmtDaynum;
 
-    /** 물품대분류코드 (선택, 2) */
-    @Column(length = 2)
+    /** 물품대분류코드 (선택, 10) */
+    @Column(length = 10)
     private String prdctLrgclsfcCd;
 
     /** 물품대분류명 (선택, 100) */
     @Column(length = 100)
     private String prdctLrgclsfcNm;
 
-    /** 물품중분류코드 (선택, 4) */
-    @Column(length = 4)
+    /** 물품중분류코드 (선택, 10) */
+    @Column(length = 10)
     private String prdctMidclsfcCd;
 
     /** 물품중분류명 (선택, 100) */
     @Column(length = 100)
     private String prdctMidclsfcNm;
 
-    /** 물품분류번호 (필수, 8) */
-    @Column(length = 8, nullable = false)
+    /** 물품분류번호 (필수, 16) */
+    @Column(length = 16, nullable = false)
     private String prdctClsfcNo;
 
-    /** 품명 (필수, 200) */
-    @Column(length = 200, nullable = false)
+    /** 품명 (필수, 100) */
+    @Column(length = 100, nullable = false)
     private String prdctClsfcNoNm;
 
-    /** 세부품명번호 (필수, 10) */
-    @Column(length = 10, nullable = false)
+    /** 세부품명번호 (필수, 20) */
+    @Column(length = 20, nullable = false)
     private String dtilPrdctClsfcNo;
 
-    /** 세부품명 (필수, 200) */
-    @Column(length = 200, nullable = false)
+    /** 세부품명 (필수, 100) */
+    @Column(length = 100, nullable = false)
     private String dtilPrdctClsfcNoNm;
 
-    /** 물품식별번호 (필수, 8) */
-    @Column(length = 8, nullable = false)
+    /** 물품식별번호 (필수, 16) */
+    @Column(length = 16, nullable = false)
     private String prdctIdntNo;
 
     /** 물품규격명 (선택, 500) */

@@ -344,7 +344,7 @@ public class HomeController {
     private String buildUrl(String endpoint, String serviceKey, String inqryBgnDt, String inqryEndDt, int pageNo) {
         String beginDateParam = "inqryBgnDt";
         String endDateParam   = "inqryEndDt";
-        if ("/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01".equals(endpoint)) {
+        if ("/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01".equals(endpoint)||"/1230000/at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList".equals(endpoint)) {
             beginDateParam = "inqryBgnDate";
             endDateParam   = "inqryEndDate";
         }
