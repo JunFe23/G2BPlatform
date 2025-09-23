@@ -344,6 +344,8 @@ public class HomeController {
     private String buildUrl(String endpoint, String serviceKey, String inqryBgnDt, String inqryEndDt, int pageNo) {
         String beginDateParam = "inqryBgnDt";
         String endDateParam   = "inqryEndDt";
+
+        // 쇼핑몰일 경우 검색 조건 변수명 수정
         if ("/1230000/CntrctInfoService01/getCntrctInfoListThngPPSSrch01".equals(endpoint)||"/1230000/at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList".equals(endpoint)) {
             beginDateParam = "inqryBgnDate";
             endDateParam   = "inqryEndDate";
