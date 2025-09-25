@@ -43,7 +43,7 @@ public class PageController {
     @GetMapping("/page5")
     public String page5(Model model) {
         model.addAttribute("pageTitle", "Page 5");
-        return "imsi"; // templates/imsi.html을 렌더링
+        return "page5"; // templates/page5.html을 렌더링
     }
 
     @GetMapping("/page6")
