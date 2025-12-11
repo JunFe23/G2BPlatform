@@ -1,5 +1,10 @@
 package org.example.g2bplatform.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.g2bplatform.service.DataService;
 import org.example.g2bplatform.service.ExcelService;
@@ -16,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Tag(name = "Data", description = "데이터 관련 API")
 @RestController
 @RequestMapping("/api")
 public class DataController {
@@ -29,24 +35,31 @@ public class DataController {
         this.excelService = excelService;
     }
 
+    @Operation(summary = "데이터 조회", description = "카테고리 및 검색 조건에 따라 데이터를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @GetMapping("/data")
-    public Map<String, Object> getData( @RequestParam int draw,
-                                              @RequestParam int start,
-                                              @RequestParam int length,
-                                              @RequestParam Map<String, String> search, // Map으로 검색 값을 받아옵니다
-                                              @RequestParam String category,
-                                        @RequestParam(required = false) String dminsttNm,         // 수요기관명
-                                        @RequestParam(required = false) String dminsttNmDetail, // 수요기관 지역명
-                                        @RequestParam(required = false) String prdctClsfcNo,    // 품명 내용
-                                        @RequestParam(required = false) String cntctCnclsMthdNm,// 입찰 계약방법
-                                        @RequestParam(required = false) String firstCntrctDate,  // 최초 계약일자
-                                        @RequestParam(required = false) Integer year,
-                                        @RequestParam(required = false) String month,
-                                        @RequestParam(required = false) String rangeStart,
-                                        @RequestParam(required = false) String rangeEnd,
-                                        @RequestParam(required = false) int showSavedOnly,
-                                        @RequestParam(required = false) String type
-                                        ) {
+    public Map<String, Object> getData(
+            @Parameter(description = "DataTables의 그리기 카운터", required = true) @RequestParam int draw,
+            @Parameter(description = "데이터 시작 위치", required = true) @RequestParam int start,
+            @Parameter(description = "가져올 데이터 수", required = true) @RequestParam int length,
+            @Parameter(description = "검색 값") @RequestParam Map<String, String> search,
+            @Parameter(description = "데이터 카테고리 (goods, services, constructions, shoppingmall, onlyTop, servicesSelected)", required = true) @RequestParam String category,
+            @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
+            @Parameter(description = "수요기관 지역명") @RequestParam(required = false) String dminsttNmDetail,
+            @Parameter(description = "품명 내용") @RequestParam(required = false) String prdctClsfcNo,
+            @Parameter(description = "입찰 계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
+            @Parameter(description = "최초 계약일자") @RequestParam(required = false) String firstCntrctDate,
+            @Parameter(description = "연도") @RequestParam(required = false) Integer year,
+            @Parameter(description = "월") @RequestParam(required = false) String month,
+            @Parameter(description = "날짜 범위 시작") @RequestParam(required = false) String rangeStart,
+            @Parameter(description = "날짜 범위 끝") @RequestParam(required = false) String rangeEnd,
+            @Parameter(description = "저장된 항목만 표시") @RequestParam(required = false) int showSavedOnly,
+            @Parameter(description = "onlyTop 카테고리일 경우 타입") @RequestParam(required = false) String type
+    ) {
         String searchValue = search.get("search[value]"); // DataTables가 전송하는 검색어
 
         List<Map<String, String>> data = new ArrayList<>();
@@ -88,6 +101,12 @@ public class DataController {
         return response;
     }
 
+    @Operation(summary = "엑셀 다운로드", description = "조회된 데이터를 엑셀 파일로 다운로드합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "다운로드 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping("/data/excel")
     public void downloadExcel(@RequestBody Map<String, Object> requestData, HttpServletResponse response) throws IOException {
         // 숫자 값 변환
@@ -190,7 +209,11 @@ public class DataController {
         response.getOutputStream().flush();
     }
 
-    // 체크박스 상태 업데이트 API
+    @Operation(summary = "체크박스 상태 업데이트", description = "항목의 체크박스 상태를 업데이트합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "업데이트 성공"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping("/update-checked")
     public ResponseEntity<String> updateChecked(@RequestBody Map<String, Object> request) {
         try {
@@ -210,7 +233,11 @@ public class DataController {
         }
     }
 
-    // 물품 데이터 통합 가공 처리
+    @Operation(summary = "물품 데이터 수동 처리", description = "일일 물품 계약 데이터를 수동으로 통합 가공합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "생성 완료"),
+            @ApiResponse(responseCode = "500", description = "생성 실패")
+    })
     @PostMapping("/manual-process/dailyThings")
     public ResponseEntity<String> manualProcessGoods() {
         try {
@@ -222,6 +249,11 @@ public class DataController {
         }
     }
 
+    @Operation(summary = "용역 데이터 수동 처리", description = "일일 용역 계약 데이터를 수동으로 통합 가공합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "생성 완료"),
+            @ApiResponse(responseCode = "500", description = "생성 실패")
+    })
     @PostMapping("/manual-process/dailyServices")
     public ResponseEntity<String> manualProcessServices() {
         try {
@@ -233,6 +265,11 @@ public class DataController {
         }
     }
 
+    @Operation(summary = "공사 데이터 수동 처리", description = "일일 공사 계약 데이터를 수동으로 통합 가공합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "생성 완료"),
+            @ApiResponse(responseCode = "500", description = "생성 실패")
+    })
     @PostMapping("/manual-process/dailyConstructions")
     public ResponseEntity<String> manualProcessConstructions() {
         try {
@@ -244,6 +281,11 @@ public class DataController {
         }
     }
 
+    @Operation(summary = "탑 데이터 수동 처리", description = "일일 탑 데이터를 수동으로 통합 가공합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "생성 완료"),
+            @ApiResponse(responseCode = "500", description = "생성 실패")
+    })
     @PostMapping("/manual-process/dailyTopDatas")
     public ResponseEntity<String> manualProcessTopDatas() {
         try {
@@ -255,16 +297,26 @@ public class DataController {
         }
     }
 
+    @Operation(summary = "모달 서비스 데이터 조회", description = "모달에 표시할 서비스 데이터를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @GetMapping("/modal-service-data")
     public List<Map<String, Object>> getModalServiceData(
-            @RequestParam String category,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "20") int limit
+            @Parameter(description = "데이터 카테고리", required = true) @RequestParam String category,
+            @Parameter(description = "검색 키워드") @RequestParam(required = false) String keyword,
+            @Parameter(description = "데이터 시작 위치", required = true) @RequestParam(defaultValue = "0") int offset,
+            @Parameter(description = "가져올 데이터 수", required = true) @RequestParam(defaultValue = "20") int limit
     ) {
         return dataService.getModalServiceData(category, keyword, offset, limit);
     }
 
+    @Operation(summary = "'is_selected' 상태 업데이트", description = "지정된 테이블의 항목에 대해 'is_selected' 상태를 업데이트합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "업데이트 성공"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping("/update-is-selected")
     public void updateIsSelected(@RequestBody Map<String, Object> payload) {
         String tableName = (String) payload.get("tableName");
@@ -273,6 +325,12 @@ public class DataController {
         dataService.updateIsSelected(tableName, untyCntrctNos);
     }
 
+    @Operation(summary = "선택 해제", description = "지정된 테이블의 항목을 선택 해제합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "선택 해제 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping("/unselect")
     public ResponseEntity<?> unselect(@RequestBody Map<String, Object> payload) {
         try {
