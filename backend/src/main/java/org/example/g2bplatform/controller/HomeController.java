@@ -228,7 +228,7 @@ public class HomeController {
                         }
 
                         // 엔드포인트 라우팅
-                        if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThng".equals(endpoint)) {
+                        if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThng".equals(endpoint)) { // 계약현황에 대한 물품조회
                             return processContractInfo(bodyNode);
                         } else if ("/1230000/ao/CntrctInfoService/getCntrctInfoListThngDetail".equals(endpoint)) {
                             return processContractInfoDetail(bodyNode);
