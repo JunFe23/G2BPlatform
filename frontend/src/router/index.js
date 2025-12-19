@@ -1,23 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import BidList from '../views/BidList.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      redirect: '/goods'
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
+      path: '/goods', // 물품
+      name: 'goods',
+      component: BidList,
+      props: { category: 'goods' } // 컴포넌트에 카테고리 전달
     },
-  ],
+    {
+      path: '/services', // 용역 (예시)
+      name: 'services',
+      component: BidList,
+      props: { category: 'services' }
+    },
+    // 필요한 만큼 라우트 추가 가능
+  ]
 })
 
 export default router
