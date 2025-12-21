@@ -20,7 +20,12 @@ const router = createRouter({
       component: BidList,
       props: { category: 'services' }
     },
-    // 필요한 만큼 라우트 추가 가능
+    {
+      path: '/construction',
+      name: 'construction',
+      component: BidList,
+      props: { category: 'construction' }
+    }
   ]
 })
 

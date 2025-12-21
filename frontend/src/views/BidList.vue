@@ -16,6 +16,9 @@
           <li class="menu-item">
             <router-link to="/services" class="menu-label">용역</router-link>
           </li>
+          <li class="menu-item">
+            <router-link to="/construction" class="menu-label">공사</router-link>
+          </li>
         </ul>
 
         <li class="menu-item">
@@ -114,7 +117,12 @@ const tableRef = ref(null);
 
 // 화면 타이틀 계산
 const categoryLabel = computed(() => {
-  return props.category === 'goods' ? '물품' : props.category === 'services' ? '용역' : '기타';
+  const labels = {
+    goods: '물품',
+    services: '용역',
+    construction: '공사' // ▼ [추가] 매핑 추가
+  };
+  return labels[props.category] || '기타';
 });
 
 const years = Array.from({ length: 9 }, (_, i) => 2025 - i);
