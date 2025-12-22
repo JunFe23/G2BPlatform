@@ -22,7 +22,7 @@
         </ul>
 
         <li class="menu-item">
-          <a href="#" class="menu-label">수주현황DB</a>
+          <a href="#" class="menu-label">탑인더스트리 & 탑정보통신 수주현황DB</a>
         </li>
       </ul>
     </div>
