@@ -1,0 +1,560 @@
+<template>
+  <LegacySidebarLayout>
+    <h1 class="servicesSelected">수주대상 사업탐색</h1>
+
+    <!-- 검색 필드 -->
+    <div class="search-container">
+      <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색">
+      <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색">
+      <input type="text" v-model="filters.prdctClsfcNo" placeholder="품명내용 검색">
+      <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="입찰계약방법 검색">
+      <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자 검색">
+
+      <select v-model="filters.dateType" class="date-select">
+        <option value="year">연도 검색</option>
+        <option value="month">특정 월 검색</option>
+        <option value="range">기간 검색</option>
+      </select>
+
+      <select v-if="filters.dateType === 'year'" v-model="filters.year" class="date-select">
+        <option value="">선택</option>
+        <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+      </select>
+
+      <input v-if="filters.dateType === 'month'" type="month" v-model="filters.month">
+      
+      <template v-if="filters.dateType === 'range'">
+        <input type="month" v-model="filters.rangeStart" placeholder="시작월">
+        <input type="month" v-model="filters.rangeEnd" placeholder="종료월">
+      </template>
+
+      <button @click="handleSearch" class="search-btn">검색</button>
+
+      <button @click="handleDownloadExcel" class="excel-btn">
+        엑셀 다운로드
+      </button>
+
+      <div v-if="isLoading" class="loading-spinner-container">
+        <div class="loading-spinner"></div>
+      </div>
+
+      <button @click="openModal" class="modal-btn">
+        수주대상 탐색하기
+      </button>
+    </div>
+
+    <!-- 데이터 테이블 -->
+    <div class="table-container">
+      <div class="table-wrapper">
+        <table class="data-table">
+        <thead>
+          <tr>
+            <th>업체명</th>
+            <th>계약건명</th>
+            <th>수요기관명</th>
+            <th>수요기관지역명</th>
+            <th>품명내용</th>
+            <th>입찰공고번호</th>
+            <th>최초계약일자</th>
+            <th>최초계약금액</th>
+            <th>계약변경차수</th>
+            <th>금차완수일자</th>
+            <th>총완수일자</th>
+            <th>선택해제</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="isLoading">
+            <td colspan="12" class="loading-text">데이터를 불러오는 중입니다...</td>
+          </tr>
+          <tr v-else-if="items.length === 0">
+            <td colspan="12" class="no-data">데이터가 없습니다.</td>
+          </tr>
+          <tr v-else v-for="item in items" :key="item.id">
+            <td>{{ item.cmpNm }}</td>
+            <td>
+              <a v-if="item.cntrctDtlInfoUrl" :href="item.cntrctDtlInfoUrl" target="_blank" rel="noopener noreferrer">{{ item.cntrctNm }}</a>
+              <span v-else>{{ item.cntrctNm }}</span>
+            </td>
+            <td>{{ item.dminsttNm }}</td>
+            <td>{{ item.dminsttNmDetail }}</td>
+            <td>{{ item.prdctClsfcNo }}</td>
+            <td>{{ item.ntceNo }}</td>
+            <td>{{ item.firstCntrctDate }}</td>
+            <td>{{ formatNumber(item.firstCntrctAmt) }}</td>
+            <td>{{ item.cntrctCnt }}</td>
+            <td>{{ item.thtmScmpltDate }}</td>
+            <td>{{ item.ttalScmpltDate }}</td>
+            <td>
+              <button class="unselect-btn" @click="unselectItem(item)">선택 해제</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <!-- 모달창 -->
+    <div v-if="isModalOpen" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <strong>수주대상 사업 탐색</strong>
+          <button @click="closeModal" class="close-btn">&times;</button>
+        </div>
+
+        <div class="notice">
+          <div><b>안내</b> — 이미 <b>수주대상 사업 선택하여 저장된 계약</b>은 좌측 목록에 표시되지 않습니다.</div>
+        </div>
+
+        <div class="modal-body">
+          <!-- 좌측: 기존 데이터 리스트 -->
+          <div class="modal-pane left-pane" @scroll="handleModalScroll">
+            <input type="text" v-model="modalSearch" placeholder="검색어 입력..." class="modal-search-input">
+            <ul class="modal-list">
+              <li v-for="item in modalItems" :key="item.untyCntrctNo" class="modal-list-item" @click="selectModalItem(item)">
+                {{ item.firstCntrctDate }} | {{ item.cntrctNm }} | {{ item.dminsttNm }} | {{ formatNumber(item.firstCntrctAmt) }}
+              </li>
+              <li v-if="isModalLoading" class="modal-loading">로딩 중...</li>
+            </ul>
+          </div>
+
+          <!-- 우측: 선택된 항목 리스트 -->
+          <div class="modal-pane right-pane">
+            <h4>선택된 항목</h4>
+            <ul class="modal-list">
+              <li v-for="item in selectedModalItems" :key="item.untyCntrctNo" class="modal-list-item">
+                {{ item.firstCntrctDate }} | {{ item.cntrctNm }} | {{ item.dminsttNm }} | {{ formatNumber(item.firstCntrctAmt) }}
+                <button class="remove-btn" @click="removeSelectedModalItem(item)">제거</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="saveSelected" class="save-btn">선택 항목 저장</button>
+        </div>
+      </div>
+    </div>
+
+  </LegacySidebarLayout>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted, watch } from 'vue';
+import LegacySidebarLayout from './components/LegacySidebarLayout.vue';
+
+// Mock Data Generator for Main Table
+const generateMockData = (count = 10) => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    cmpNm: `(주)타겟업체${i + 1}`,
+    cntrctNm: `2025년 수주대상 사업 ${i + 1}건`,
+    cntrctDtlInfoUrl: '#',
+    dminsttNm: `수요기관${i + 1}`,
+    dminsttNmDetail: `지역${i + 1}`,
+    prdctClsfcNo: `분류${i + 1}`,
+    ntceNo: `20250100${i + 1}`,
+    firstCntrctDate: '2025-01-01',
+    firstCntrctAmt: 5000000 * (i + 1),
+    cntrctCnt: 1,
+    thtmScmpltDate: '2025-06-30',
+    ttalScmpltDate: '2025-12-31',
+    untyCntrctNo: `UNC${i}`
+  }));
+};
+
+// Mock Data for Modal
+const generateModalData = (offset, limit) => {
+  return Array.from({ length: limit }, (_, i) => ({
+    untyCntrctNo: `MOCK_MODAL_${offset + i}`,
+    cntrctNm: `탐색 대상 사업 ${offset + i + 1}`,
+    dminsttNm: `기관 ${offset + i + 1}`,
+    firstCntrctDate: '2025-02-01',
+    firstCntrctAmt: 1000000 * (offset + i + 1)
+  }));
+};
+
+// State
+const isLoading = ref(false);
+const items = ref([]);
+const filters = reactive({
+  dminsttNm: '',
+  dminsttNmDetail: '',
+  prdctClsfcNo: '',
+  cntctCnclsMthdNm: '',
+  firstCntrctDate: '',
+  dateType: 'year',
+  year: '2025',
+  month: '',
+  rangeStart: '',
+  rangeEnd: '',
+  showSavedOnly: false
+});
+
+const years = ['2025', '2024', '2023', '2022', '2021', '2020'];
+
+// Modal State
+const isModalOpen = ref(false);
+const modalSearch = ref('');
+const modalItems = ref([]);
+const selectedModalItems = ref([]);
+const isModalLoading = ref(false);
+const modalOffset = ref(0);
+const modalLimit = 20;
+
+// Methods
+const fetchData = async () => {
+  isLoading.value = true;
+  // TODO: 나중에 이 부분은 axios.get('/api/data', { params: { category: 'servicesSelected', ...filters } })로 교체해야 함
+  setTimeout(() => {
+    items.value = generateMockData(15);
+    isLoading.value = false;
+  }, 800);
+};
+
+const handleSearch = () => {
+  fetchData();
+};
+
+const handleDownloadExcel = () => {
+  // TODO: 나중에 이 부분은 axios.post('/api/data/excel', requestData, { responseType: 'blob' })로 교체해야 함
+  alert('엑셀 다운로드 (Mock)');
+};
+
+const unselectItem = (item) => {
+  if (!confirm("정말 선택을 취소하시겠습니까?")) return;
+  // TODO: 나중에 이 부분은 axios.post('/api/unselect', { tableName: "daily_contracts_services", untyCntrctNo: item.untyCntrctNo, selectType: 2 })로 교체해야 함
+  alert(`선택 해제됨: ${item.cntrctNm}`);
+  items.value = items.value.filter(i => i.id !== item.id);
+};
+
+// Modal Methods
+const openModal = () => {
+  isModalOpen.value = true;
+  resetModal();
+  fetchModalData();
+};
+
+const closeModal = () => {
+  isModalOpen.value = false;
+};
+
+const resetModal = () => {
+  modalItems.value = [];
+  selectedModalItems.value = [];
+  modalOffset.value = 0;
+  modalSearch.value = '';
+};
+
+const fetchModalData = () => {
+  if (isModalLoading.value) return;
+  isModalLoading.value = true;
+  
+  // TODO: 나중에 이 부분은 axios.get('/api/modal-service-data', { params: ... })로 교체해야 함
+  setTimeout(() => {
+    const newItems = generateModalData(modalOffset.value, modalLimit);
+    modalItems.value = [...modalItems.value, ...newItems];
+    modalOffset.value += modalLimit;
+    isModalLoading.value = false;
+  }, 500);
+};
+
+const handleModalScroll = (e) => {
+  const { scrollTop, scrollHeight, clientHeight } = e.target;
+  if (scrollTop + clientHeight >= scrollHeight - 10) {
+    fetchModalData();
+  }
+};
+
+const selectModalItem = (item) => {
+  if (selectedModalItems.value.find(i => i.untyCntrctNo === item.untyCntrctNo)) return;
+  selectedModalItems.value.push(item);
+};
+
+const removeSelectedModalItem = (item) => {
+  selectedModalItems.value = selectedModalItems.value.filter(i => i.untyCntrctNo !== item.untyCntrctNo);
+};
+
+const saveSelected = () => {
+  if (selectedModalItems.value.length === 0) return alert("선택된 항목이 없습니다.");
+  // TODO: 나중에 이 부분은 axios.post('/api/update-is-selected', { tableName: "daily_contracts_services", untyCntrctNos: [...] })로 교체해야 함
+  alert("선택 항목 저장 완료 (Mock)");
+  closeModal();
+  fetchData(); // Refresh main table
+};
+
+const formatNumber = (num) => {
+  return num ? num.toLocaleString() : '';
+};
+
+// Watchers
+watch(modalSearch, () => {
+  modalOffset.value = 0;
+  modalItems.value = [];
+  fetchModalData();
+});
+
+// Lifecycle
+onMounted(() => {
+  fetchData();
+});
+</script>
+
+<style scoped>
+.search-container {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+input[type="text"], select, input[type="month"] {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.search-btn {
+  padding: 8px 15px;
+  background-color: #34495e;
+  color: #ecf0f1;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.excel-btn {
+  padding: 8px 15px;
+  background-color: #27ae60;
+  color: #ecf0f1;
+  border: none;
+  cursor: pointer;
+  margin-left: 10px;
+  border-radius: 4px;
+}
+
+.modal-btn {
+  padding: 8px 15px;
+  background-color: #e84393;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.loading-spinner-container {
+  margin-left: 10px;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.data-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+.loading-text, .no-data {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.unselect-btn {
+  padding: 5px 10px;
+  background-color: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  width: 90vw;
+  height: 80vh;
+  background: #fff;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 10px;
+  background: #34495e;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.notice {
+  margin: 8px 10px 0 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #cfe0ff;
+  border-left: 4px solid #4c78ff;
+  background: #f0f5ff;
+  color: #1f3b7d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.modal-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  padding: 10px;
+  gap: 10px;
+}
+
+.modal-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.modal-search-input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.modal-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.modal-list-item {
+  white-space: nowrap;
+  overflow-x: auto;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #f9f9f9;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modal-list-item:hover {
+  background-color: #f1f1f1;
+}
+
+.modal-footer {
+  padding: 10px;
+  text-align: right;
+  border-top: 1px solid #ccc;
+}
+
+.save-btn {
+  padding: 10px 20px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.remove-btn {
+  margin-left: 10px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.table-wrapper {
+  max-height: 70vh;
+  overflow: auto;
+  border: 1px solid #ccc;
+}
+
+.data-table th {
+  position: sticky;
+  top: 0;
+  background-color: #f1f1f1;
+  z-index: 1;
+}
+
+.data-table th,
+.data-table td {
+  white-space: nowrap;
+}
+</style>
