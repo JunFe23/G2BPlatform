@@ -1,32 +1,82 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
+import MainLayoutView from '../views/MainLayoutView.vue'
+import GoodsView from '../views/GoodsView.vue'
+import ServicesView from '../views/ServicesView.vue'
+import ConstructionsView from '../views/ConstructionsView.vue'
+import TopContractsView from '../views/TopContractsView.vue'
+import ShoppingMallView from '../views/ShoppingMallView.vue'
+import TargetProjectsView from '../views/TargetProjectsView.vue'
+import WorkInProgressView from '../views/WorkInProgressView.vue'
+import SettingsView from '../views/SettingsView.vue'
 import BidList from '../views/BidList.vue'
+import HomeView from '../views/HomeView.vue'
+import AboutView from '../views/AboutView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      redirect: '/goods'
+      name: 'main',
+      component: MainLayoutView,
     },
     {
-      path: '/goods', // 물품
+      path: '/goods',
       name: 'goods',
-      component: BidList,
-      props: { category: 'goods' } // 컴포넌트에 카테고리 전달
+      component: GoodsView,
     },
     {
-      path: '/services', // 용역 (예시)
+      path: '/services',
       name: 'services',
-      component: BidList,
-      props: { category: 'services' }
+      component: ServicesView,
     },
     {
-      path: '/construction',
-      name: 'construction',
+      path: '/constructions',
+      name: 'constructions',
+      component: ConstructionsView,
+    },
+    {
+      path: '/top-contracts',
+      name: 'top-contracts',
+      component: TopContractsView,
+    },
+    {
+      path: '/shopping-mall',
+      name: 'shopping-mall',
+      component: ShoppingMallView,
+    },
+    {
+      path: '/target-projects',
+      name: 'target-projects',
+      component: TargetProjectsView,
+    },
+    {
+      path: '/work-in-progress',
+      name: 'work-in-progress',
+      component: WorkInProgressView,
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: SettingsView,
+    },
+    {
+      path: '/bids',
+      name: 'bids',
       component: BidList,
-      props: { category: 'construction' }
-    }
-  ]
+    },
+    {
+      path: '/home',
+      name: 'home',
+      component: HomeView,
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: AboutView,
+    },
+  ],
 })
 
 export default router
