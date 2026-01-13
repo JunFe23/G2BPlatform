@@ -5,6 +5,14 @@
         <span>{{ isSidebarExpanded ? 'G2B PROJECT' : 'G2B' }}</span>
       </div>
       <ul>
+        <li class="menu-item" id="toggle-report-data" @click="toggleReportSubmenu">
+          <span class="menu-label">보고서 데이터</span>
+        </li>
+        <ul v-show="isReportSubmenuOpen" class="submenu" style="padding-left: 20px;">
+          <li class="menu-item" @click="$router.push('/report-goods')">
+            <span class="menu-label">물품</span>
+          </li>
+        </ul>
         <li class="menu-item" id="toggle-related-market-db" @click="toggleSubmenu">
           <span class="menu-label">관련업계 전체시장 DB</span>
         </li>
@@ -43,9 +51,14 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const isSidebarExpanded = ref(false);
 const isSubmenuOpen = ref(false);
+const isReportSubmenuOpen = ref(false);
 
 const toggleSubmenu = () => {
   isSubmenuOpen.value = !isSubmenuOpen.value;
+};
+
+const toggleReportSubmenu = () => {
+  isReportSubmenuOpen.value = !isReportSubmenuOpen.value;
 };
 </script>
 
