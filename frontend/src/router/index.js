@@ -13,6 +13,7 @@ import BidList from '../views/BidList.vue'
 import HomeView from '../views/HomeView.vue'
 import AboutView from '../views/AboutView.vue'
 import ReportGoodsView from '../views/ReportGoodsView.vue'
+import ReportDashboardView from '../views/ReportDashboardView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/report-goods',
       name: 'report-goods',
       component: ReportGoodsView,
+    },
+    {
+      path: '/report-dashboard',
+      name: 'report-dashboard',
+      component: ReportDashboardView,
     },
     {
       path: '/goods',

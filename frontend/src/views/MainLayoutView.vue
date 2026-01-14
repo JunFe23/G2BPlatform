@@ -39,6 +39,7 @@
       <div style="margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px;">
         <h3>사용자 뷰 이동</h3>
         <button @click="$router.push('/report-goods')">보고서 물품</button>
+        <button @click="$router.push('/report-dashboard')">보고서 대시보드</button>
         <button @click="$router.push('/goods')">물품 (Page1)</button>
         <button @click="$router.push('/services')">용역 (Page2)</button>
         <button @click="$router.push('/constructions')">공사 (Page3)</button>
