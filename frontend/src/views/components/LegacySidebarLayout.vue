@@ -12,6 +12,9 @@
           <li class="menu-item" @click="$router.push('/report-goods')">
             <span class="menu-label">물품</span>
           </li>
+          <li class="menu-item" @click="$router.push('/report-dashboard')">
+            <span class="menu-label">대시보드</span>
+          </li>
         </ul>
         <li class="menu-item" id="toggle-related-market-db" @click="toggleSubmenu">
           <span class="menu-label">관련업계 전체시장 DB</span>
