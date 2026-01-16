@@ -512,7 +512,7 @@
 <script setup>
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue';
 
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 
 const isYearSeparated = ref(true);
 const activeTab = ref('시장현황');
@@ -526,7 +526,7 @@ const tabs = [
   { label: '민수관리', icon: '🗂️' },
 ];
 
-const contractCards = [
+const contractCards = ref([
   {
     id: 1,
     title: '컴퓨터 장비 일괄구매',
@@ -588,76 +588,76 @@ const contractCards = [
       { label: '2차년도', date: '2025-11-10', amount: '3.0억원' },
     ],
   },
-];
+]);
 
-const summaryStats = [
+const summaryStats = ref([
   { label: '전체 매출액', value: '144.4억', colorClass: 'blue' },
   { label: '전체 계약건수', value: '29건', colorClass: 'green' },
   { label: '평균 계약금액', value: '5.0억', colorClass: 'orange' },
   { label: '우수제품 비율', value: '98.5%', colorClass: 'purple' },
-];
+]);
 
-const revenueBars = [
+const revenueBars = ref([
   { label: '물품+3자단가', height: '70%' },
   { label: '용역', height: '25%' },
   { label: '공사', height: '80%' },
   { label: '민수', height: '15%' },
-];
+]);
 
-const countBars = [
+const countBars = ref([
   { label: '물품+3자단가', height: '70%' },
   { label: '용역', height: '90%' },
   { label: '공사', height: '75%' },
   { label: '민수', height: '78%' },
-];
+]);
 
-const detailItems = [
+const detailItems = ref([
   { label: '물품+3자단가', count: 7, amount: '55.0억', color: '#3498db' },
   { label: '용역', count: 8, amount: '17.1억', color: '#2ecc71' },
   { label: '공사', count: 7, amount: '64.5억', color: '#f39c12' },
   { label: '민수', count: 7, amount: '8.0억', color: '#e74c3c' },
-];
+]);
 
-const agencyTopSales = [
+const agencyTopSales = ref([
   { label: '행정안전부', width: '88%' },
   { label: '과학기술정보통신부', width: '8%' },
   { label: '국방부', width: '6%' },
   { label: '교육부', width: '4%' },
   { label: '환경부', width: '3%' },
-];
+]);
 
-const agencyCountBars = [
+const agencyCountBars = ref([
   { label: '행정안전부', height: '90%' },
   { label: '과학기술정보통신부', height: '35%' },
   { label: '국방부', height: '35%' },
   { label: '교육부', height: '35%' },
   { label: '환경부', height: '35%' },
-];
+]);
 
-const agencyAvgBars = [
+const agencyAvgBars = ref([
   { label: '행정안전부', height: '90%' },
   { label: '과학기술정보통신부', height: '18%' },
   { label: '국방부', height: '10%' },
   { label: '교육부', height: '6%' },
   { label: '환경부', height: '6%' },
-];
+]);
 
-const agencyDetailRows = [
+const agencyDetailRows = ref([
   { rank: 1, name: '행정안전부', sales: '50.8억', count: '3건', avg: '16.9억' },
   { rank: 2, name: '과학기술정보통신부', sales: '2.0억', count: '1건', avg: '2.0억' },
   { rank: 3, name: '국방부', sales: '1.2억', count: '1건', avg: '1.2억' },
   { rank: 4, name: '교육부', sales: '5000만', count: '1건', avg: '5000만' },
   { rank: 5, name: '환경부', sales: '4500만', count: '1건', avg: '4500만' },
-];
+]);
 
-const regionLegend = [
+const regionLegend = ref([
   { label: '공사', color: '#f39c12' },
   { label: '물품+3자단가', color: '#3f7cf1' },
   { label: '민수', color: '#e74c3c' },
   { label: '용역', color: '#2ecc71' },
-];
+]);
 
-const regionStackedBars = [
+const regionStackedBars = ref([
   {
     name: '서울',
     segments: [
@@ -713,9 +713,9 @@ const regionStackedBars = [
       { label: '물품+3자단가', height: '6%', color: '#3f7cf1' },
     ],
   },
-];
+]);
 
-const regionPieLabels = [
+const regionPieLabels = ref([
   { label: '서울', value: '40.2%', color: '#3f7cf1' },
   { label: '충북', value: '20.8%', color: '#2ecc71' },
   { label: '경기', value: '15.4%', color: '#f39c12' },
@@ -726,9 +726,9 @@ const regionPieLabels = [
   { label: '대전', value: '1.7%', color: '#7f8c8d' },
   { label: '대구', value: '1.0%', color: '#16a085' },
   { label: '부산', value: '0.9%', color: '#8e44ad' },
-];
+]);
 
-const regionCountBars = [
+const regionCountBars = ref([
   { label: '서울', height: '85%' },
   { label: '충북', height: '25%' },
   { label: '경기', height: '85%' },
@@ -737,9 +737,9 @@ const regionCountBars = [
   { label: '강원', height: '12%' },
   { label: '전북', height: '12%' },
   { label: '대전', height: '12%' },
-];
+]);
 
-const regionDetailRows = [
+const regionDetailRows = ref([
   { rank: 1, region: '서울', goods: '51.3억', service: '1.5억', construction: '5.0억', private: '2500만', total: '58.0억', count: '7건' },
   { rank: 2, region: '충북', goods: '0만', service: '0만', construction: '30.0억', private: '0만', total: '30.0억', count: '2건' },
   { rank: 3, region: '경기', goods: '1.2억', service: '12.0억', construction: '8.0억', private: '1.1억', total: '22.3억', count: '7건' },
@@ -753,52 +753,52 @@ const regionDetailRows = [
   { rank: 11, region: '광주', goods: '0만', service: '6000만', construction: '0만', private: '0만', total: '6000만', count: '1건' },
   { rank: 12, region: '인천', goods: '4500만', service: '0만', construction: '0만', private: '0만', total: '4500만', count: '1건' },
   { rank: 13, region: '경북', goods: '0만', service: '0만', construction: '0만', private: '4000만', total: '4000만', count: '1건' },
-];
+]);
 
 const activeRankTab = ref('매출액 순위');
 const rankTabs = ['매출액 순위', '계약건수 순위', '평균단가 순위'];
 
-const rankTopItems = [
+const rankTopItems = ref([
   { rank: 1, title: '컴퓨터 장비 일괄구매', count: 2, amount: '50.0억원', badgeClass: 'gold' },
   { rank: 2, title: '노트북', count: 1, amount: '2.0억원', badgeClass: 'silver' },
   { rank: 3, title: '프린터', count: 1, amount: '1.2억원', badgeClass: 'bronze' },
   { rank: 4, title: '책상', count: 1, amount: '8000만원', badgeClass: 'blue' },
   { rank: 5, title: '사무용 의자', count: 1, amount: '5000만원', badgeClass: 'blue' },
   { rank: 6, title: 'LED 조명', count: 1, amount: '4500만원', badgeClass: 'blue' },
-];
+]);
 
-const rankSummaryRows = [
+const rankSummaryRows = ref([
   { rank: 1, name: '컴퓨터 장비 일괄구매', sales: '50.0억원', count: '2건', avg: '25.0억원', badgeClass: 'gold' },
   { rank: 2, name: '노트북', sales: '2.0억원', count: '1건', avg: '2.0억원', badgeClass: 'silver' },
   { rank: 3, name: '프린터', sales: '1.2억원', count: '1건', avg: '1.2억원', badgeClass: 'bronze' },
   { rank: 4, name: '책상', sales: '8000만원', count: '1건', avg: '8000만원', badgeClass: 'blue' },
   { rank: 5, name: '사무용 의자', sales: '5000만원', count: '1건', avg: '5000만원', badgeClass: 'blue' },
   { rank: 6, name: 'LED 조명', sales: '4500만원', count: '1건', avg: '4500만원', badgeClass: 'blue' },
-];
+]);
 
-const excellentByRegion = [
+const excellentByRegion = ref([
   { region: '서울', company: '탑오피스', count: 3 },
   { region: '경기', company: '정보가구', count: 3 },
   { region: '부산', company: '한국가구', count: 1 },
   { region: '인천', company: '밝은조명', count: 1 },
   { region: '대전', company: '테크솔루션', count: 1 },
-];
+]);
 
-const excellentByCompany = [
+const excellentByCompany = ref([
   { company: '탑오피스', items: '사무용 의자, 프린터, LED 조명', region: '서울', count: 3 },
   { company: '정보가구', items: '사무용 의자, 프린터, 노트북', region: '경기', count: 3 },
   { company: '한국가구', items: '사무용 의자', region: '부산', count: 1 },
   { company: '밝은조명', items: 'LED 조명', region: '인천', count: 1 },
   { company: '테크솔루션', items: '노트북', region: '대전', count: 1 },
-];
+]);
 
-const excellentAlerts = [
+const excellentAlerts = ref([
   { company: '한국가구', region: '부산', product: '사무용 의자 (P001)', start: '2024-03-10', end: '2026-03-09', status: '만료임박', statusClass: 'warning' },
   { company: '밝은조명', region: '인천', product: 'LED 조명 (P004)', start: '2024-07-22', end: '2026-07-21', status: '유효', statusClass: 'success' },
   { company: '테크솔루션', region: '대전', product: '노트북 (P005)', start: '2024-09-10', end: '2026-09-09', status: '유효', statusClass: 'success' },
-];
+]);
 
-const excellentDetailRows = [
+const excellentDetailRows = ref([
   { code: 'P001', name: '사무용 의자', company: '탑오피스', region: '서울', start: '2024-01-15', end: '2026-01-14', status: '만료', statusClass: 'danger' },
   { code: 'P001', name: '사무용 의자', company: '정보가구', region: '경기', start: '2024-02-20', end: '2026-02-19', status: '만료임박', statusClass: 'warning' },
   { code: 'P001', name: '사무용 의자', company: '한국가구', region: '부산', start: '2024-03-10', end: '2026-03-09', status: '만료임박', statusClass: 'warning' },
@@ -808,9 +808,9 @@ const excellentDetailRows = [
   { code: 'P004', name: 'LED 조명', company: '밝은조명', region: '인천', start: '2024-07-22', end: '2026-07-21', status: '유효', statusClass: 'success' },
   { code: 'P005', name: '노트북', company: '정보가구', region: '경기', start: '2024-08-15', end: '2026-08-14', status: '유효', statusClass: 'success' },
   { code: 'P005', name: '노트북', company: '테크솔루션', region: '대전', start: '2024-09-10', end: '2026-09-09', status: '유효', statusClass: 'success' },
-];
+]);
 
-const privateRows = [
+const privateRows = ref([
   { id: 1, product: '사무용 의자', client: '삼성전자', region: '경기', amount: '30,000,000원', qty: '300', date: '2025-01-25', year: '-', highlight: false },
   { id: 2, product: '책상', client: 'LG전자', region: '서울', amount: '25,000,000원', qty: '150', date: '2025-02-10', year: '-', highlight: false },
   { id: 3, product: 'LED 조명', client: '현대자동차', region: '울산', amount: '20,000,000원', qty: '400', date: '2025-03-05', year: '-', highlight: false },
@@ -818,7 +818,18 @@ const privateRows = [
   { id: 5, product: '프린터', client: '포스코', region: '경북', amount: '40,000,000원', qty: '80', date: '2025-05-20', year: '-', highlight: false },
   { id: 6, product: '사무기기 일괄납품', client: '현대중공업', region: '울산', amount: '300,000,000원', qty: '500', date: '2024-11-10', year: '1차년도', highlight: true, linked: true },
   { id: 7, product: '사무기기 일괄납품', client: '현대중공업', region: '울산', amount: '300,000,000원', qty: '500', date: '2025-11-10', year: '2차년도', highlight: true, linked: true },
-];
+]);
+
+const loadDashboardData = async () => {
+  // TODO: Replace with API calls when endpoints are ready.
+  // Example:
+  // const response = await axios.get('/api/dashboard');
+  // contractCards.value = response.data.contractCards;
+};
+
+onMounted(() => {
+  loadDashboardData();
+});
 </script>
 
 <style scoped>
@@ -829,20 +840,25 @@ const privateRows = [
 }
 
 .page-header {
-  padding: 8px 0 0;
-  border-bottom: 1px solid #eee;
+  padding: 16px 0 6px;
+  border-bottom: 1px solid #1f2937;
+  background: #1f2937;
+  border-radius: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 .title-block h1 {
   margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: #2c3e50;
+  font-size: 28px;
+  font-weight: 800;
+  color: #f9fafb;
 }
 
 .title-block p {
-  margin: 4px 0 12px;
-  color: #7f8c8d;
+  margin: 6px 0 8px;
+  color: #e5e7eb;
+  font-size: 14px;
 }
 
 .title-row {
@@ -852,10 +868,11 @@ const privateRows = [
 }
 
 .logo-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
-  border: 2px solid #3f6ff0;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  border: 2px solid #93c5fd;
+  background: #0f172a;
 }
 
 .info-banner {
