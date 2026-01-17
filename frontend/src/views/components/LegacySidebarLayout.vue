@@ -74,18 +74,24 @@ const toggleReportSubmenu = () => {
 }
 
 .sidebar {
-  width: 75px;
-  height: 100vh;
-  background-color: #2c3e50;
+  width: 76px;
+  height: calc(100vh - 24px);
+  margin: 12px;
+  background: linear-gradient(180deg, #223247 0%, #1f2a37 100%);
   color: #ecf0f1;
   position: fixed;
-  transition: width 0.3s ease;
+  transition: width 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
   overflow: hidden;
   z-index: 1000;
+  border-radius: 18px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
 }
 
 .sidebar.expanded {
   width: 300px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.35);
 }
 
 .sidebar::after {
@@ -106,15 +112,18 @@ const toggleReportSubmenu = () => {
 }
 
 .sidebar-header {
-  background-color: #34495e;
-  color: #ecf0f1;
-  padding: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  margin: 10px;
+  padding: 16px;
   text-align: center;
-  font-size: 1.5em;
-  font-weight: 500;
+  font-size: 1.1em;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   transition: all 0.3s ease;
   overflow: hidden;
   white-space: nowrap;
+  border-radius: 14px;
 }
 
 .sidebar-header.collapsed span {
@@ -128,22 +137,29 @@ const toggleReportSubmenu = () => {
 }
 
 .menu-item {
-  padding: 20px;
+  margin: 8px 10px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
-  transition: background-color 0.3s;
+  gap: 10px;
+  transition: background-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
   cursor: pointer;
+  border-radius: 12px;
+  color: #e2e8f0;
 }
 
 .menu-item:hover {
-  background-color: #34495e;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: translateX(2px);
 }
 
 .menu-label {
   white-space: nowrap;
   opacity: 0;
   transition: opacity 0.3s ease, transform 0.3s ease;
-  transform: translateX(-20px);
+  transform: translateX(-12px);
+  font-weight: 600;
 }
 
 .sidebar.expanded .menu-label {
@@ -152,15 +168,15 @@ const toggleReportSubmenu = () => {
 }
 
 .content {
-  margin-left: 75px;
-  padding: 20px;
+  margin-left: 100px;
+  padding: 20px 24px;
   transition: margin-left 0.3s ease;
-  width: calc(100% - 75px);
+  width: calc(100% - 100px);
 }
 
 .sidebar.expanded ~ .content {
-  margin-left: 300px;
-  width: calc(100% - 300px);
+  margin-left: 330px;
+  width: calc(100% - 330px);
 }
 
 /* Specific H1 styles from legacy templates */
