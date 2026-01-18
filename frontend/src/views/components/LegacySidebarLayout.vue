@@ -12,6 +12,12 @@
           <li class="menu-item" @click="$router.push('/report-goods')">
             <span class="menu-label">물품</span>
           </li>
+          <li class="menu-item" @click="$router.push('/report-services')">
+            <span class="menu-label">용역</span>
+          </li>
+          <li class="menu-item" @click="$router.push('/report-constructions')">
+            <span class="menu-label">공사</span>
+          </li>
           <li class="menu-item" @click="$router.push('/report-dashboard')">
             <span class="menu-label">대시보드</span>
           </li>
