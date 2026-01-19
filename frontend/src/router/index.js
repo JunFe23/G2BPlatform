@@ -23,7 +23,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'main',
-      component: MainLayoutView,
+      redirect: '/report-goods',
     },
     {
       path: '/report-goods',
