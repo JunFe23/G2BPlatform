@@ -6,73 +6,87 @@ G2B Platform은 정부 조달(G2B, Government-to-Business) 계약 정보를 수�
 
 수작업으로 분산된 G2B 계약 정보를 모으고 정리하던 문제를, 자동화된 중앙화 플랫폼으로 해결하는 것을 목표로 합니다.
 
+> 현재는 JSP 기반으로 배포되어 있으나, `frontend/` 폴더를 분리하여 프론트엔드와 연동하는 작업을 진행 중입니다.
+
 ## 🚀 주요 기능 (Key Features)
 
-- **계약 데이터 자동 다운로드 🤖**  
-  - 외부 G2B 시스템으로부터 계약 정보를 주기적으로 자동 다운로드합니다.
+-   **계약 데이터 자동 다운로드 🤖**
 
-- **데이터 통합 및 적재 ⚙️**  
-  - 다운로드한 데이터를 저장 프로시저 등을 활용해 데이터베이스에 통합·적재합니다.
+    -   외부 G2B 시스템으로부터 계약 정보를 주기적으로 자동 다운로드합니다.
 
-- **데이터 조회 및 필터링 API 제공 🔍**  
-  - 다양한 조건으로 계약 데이터를 검색·필터링할 수 있는 REST API를 제공합니다.
+-   **데이터 통합 및 적재 ⚙️**
 
-- **Excel 내보내기 📈**  
-  - 조회된 계약 데이터를 기반으로 Excel 파일을 생성하여 분석·보고용으로 활용할 수 있습니다.
+    -   다운로드한 데이터를 저장 프로시저 등을 활용해 데이터베이스에 통합·적재합니다.
 
-- **Google Sheets 연동 ☁️**  
-  - 계약 데이터를 Google Sheets로 내보내어, 협업 및 시각화에 활용할 수 있습니다.
+-   **데이터 조회 및 필터링 API 제공 🔍**
 
-- **전역 예외 처리 🛡️**  
-  - 공통 예외 처리(Global Exception Handling) 구조를 통해 일관된 에러 응답을 제공합니다.
+    -   다양한 조건으로 계약 데이터를 검색·필터링할 수 있는 REST API를 제공합니다.
 
-- **보안 설정 관리 🔑**  
-  - Google Sheets API 키 등 민감한 설정 정보를 안전하게 관리합니다.
+-   **Excel 내보내기 📈**
 
-- **스케줄링 기반 자동화 ⏰**  
-  - Spring Scheduling을 사용하여 데이터 다운로드 및 적재 작업을 자동으로 수행합니다.
+    -   조회된 계약 데이터를 기반으로 Excel 파일을 생성하여 분석·보고용으로 활용할 수 있습니다.
+
+-   **Google Sheets 연동 ☁️**
+
+    -   계약 데이터를 Google Sheets로 내보내어, 협업 및 시각화에 활용할 수 있습니다.
+
+-   **전역 예외 처리 🛡️**
+
+    -   공통 예외 처리(Global Exception Handling) 구조를 통해 일관된 에러 응답을 제공합니다.
+
+-   **보안 설정 관리 🔑**
+
+    -   Google Sheets API 키 등 민감한 설정 정보를 안전하게 관리합니다.
+
+-   **스케줄링 기반 자동화 ⏰**
+    -   Spring Scheduling을 사용하여 데이터 다운로드 및 적재 작업을 자동으로 수행합니다.
 
 ## 🛠️ 기술 스택 (Tech Stack)
 
-- **Backend**
-  - Java ☕
-  - Spring Boot 🚀
-  - Spring Data JPA
-  - Spring WebFlux
-  - Spring OAuth2 Client
-  - Spring Security
-  - MyBatis
-  - Log4j2
-  - Jackson
-  - Lombok
-  - Reactor Netty
+-   **Backend**
 
-- **Database**
-  - MySQL 🐬
+    -   Java ☕
+    -   Spring Boot 🚀
+    -   Spring Data JPA
+    -   Spring WebFlux
+    -   Spring OAuth2 Client
+    -   Spring Security
+    -   MyBatis
+    -   Log4j2
+    -   Jackson
+    -   Lombok
+    -   Reactor Netty
 
-- **외부 API 연동**
-  - Google Sheets API 📝
+-   **Database**
 
-- **빌드 도구**
-  - Gradle ⚙️
+    -   MySQL 🐬
 
-- **유틸리티**
-  - Apache POI (Excel 생성용) 📊
+-   **외부 API 연동**
 
-- **컨테이너**
-  - Docker 🐳
-  - Docker Compose
+    -   Google Sheets API 📝
+
+-   **빌드 도구**
+
+    -   Gradle ⚙️
+
+-   **유틸리티**
+
+    -   Apache POI (Excel 생성용) 📊
+
+-   **컨테이너**
+    -   Docker 🐳
+    -   Docker Compose
 
 ## 📦 시작하기 (Getting Started)
 
 ### 필수 구성 요소 (Prerequisites)
 
-- JDK 21 이상
-- Gradle 8 이상
-- Docker 및 Docker Compose (Docker로 배포할 경우)
-- MySQL 데이터베이스
-- Google Sheets API에 접근 가능한 Google Cloud Service Account
-- Google Cloud Service Account 자격 증명이 담긴 `top-service-account.json` 파일
+-   JDK 21 이상
+-   Gradle 8 이상
+-   Docker 및 Docker Compose (Docker로 배포할 경우)
+-   MySQL 데이터베이스
+-   Google Sheets API에 접근 가능한 Google Cloud Service Account
+-   Google Cloud Service Account 자격 증명이 담긴 `top-service-account.json` 파일
 
 ### 설치 (Installation)
 
@@ -123,7 +137,7 @@ G2B Platform은 정부 조달(G2B, Government-to-Business) 계약 정보를 수�
 
 1. **MySQL 데이터베이스 실행**
 
-   - MySQL 인스턴스가 실행 중이며 접속 가능한 상태인지 확인합니다.
+    - MySQL 인스턴스가 실행 중이며 접속 가능한 상태인지 확인합니다.
 
 2. **백엔드 애플리케이션 실행**
 
@@ -134,12 +148,12 @@ G2B Platform은 정부 조달(G2B, Government-to-Business) 계약 정보를 수�
 
 3. **프론트엔드 애플리케이션 실행**
 
-   - `npm run build`로 생성된 빌드 파일을 웹 서버(예: `nginx`, `http-server`)를 통해 서빙합니다.
+    - `npm run build`로 생성된 빌드 파일을 웹 서버(예: `nginx`, `http-server`)를 통해 서빙합니다.
 
 4. **Docker Compose로 실행**
 
-   - 프로젝트 루트 디렉터리에 `top-service-account.json` 파일을 위치시킵니다.
-   - 다음 명령으로 컨테이너를 빌드 및 실행합니다.
+    - 프로젝트 루트 디렉터리에 `top-service-account.json` 파일을 위치시킵니다.
+    - 다음 명령으로 컨테이너를 빌드 및 실행합니다.
 
     ```bash
     docker-compose up --build
@@ -179,3 +193,4 @@ G2B Platform은 정부 조달(G2B, Government-to-Business) 계약 정보를 수�
 ├── docker-compose.yml
 ├── top-service-account.json
 └── README.md
+```
