@@ -9,6 +9,9 @@ import java.util.Map;
 @Service
 public class ReportDataService {
 
+    /**
+     * 시장현황 탭용 데이터를 구성해 반환합니다.
+     */
     public Map<String, Object> getMarketOverview() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("contractCards", List.of());
@@ -19,6 +22,9 @@ public class ReportDataService {
         return wrap(data);
     }
 
+    /**
+     * 수요기관별 탭용 데이터를 구성해 반환합니다.
+     */
     public Map<String, Object> getAgencyOverview() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("topSales", List.of());
@@ -28,6 +34,9 @@ public class ReportDataService {
         return wrap(data);
     }
 
+    /**
+     * 지역별 탭용 데이터를 구성해 반환합니다.
+     */
     public Map<String, Object> getRegionOverview() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("stackedBars", List.of());
@@ -37,6 +46,9 @@ public class ReportDataService {
         return wrap(data);
     }
 
+    /**
+     * 순위분석 탭용 데이터를 구성해 반환합니다.
+     */
     public Map<String, Object> getRankOverview() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("tabs", List.of());
@@ -45,6 +57,9 @@ public class ReportDataService {
         return wrap(data);
     }
 
+    /**
+     * 우수제품 탭용 데이터를 구성해 반환합니다.
+     */
     public Map<String, Object> getExcellentOverview() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("summaryCards", List.of());
@@ -55,12 +70,18 @@ public class ReportDataService {
         return wrap(data);
     }
 
+    /**
+     * 민수관리 탭용 데이터를 구성해 반환합니다.
+     */
     public Map<String, Object> getPrivateOverview() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("rows", List.of());
         return wrap(data);
     }
 
+    /**
+     * 공통 응답 포맷으로 래핑합니다.
+     */
     private Map<String, Object> wrap(Map<String, Object> data) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
