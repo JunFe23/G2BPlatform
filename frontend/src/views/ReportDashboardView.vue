@@ -827,6 +827,13 @@ const loadDashboardData = async () => {
   // contractCards.value = response.data.contractCards;
 };
 
+// TODO (report data integration)
+// 1) /api/report/* endpoint별 응답 스키마 확정 및 매핑
+// 2) 탭 전환 시 필요한 데이터만 로딩 (캐시/재사용 전략 포함)
+// 3) 로딩/에러/빈 데이터 상태 UI 추가
+// 4) 차트 데이터 비율/축 값 계산 로직 분리 (util 또는 composable)
+// 5) 필터(기간/카테고리) 입력값을 API 파라미터로 연동
+
 onMounted(() => {
   loadDashboardData();
 });
