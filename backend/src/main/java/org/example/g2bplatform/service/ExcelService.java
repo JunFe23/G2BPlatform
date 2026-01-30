@@ -56,4 +56,49 @@ public class ExcelService {
             return out;
         }
     }
+
+    /**
+     * 보고서 물품 목록을 엑셀 파일로 생성 (장기계약여부 포함, 저장 컬럼 제외).
+     */
+    public ByteArrayOutputStream createReportGoodsExcel(List<Map<String, Object>> data) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("보고서물품");
+
+            String[] headerNames = {
+                    "입찰공고번호", "업체명", "업체사업자등록번호", "계약명", "수요기관명", "수요기관지역명",
+                    "품명내용", "입찰계약방법", "최초계약일자", "최초계약금액", "최종계약일자", "최종계약금액",
+                    "계약차수", "장기계약여부"
+            };
+            String[] keys = {
+                    "bidNoticeNo", "vendorName", "vendorBizRegNo", "contractTitle", "demandAgencyName", "demandAgencyRegion",
+                    "detailItemName", "contractMethod", "firstContractDate", "firstContractAmount", "finalContractDate", "finalContractAmount",
+                    "contractCount", "isLongTerm"
+            };
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headerNames.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headerNames[i]);
+            }
+
+            int rowNum = 1;
+            for (Map<String, Object> row : data) {
+                Row excelRow = sheet.createRow(rowNum++);
+                for (int colNum = 0; colNum < keys.length; colNum++) {
+                    Object value = row.getOrDefault(keys[colNum], "");
+                    Cell cell = excelRow.createCell(colNum);
+                    if (value instanceof BigDecimal) {
+                        cell.setCellValue(value.toString());
+                    } else if (value instanceof Number) {
+                        cell.setCellValue(((Number) value).doubleValue());
+                    } else {
+                        cell.setCellValue(value != null ? value.toString() : "");
+                    }
+                }
+            }
+
+            workbook.write(out);
+            return out;
+        }
+    }
 }

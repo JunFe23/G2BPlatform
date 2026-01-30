@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.example.g2bplatform.mapper.ProcurementContractSummaryMapper">
+
+    <select id="selectReportGoodsList" resultType="map">
+        SELECT
+            bid_notice_no        AS bidNoticeNo,
+            vendor_name          AS vendorName,
+            vendor_biz_reg_no    AS vendorBizRegNo,
+            contract_title      AS contractTitle,
+            demand_agency_name  AS demandAgencyName,
+            demand_agency_region AS demandAgencyRegion,
+            detail_item_name     AS detailItemName,
+            contract_method      AS contractMethod,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')  AS firstContractDate,
+            first_contract_amount AS firstContractAmount,
+            DATE_FORMAT(final_contract_date, '%Y-%m-%d')  AS finalContractDate,
+            final_contract_amount AS finalContractAmount,
+            contract_count      AS contractCount,
+            is_long_term        AS isLongTerm,
+            IFNULL(saved, 'N')   AS saved
+        FROM procurement_contract_summary
+        WHERE 1=1
+        <if test="demandAgencyName != null and demandAgencyName != ''">
+            AND demand_agency_name LIKE CONCAT('%', #{demandAgencyName}, '%')
+        </if>
+        <if test="demandAgencyRegion != null and demandAgencyRegion != ''">
+            AND demand_agency_region LIKE CONCAT('%', #{demandAgencyRegion}, '%')
+        </if>
+        <if test="detailItemName != null and detailItemName != ''">
+            AND detail_item_name LIKE CONCAT('%', #{detailItemName}, '%')
+        </if>
+        <if test="contractMethod != null and contractMethod != ''">
+            AND contract_method LIKE CONCAT('%', #{contractMethod}, '%')
+        </if>
+        <if test="firstContractDate != null and firstContractDate != ''">
+            AND first_contract_date = #{firstContractDate}
+        </if>
+        <if test="year != null">
+            AND YEAR(first_contract_date) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(first_contract_date, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
+            AND DATE_FORMAT(first_contract_date, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+        <if test="showSavedOnly == true">
+            AND IFNULL(saved, 'N') = 'Y'
+        </if>
+        ORDER BY first_contract_date DESC, bid_notice_no, vendor_biz_reg_no
+        LIMIT #{start}, #{length}
+    </select>
+
+    <select id="selectReportGoodsCount" resultType="int">
+        SELECT COUNT(*)
+        FROM procurement_contract_summary
+        WHERE 1=1
+        <if test="demandAgencyName != null and demandAgencyName != ''">
+            AND demand_agency_name LIKE CONCAT('%', #{demandAgencyName}, '%')
+        </if>
+        <if test="demandAgencyRegion != null and demandAgencyRegion != ''">
+            AND demand_agency_region LIKE CONCAT('%', #{demandAgencyRegion}, '%')
+        </if>
+        <if test="detailItemName != null and detailItemName != ''">
+            AND detail_item_name LIKE CONCAT('%', #{detailItemName}, '%')
+        </if>
+        <if test="contractMethod != null and contractMethod != ''">
+            AND contract_method LIKE CONCAT('%', #{contractMethod}, '%')
+        </if>
+        <if test="firstContractDate != null and firstContractDate != ''">
+            AND first_contract_date = #{firstContractDate}
+        </if>
+        <if test="year != null">
+            AND YEAR(first_contract_date) = #{year}
+        </if>
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(first_contract_date, '%Y-%m') = #{month}
+        </if>
+        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
+            AND DATE_FORMAT(first_contract_date, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+        </if>
+        <if test="showSavedOnly == true">
+            AND IFNULL(saved, 'N') = 'Y'
+        </if>
+    </select>
+
+    <update id="updateSaved">
+        UPDATE procurement_contract_summary
+        SET saved = #{saved}
+        WHERE bid_notice_no = #{bidNoticeNo}
+          AND vendor_biz_reg_no = #{vendorBizRegNo}
+    </update>
+</mapper>

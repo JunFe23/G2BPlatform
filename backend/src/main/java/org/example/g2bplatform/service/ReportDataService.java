@@ -1,5 +1,6 @@
 package org.example.g2bplatform.service;
 
+import org.example.g2bplatform.mapper.ProcurementContractSummaryMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -8,6 +9,12 @@ import java.util.Map;
 
 @Service
 public class ReportDataService {
+
+    private final ProcurementContractSummaryMapper procurementContractSummaryMapper;
+
+    public ReportDataService(ProcurementContractSummaryMapper procurementContractSummaryMapper) {
+        this.procurementContractSummaryMapper = procurementContractSummaryMapper;
+    }
 
     /**
      * 시장현황 탭용 데이터를 구성해 반환합니다.
@@ -77,6 +84,45 @@ public class ReportDataService {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("rows", List.of());
         return wrap(data);
+    }
+
+    /**
+     * 보고서 물품 목록 조회 (procurement_contract_summary 기반, 검색/페이징).
+     */
+    public List<Map<String, Object>> getReportGoodsList(int start, int length,
+            String demandAgencyName, String demandAgencyRegion, String detailItemName, String contractMethod,
+            String firstContractDate, Integer year, String month, String rangeStart, String rangeEnd, boolean showSavedOnly) {
+        return procurementContractSummaryMapper.selectReportGoodsList(
+                start, length, demandAgencyName, demandAgencyRegion, detailItemName, contractMethod,
+                firstContractDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+    }
+
+    /**
+     * 보고서 물품 검색 결과 건수.
+     */
+    public int getReportGoodsCount(String demandAgencyName, String demandAgencyRegion, String detailItemName,
+            String contractMethod, String firstContractDate, Integer year, String month, String rangeStart, String rangeEnd, boolean showSavedOnly) {
+        return procurementContractSummaryMapper.selectReportGoodsCount(
+                demandAgencyName, demandAgencyRegion, detailItemName, contractMethod,
+                firstContractDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+    }
+
+    /**
+     * 보고서 물품 엑셀용 전체 목록 (페이징 없음).
+     */
+    public List<Map<String, Object>> getReportGoodsForExcel(String demandAgencyName, String demandAgencyRegion,
+            String detailItemName, String contractMethod, String firstContractDate, Integer year, String month,
+            String rangeStart, String rangeEnd, boolean showSavedOnly) {
+        return procurementContractSummaryMapper.selectReportGoodsList(
+                0, Integer.MAX_VALUE, demandAgencyName, demandAgencyRegion, detailItemName, contractMethod,
+                firstContractDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+    }
+
+    /**
+     * 보고서 물품 저장 여부 업데이트.
+     */
+    public int updateReportGoodsSaved(String bidNoticeNo, String vendorBizRegNo, String saved) {
+        return procurementContractSummaryMapper.updateSaved(bidNoticeNo, vendorBizRegNo, saved);
     }
 
     /**

@@ -5,14 +5,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController; // Add RestController annotation to make it a Spring REST controller
+import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "OAuth2", description = "Google OAuth2 인증 관련 API")
-@RestController // Added @RestController
+@RestController
+@ConditionalOnBean(OAuth2AuthorizedClientService.class)
 public class OAuth2Controller {
     private final OAuth2AuthorizedClientService authorizedClientService;
 
