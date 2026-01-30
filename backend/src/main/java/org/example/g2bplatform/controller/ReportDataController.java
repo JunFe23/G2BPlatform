@@ -1,13 +1,20 @@
 package org.example.g2bplatform.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.example.g2bplatform.service.ExcelService;
 import org.example.g2bplatform.service.ReportDataService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Tag(name = "Report Data", description = "보고서 데이터 API")
@@ -16,9 +23,11 @@ import java.util.Map;
 public class ReportDataController {
 
     private final ReportDataService reportDataService;
+    private final ExcelService excelService;
 
-    public ReportDataController(ReportDataService reportDataService) {
+    public ReportDataController(ReportDataService reportDataService, ExcelService excelService) {
         this.reportDataService = reportDataService;
+        this.excelService = excelService;
     }
 
     /**
@@ -79,5 +88,89 @@ public class ReportDataController {
     public ResponseEntity<Map<String, Object>> getPrivateOverview() {
         // 민수관리(민수 계약 테이블) 탭 데이터를 반환
         return ResponseEntity.ok(reportDataService.getPrivateOverview());
+    }
+
+    /**
+     * 보고서 물품 목록 조회 (procurement_contract_summary 기반, 검색/페이징).
+     */
+    @Operation(summary = "보고서 물품 목록", description = "수요기관명/지역/품명/입찰방법/최초계약일자(연·월·기간) 검색, 저장여부 필터")
+    @GetMapping("/goods")
+    public ResponseEntity<Map<String, Object>> getReportGoods(
+            @Parameter(description = "시작 행") @RequestParam(defaultValue = "0") int start,
+            @Parameter(description = "조회 건수") @RequestParam(defaultValue = "50") int length,
+            @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
+            @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
+            @Parameter(description = "품명내용") @RequestParam(required = false) String prdctClsfcNo,
+            @Parameter(description = "입찰계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
+            @Parameter(description = "최초계약일자(YYYY-MM-DD)") @RequestParam(required = false) String firstCntrctDate,
+            @Parameter(description = "연도") @RequestParam(required = false) Integer year,
+            @Parameter(description = "월(YYYY-MM)") @RequestParam(required = false) String month,
+            @Parameter(description = "기간 시작(YYYY-MM)") @RequestParam(required = false) String rangeStart,
+            @Parameter(description = "기간 종료(YYYY-MM)") @RequestParam(required = false) String rangeEnd,
+            @Parameter(description = "저장된 데이터만") @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly
+    ) {
+        List<Map<String, Object>> list = reportDataService.getReportGoodsList(
+                start, length, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
+                firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+        int filtered = reportDataService.getReportGoodsCount(
+                dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
+                firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("data", list);
+        body.put("recordsFiltered", filtered);
+        return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 보고서 물품 엑셀 다운로드 (동일 검색 조건).
+     */
+    @Operation(summary = "보고서 물품 엑셀 다운로드")
+    @GetMapping("/goods/excel")
+    public void getReportGoodsExcel(
+            HttpServletResponse response,
+            @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
+            @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
+            @Parameter(description = "품명내용") @RequestParam(required = false) String prdctClsfcNo,
+            @Parameter(description = "입찰계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
+            @Parameter(description = "최초계약일자") @RequestParam(required = false) String firstCntrctDate,
+            @Parameter(description = "연도") @RequestParam(required = false) Integer year,
+            @Parameter(description = "월") @RequestParam(required = false) String month,
+            @Parameter(description = "기간 시작") @RequestParam(required = false) String rangeStart,
+            @Parameter(description = "기간 종료") @RequestParam(required = false) String rangeEnd,
+            @Parameter(description = "저장된 데이터만") @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly
+    ) throws IOException {
+        List<Map<String, Object>> data = reportDataService.getReportGoodsForExcel(
+                dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
+                firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+        byte[] bytes = excelService.createReportGoodsExcel(data).toByteArray();
+        String filename = "report_goods_" + System.currentTimeMillis() + ".xlsx";
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + URLEncoder.encode(filename, StandardCharsets.UTF_8) + "\"; filename*=UTF-8''" + URLEncoder.encode(filename, StandardCharsets.UTF_8));
+        response.setContentLength(bytes.length);
+        response.getOutputStream().write(bytes);
+        response.getOutputStream().flush();
+    }
+
+    /**
+     * 보고서 물품 저장 여부 업데이트 (체크 시 DB에 저장).
+     */
+    @Operation(summary = "보고서 물품 저장 여부 업데이트")
+    @PatchMapping("/goods/saved")
+    public ResponseEntity<Map<String, Object>> updateReportGoodsSaved(@RequestBody Map<String, Object> body) {
+        String bidNoticeNo = body != null && body.get("bidNoticeNo") != null ? body.get("bidNoticeNo").toString() : null;
+        String vendorBizRegNo = body != null && body.get("vendorBizRegNo") != null ? body.get("vendorBizRegNo").toString() : null;
+        String saved = body != null && body.get("saved") != null ? "Y".equalsIgnoreCase(body.get("saved").toString()) ? "Y" : "N" : "N";
+        if (bidNoticeNo == null || vendorBizRegNo == null) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", "bidNoticeNo, vendorBizRegNo 필요");
+            return ResponseEntity.badRequest().body(err);
+        }
+        int updated = reportDataService.updateReportGoodsSaved(bidNoticeNo, vendorBizRegNo, saved);
+        Map<String, Object> res = new HashMap<>();
+        res.put("success", updated > 0);
+        res.put("updated", updated);
+        return ResponseEntity.ok(res);
     }
 }
