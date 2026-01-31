@@ -794,6 +794,12 @@
         WHERE id = #{id}
     </update>
 
+    <update id="updateCheckedTops">
+        UPDATE daily_top_datas
+        SET checked = #{checked}
+        WHERE id = #{id}
+    </update>
+
     <select id="selectModalServiceData" resultType="map">
         SELECT d.*
         FROM daily_contracts_services d

@@ -108,6 +108,15 @@ public class DataService {
         }
     }
 
+    @Transactional
+    public void updateCheckedTops(int id, boolean checked) {
+        int checkedValue = checked ? 1 : 0;
+        int updatedRows = dataMapper.updateCheckedTops(id, checkedValue);
+        if (updatedRows == 0) {
+            throw new RuntimeException("업데이트에 실패했습니다. ID: " + id);
+        }
+    }
+
     public void callProcedure(String procedureFullName) {
         jdbcTemplate.execute("CALL " + procedureFullName + "()");
     }
