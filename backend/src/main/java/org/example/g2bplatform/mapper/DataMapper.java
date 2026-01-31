@@ -200,6 +200,7 @@ public interface DataMapper {
     int updateCheckedThings(@Param("id") int id, @Param("checked") int checked);
     int updateCheckedServices(@Param("id") int id, @Param("checked") int checked);
     int updateCheckedConstructions(@Param("id") int id, @Param("checked") int checked);
+    int updateCheckedTops(@Param("id") int id, @Param("checked") int checked);
 
     List<Map<String, Object>> selectModalServiceData(
             @Param("category") String category,

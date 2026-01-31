@@ -4,11 +4,11 @@
 
     <!-- 검색 필드 -->
     <div class="search-container">
-      <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색">
-      <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색">
-      <input type="text" v-model="filters.prdctClsfcNo" placeholder="품명내용 검색">
-      <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="입찰계약방법 검색">
-      <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자 검색">
+      <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
+      <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색" />
+      <input type="text" v-model="filters.prdctClsfcNo" placeholder="품명내용 검색" />
+      <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="입찰계약방법 검색" />
+      <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자 검색" />
 
       <select v-model="filters.dateType" class="date-select">
         <option value="year">연도 검색</option>
@@ -21,76 +21,78 @@
         <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
       </select>
 
-      <input v-if="filters.dateType === 'month'" type="month" v-model="filters.month">
-      
+      <input v-if="filters.dateType === 'month'" type="month" v-model="filters.month" />
+
       <template v-if="filters.dateType === 'range'">
-        <input type="month" v-model="filters.rangeStart" placeholder="시작월">
-        <input type="month" v-model="filters.rangeEnd" placeholder="종료월">
+        <input type="month" v-model="filters.rangeStart" placeholder="시작월" />
+        <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
       </template>
 
       <button @click="handleSearch" class="search-btn">검색</button>
 
-      <button @click="handleDownloadExcel" class="excel-btn">
-        엑셀 다운로드
-      </button>
+      <button @click="handleDownloadExcel" class="excel-btn">엑셀 다운로드</button>
 
       <div v-if="isLoading" class="loading-spinner-container">
         <div class="loading-spinner"></div>
       </div>
 
-      <button @click="openModal" class="modal-btn">
-        수주대상 탐색하기
-      </button>
+      <button @click="openModal" class="modal-btn">수주대상 탐색하기</button>
     </div>
 
     <!-- 데이터 테이블 -->
     <div class="table-container">
       <div class="table-wrapper">
         <table class="data-table">
-        <thead>
-          <tr>
-            <th>업체명</th>
-            <th>계약건명</th>
-            <th>수요기관명</th>
-            <th>수요기관지역명</th>
-            <th>품명내용</th>
-            <th>입찰공고번호</th>
-            <th>최초계약일자</th>
-            <th>최초계약금액</th>
-            <th>계약변경차수</th>
-            <th>금차완수일자</th>
-            <th>총완수일자</th>
-            <th>선택해제</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="isLoading">
-            <td colspan="12" class="loading-text">데이터를 불러오는 중입니다...</td>
-          </tr>
-          <tr v-else-if="items.length === 0">
-            <td colspan="12" class="no-data">데이터가 없습니다.</td>
-          </tr>
-          <tr v-else v-for="item in items" :key="item.id">
-            <td>{{ item.cmpNm }}</td>
-            <td>
-              <a v-if="item.cntrctDtlInfoUrl" :href="item.cntrctDtlInfoUrl" target="_blank" rel="noopener noreferrer">{{ item.cntrctNm }}</a>
-              <span v-else>{{ item.cntrctNm }}</span>
-            </td>
-            <td>{{ item.dminsttNm }}</td>
-            <td>{{ item.dminsttNmDetail }}</td>
-            <td>{{ item.prdctClsfcNo }}</td>
-            <td>{{ item.ntceNo }}</td>
-            <td>{{ item.firstCntrctDate }}</td>
-            <td>{{ formatNumber(item.firstCntrctAmt) }}</td>
-            <td>{{ item.cntrctCnt }}</td>
-            <td>{{ item.thtmScmpltDate }}</td>
-            <td>{{ item.ttalScmpltDate }}</td>
-            <td>
-              <button class="unselect-btn" @click="unselectItem(item)">선택 해제</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          <thead>
+            <tr>
+              <th>업체명</th>
+              <th>계약건명</th>
+              <th>수요기관명</th>
+              <th>수요기관지역명</th>
+              <th>품명내용</th>
+              <th>입찰공고번호</th>
+              <th>최초계약일자</th>
+              <th>최초계약금액</th>
+              <th>계약변경차수</th>
+              <th>금차완수일자</th>
+              <th>총완수일자</th>
+              <th>선택해제</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="isLoading">
+              <td colspan="12" class="loading-text">데이터를 불러오는 중입니다...</td>
+            </tr>
+            <tr v-else-if="items.length === 0">
+              <td colspan="12" class="no-data">데이터가 없습니다.</td>
+            </tr>
+            <tr v-else v-for="item in items" :key="rowKey(item)">
+              <td>{{ item.cmpNm }}</td>
+              <td>
+                <a
+                  v-if="item.cntrctDtlInfoUrl"
+                  :href="item.cntrctDtlInfoUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >{{ item.cntrctNm }}</a
+                >
+                <span v-else>{{ item.cntrctNm }}</span>
+              </td>
+              <td>{{ item.dminsttNm }}</td>
+              <td>{{ item.dminsttNmDetail }}</td>
+              <td>{{ item.prdctClsfcNo }}</td>
+              <td>{{ item.ntceNo }}</td>
+              <td>{{ item.firstCntrctDate }}</td>
+              <td>{{ formatNumber(item.firstCntrctAmt) }}</td>
+              <td>{{ item.cntrctCnt }}</td>
+              <td>{{ item.thtmScmpltDate }}</td>
+              <td>{{ item.ttalScmpltDate }}</td>
+              <td>
+                <button class="unselect-btn" @click="unselectItem(item)">선택 해제</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -103,16 +105,30 @@
         </div>
 
         <div class="notice">
-          <div><b>안내</b> — 이미 <b>수주대상 사업 선택하여 저장된 계약</b>은 좌측 목록에 표시되지 않습니다.</div>
+          <div>
+            <b>안내</b> — 이미 <b>수주대상 사업 선택하여 저장된 계약</b>은 좌측 목록에 표시되지
+            않습니다.
+          </div>
         </div>
 
         <div class="modal-body">
           <!-- 좌측: 기존 데이터 리스트 -->
           <div class="modal-pane left-pane" @scroll="handleModalScroll">
-            <input type="text" v-model="modalSearch" placeholder="검색어 입력..." class="modal-search-input">
+            <input
+              type="text"
+              v-model="modalSearch"
+              placeholder="검색어 입력..."
+              class="modal-search-input"
+            />
             <ul class="modal-list">
-              <li v-for="item in modalItems" :key="item.untyCntrctNo" class="modal-list-item" @click="selectModalItem(item)">
-                {{ item.firstCntrctDate }} | {{ item.cntrctNm }} | {{ item.dminsttNm }} | {{ formatNumber(item.firstCntrctAmt) }}
+              <li
+                v-for="item in modalItems"
+                :key="item.untyCntrctNo"
+                class="modal-list-item"
+                @click="selectModalItem(item)"
+              >
+                {{ item.firstCntrctDate }} | {{ item.cntrctNm }} | {{ item.dminsttNm }} |
+                {{ formatNumber(item.firstCntrctAmt) }}
               </li>
               <li v-if="isModalLoading" class="modal-loading">로딩 중...</li>
             </ul>
@@ -122,8 +138,13 @@
           <div class="modal-pane right-pane">
             <h4>선택된 항목</h4>
             <ul class="modal-list">
-              <li v-for="item in selectedModalItems" :key="item.untyCntrctNo" class="modal-list-item">
-                {{ item.firstCntrctDate }} | {{ item.cntrctNm }} | {{ item.dminsttNm }} | {{ formatNumber(item.firstCntrctAmt) }}
+              <li
+                v-for="item in selectedModalItems"
+                :key="item.untyCntrctNo"
+                class="modal-list-item"
+              >
+                {{ item.firstCntrctDate }} | {{ item.cntrctNm }} | {{ item.dminsttNm }} |
+                {{ formatNumber(item.firstCntrctAmt) }}
                 <button class="remove-btn" @click="removeSelectedModalItem(item)">제거</button>
               </li>
             </ul>
@@ -135,48 +156,20 @@
         </div>
       </div>
     </div>
-
   </LegacySidebarLayout>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
-import LegacySidebarLayout from './components/LegacySidebarLayout.vue';
+import { ref, reactive, onMounted, watch } from 'vue'
+import axios from 'axios'
+import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
-// Mock Data Generator for Main Table
-const generateMockData = (count = 10) => {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    cmpNm: `(주)타겟업체${i + 1}`,
-    cntrctNm: `2025년 수주대상 사업 ${i + 1}건`,
-    cntrctDtlInfoUrl: '#',
-    dminsttNm: `수요기관${i + 1}`,
-    dminsttNmDetail: `지역${i + 1}`,
-    prdctClsfcNo: `분류${i + 1}`,
-    ntceNo: `20250100${i + 1}`,
-    firstCntrctDate: '2025-01-01',
-    firstCntrctAmt: 5000000 * (i + 1),
-    cntrctCnt: 1,
-    thtmScmpltDate: '2025-06-30',
-    ttalScmpltDate: '2025-12-31',
-    untyCntrctNo: `UNC${i}`
-  }));
-};
+const PAGE_SIZE = 100
+const CATEGORY = 'servicesSelected'
+const MODAL_LIMIT = 50
 
-// Mock Data for Modal
-const generateModalData = (offset, limit) => {
-  return Array.from({ length: limit }, (_, i) => ({
-    untyCntrctNo: `MOCK_MODAL_${offset + i}`,
-    cntrctNm: `탐색 대상 사업 ${offset + i + 1}`,
-    dminsttNm: `기관 ${offset + i + 1}`,
-    firstCntrctDate: '2025-02-01',
-    firstCntrctAmt: 1000000 * (offset + i + 1)
-  }));
-};
-
-// State
-const isLoading = ref(false);
-const items = ref([]);
+const isLoading = ref(false)
+const items = ref([])
 const filters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
@@ -184,120 +177,197 @@ const filters = reactive({
   cntctCnclsMthdNm: '',
   firstCntrctDate: '',
   dateType: 'year',
-  year: '2025',
+  year: '',
   month: '',
   rangeStart: '',
   rangeEnd: '',
-  showSavedOnly: false
-});
+  showSavedOnly: false,
+})
 
-const years = ['2025', '2024', '2023', '2022', '2021', '2020'];
+const years = ['2025', '2024', '2023', '2022', '2021', '2020']
 
-// Modal State
-const isModalOpen = ref(false);
-const modalSearch = ref('');
-const modalItems = ref([]);
-const selectedModalItems = ref([]);
-const isModalLoading = ref(false);
-const modalOffset = ref(0);
-const modalLimit = 20;
+const isModalOpen = ref(false)
+const modalSearch = ref('')
+const modalItems = ref([])
+const selectedModalItems = ref([])
+const isModalLoading = ref(false)
+const modalOffset = ref(0)
+const modalAllLoaded = ref(false)
 
-// Methods
+function buildParams() {
+  return {
+    draw: 1,
+    start: 0,
+    length: PAGE_SIZE,
+    'search[value]': '',
+    category: CATEGORY,
+    dminsttNm: filters.dminsttNm || undefined,
+    dminsttNmDetail: filters.dminsttNmDetail || undefined,
+    prdctClsfcNo: filters.prdctClsfcNo || undefined,
+    cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
+    firstCntrctDate: filters.firstCntrctDate || undefined,
+    year: filters.dateType === 'year' && filters.year ? parseInt(filters.year, 10) : undefined,
+    month: filters.dateType === 'month' ? filters.month || undefined : undefined,
+    rangeStart: filters.dateType === 'range' ? filters.rangeStart || undefined : undefined,
+    rangeEnd: filters.dateType === 'range' ? filters.rangeEnd || undefined : undefined,
+    showSavedOnly: filters.showSavedOnly ? 1 : 0,
+  }
+}
+
+function buildExcelRequest() {
+  const p = buildParams()
+  return {
+    category: CATEGORY,
+    dminsttNm: p.dminsttNm ?? null,
+    dminsttNmDetail: p.dminsttNmDetail ?? null,
+    prdctClsfcNo: p.prdctClsfcNo ?? null,
+    cntctCnclsMthdNm: p.cntctCnclsMthdNm ?? null,
+    firstCntrctDate: p.firstCntrctDate ?? null,
+    year: p.year ?? null,
+    month: p.month ?? null,
+    rangeStart: p.rangeStart ?? null,
+    rangeEnd: p.rangeEnd ?? null,
+    showSavedOnly: p.showSavedOnly,
+  }
+}
+
 const fetchData = async () => {
-  isLoading.value = true;
-  // TODO: 나중에 이 부분은 axios.get('/api/data', { params: { category: 'servicesSelected', ...filters } })로 교체해야 함
-  setTimeout(() => {
-    items.value = generateMockData(15);
-    isLoading.value = false;
-  }, 800);
-};
+  isLoading.value = true
+  try {
+    const { data } = await axios.get('/api/data', { params: buildParams() })
+    items.value = Array.isArray(data.data) ? data.data : []
+  } catch (e) {
+    console.error('데이터 조회 실패', e)
+    items.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const handleSearch = () => {
-  fetchData();
-};
+  fetchData()
+}
 
-const handleDownloadExcel = () => {
-  // TODO: 나중에 이 부분은 axios.post('/api/data/excel', requestData, { responseType: 'blob' })로 교체해야 함
-  alert('엑셀 다운로드 (Mock)');
-};
+const handleDownloadExcel = async () => {
+  try {
+    const res = await axios.post('/api/data/excel', buildExcelRequest(), { responseType: 'blob' })
+    const url = URL.createObjectURL(new Blob([res.data]))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '조회결과.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error('엑셀 다운로드 실패', e)
+    alert('엑셀 다운로드에 실패했습니다.')
+  }
+}
 
-const unselectItem = (item) => {
-  if (!confirm("정말 선택을 취소하시겠습니까?")) return;
-  // TODO: 나중에 이 부분은 axios.post('/api/unselect', { tableName: "daily_contracts_services", untyCntrctNo: item.untyCntrctNo, selectType: 2 })로 교체해야 함
-  alert(`선택 해제됨: ${item.cntrctNm}`);
-  items.value = items.value.filter(i => i.id !== item.id);
-};
+const unselectItem = async (item) => {
+  if (!confirm('정말 선택을 취소하시겠습니까?')) return
+  try {
+    await axios.post('/api/unselect', {
+      tableName: 'daily_contracts_services',
+      untyCntrctNo: item.untyCntrctNo,
+      selectType: 2,
+    })
+    items.value = items.value.filter(
+      (i) => (i.untyCntrctNo || i.id) !== (item.untyCntrctNo || item.id),
+    )
+  } catch (e) {
+    console.error('선택 해제 실패', e)
+    alert('선택 해제에 실패했습니다.')
+  }
+}
 
-// Modal Methods
 const openModal = () => {
-  isModalOpen.value = true;
-  resetModal();
-  fetchModalData();
-};
+  isModalOpen.value = true
+  resetModal()
+  fetchModalData()
+}
 
 const closeModal = () => {
-  isModalOpen.value = false;
-};
+  isModalOpen.value = false
+}
 
 const resetModal = () => {
-  modalItems.value = [];
-  selectedModalItems.value = [];
-  modalOffset.value = 0;
-  modalSearch.value = '';
-};
+  modalItems.value = []
+  selectedModalItems.value = []
+  modalOffset.value = 0
+  modalAllLoaded.value = false
+}
 
-const fetchModalData = () => {
-  if (isModalLoading.value) return;
-  isModalLoading.value = true;
-  
-  // TODO: 나중에 이 부분은 axios.get('/api/modal-service-data', { params: ... })로 교체해야 함
-  setTimeout(() => {
-    const newItems = generateModalData(modalOffset.value, modalLimit);
-    modalItems.value = [...modalItems.value, ...newItems];
-    modalOffset.value += modalLimit;
-    isModalLoading.value = false;
-  }, 500);
-};
+const fetchModalData = async () => {
+  if (isModalLoading.value || modalAllLoaded.value) return
+  isModalLoading.value = true
+  try {
+    const { data } = await axios.get('/api/modal-service-data', {
+      params: {
+        category: 'services',
+        keyword: modalSearch.value,
+        offset: modalOffset.value,
+        limit: MODAL_LIMIT,
+      },
+    })
+    const list = Array.isArray(data) ? data : []
+    if (list.length < MODAL_LIMIT) modalAllLoaded.value = true
+    modalItems.value = modalOffset.value === 0 ? list : [...modalItems.value, ...list]
+    modalOffset.value += MODAL_LIMIT
+  } catch (e) {
+    console.error('모달 데이터 조회 실패', e)
+    modalAllLoaded.value = true
+  } finally {
+    isModalLoading.value = false
+  }
+}
 
 const handleModalScroll = (e) => {
-  const { scrollTop, scrollHeight, clientHeight } = e.target;
-  if (scrollTop + clientHeight >= scrollHeight - 10) {
-    fetchModalData();
-  }
-};
+  const { scrollTop, scrollHeight, clientHeight } = e.target
+  if (scrollTop + clientHeight >= scrollHeight - 10) fetchModalData()
+}
 
 const selectModalItem = (item) => {
-  if (selectedModalItems.value.find(i => i.untyCntrctNo === item.untyCntrctNo)) return;
-  selectedModalItems.value.push(item);
-};
+  if (selectedModalItems.value.find((i) => i.untyCntrctNo === item.untyCntrctNo)) return
+  selectedModalItems.value.push(item)
+}
 
 const removeSelectedModalItem = (item) => {
-  selectedModalItems.value = selectedModalItems.value.filter(i => i.untyCntrctNo !== item.untyCntrctNo);
-};
+  selectedModalItems.value = selectedModalItems.value.filter(
+    (i) => i.untyCntrctNo !== item.untyCntrctNo,
+  )
+}
 
-const saveSelected = () => {
-  if (selectedModalItems.value.length === 0) return alert("선택된 항목이 없습니다.");
-  // TODO: 나중에 이 부분은 axios.post('/api/update-is-selected', { tableName: "daily_contracts_services", untyCntrctNos: [...] })로 교체해야 함
-  alert("선택 항목 저장 완료 (Mock)");
-  closeModal();
-  fetchData(); // Refresh main table
-};
+const saveSelected = async () => {
+  if (selectedModalItems.value.length === 0) return alert('선택된 항목이 없습니다.')
+  try {
+    await axios.post('/api/update-is-selected', {
+      tableName: 'daily_contracts_services',
+      untyCntrctNos: selectedModalItems.value.map((i) => i.untyCntrctNo),
+    })
+    alert('선택 항목 저장 완료')
+    closeModal()
+    fetchData()
+  } catch (e) {
+    console.error('저장 실패', e)
+    alert('저장 중 오류가 발생했습니다.')
+  }
+}
 
-const formatNumber = (num) => {
-  return num ? num.toLocaleString() : '';
-};
+const formatNumber = (num) =>
+  num != null ? (isNaN(Number(num)) ? String(num) : Number(num).toLocaleString()) : ''
 
-// Watchers
+const rowKey = (item) => item.untyCntrctNo || item.id || Math.random()
+
 watch(modalSearch, () => {
-  modalOffset.value = 0;
-  modalItems.value = [];
-  fetchModalData();
-});
+  modalOffset.value = 0
+  modalAllLoaded.value = false
+  modalItems.value = []
+  fetchModalData()
+})
 
-// Lifecycle
 onMounted(() => {
-  fetchData();
-});
+  fetchData()
+})
 </script>
 
 <style scoped>
@@ -310,7 +380,9 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-input[type="text"], select, input[type="month"] {
+input[type='text'],
+select,
+input[type='month'] {
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -358,8 +430,12 @@ input[type="text"], select, input[type="month"] {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .table-container {
@@ -372,7 +448,8 @@ input[type="text"], select, input[type="month"] {
   border-collapse: collapse;
 }
 
-.data-table th, .data-table td {
+.data-table th,
+.data-table td {
   padding: 10px;
   border: 1px solid #ddd;
   text-align: center;
@@ -391,7 +468,8 @@ input[type="text"], select, input[type="month"] {
   background-color: #f1f1f1;
 }
 
-.loading-text, .no-data {
+.loading-text,
+.no-data {
   text-align: center;
   padding: 20px;
   color: #666;
@@ -422,7 +500,7 @@ a:hover {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   z-index: 9999;
   display: flex;
   justify-content: center;

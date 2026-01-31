@@ -165,6 +165,20 @@ public class DataController {
                     (String) requestData.get("rangeEnd"),
                     (int) requestData.get("showSavedOnly")
             );
+        } else if ("shoppingmall".equals(category)) {
+            data = dataService.getConstructionsData(
+                    0, Integer.MAX_VALUE,
+                    (String) requestData.get("dminsttNm"),
+                    (String) requestData.get("dminsttNmDetail"),
+                    (String) requestData.get("prdctClsfcNo"),
+                    (String) requestData.get("cntctCnclsMthdNm"),
+                    (String) requestData.get("firstCntrctDate"),
+                    year,
+                    (String) requestData.get("month"),
+                    (String) requestData.get("rangeStart"),
+                    (String) requestData.get("rangeEnd"),
+                    requestData.get("showSavedOnly") != null ? (int) requestData.get("showSavedOnly") : 0
+            );
         } else if ("onlyTop".equals(category)) {
             data = dataService.getTopsData(
                     (String) requestData.get("type"),
@@ -217,13 +231,20 @@ public class DataController {
     @PostMapping("/update-checked")
     public ResponseEntity<String> updateChecked(@RequestBody Map<String, Object> request) {
         try {
-            // 데이터베이스에서 업데이트 처리
-            if(request.get("category").equals("goods")) {
-                dataService.updateCheckedThings((int) request.get("id"), (boolean) request.get("checked"));
-            } else if(request.get("category").equals("services")){
-                dataService.updateCheckedServices((int) request.get("id"), (boolean) request.get("checked"));
-            } else if(request.get("category").equals("constructions")){
-                dataService.updateCheckedConstructions((int) request.get("id"), (boolean) request.get("checked"));
+            String category = (String) request.get("category");
+            int id = request.get("id") instanceof Number ? ((Number) request.get("id")).intValue() : Integer.parseInt(String.valueOf(request.get("id")));
+            boolean checked = Boolean.TRUE.equals(request.get("checked")) || "true".equalsIgnoreCase(String.valueOf(request.get("checked")));
+
+            if ("goods".equals(category)) {
+                dataService.updateCheckedThings(id, checked);
+            } else if ("services".equals(category)) {
+                dataService.updateCheckedServices(id, checked);
+            } else if ("constructions".equals(category) || "shoppingmall".equals(category)) {
+                dataService.updateCheckedConstructions(id, checked);
+            } else if ("onlyTop".equals(category)) {
+                dataService.updateCheckedTops(id, checked);
+            } else {
+                return ResponseEntity.badRequest().body("지원하지 않는 카테고리입니다: " + category);
             }
             return ResponseEntity.ok("체크박스 상태가 성공적으로 업데이트되었습니다.");
         } catch (Exception e) {
