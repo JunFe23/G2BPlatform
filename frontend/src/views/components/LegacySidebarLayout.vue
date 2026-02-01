@@ -1,14 +1,22 @@
 <template>
   <div class="legacy-layout">
-    <div class="sidebar" :class="{ 'expanded': isSidebarExpanded }" @mouseenter="isSidebarExpanded = true" @mouseleave="isSidebarExpanded = false">
-      <div class="sidebar-header" :class="{ 'collapsed': !isSidebarExpanded, 'expanded': isSidebarExpanded }">
+    <div
+      class="sidebar"
+      :class="{ expanded: isSidebarExpanded }"
+      @mouseenter="isSidebarExpanded = true"
+      @mouseleave="isSidebarExpanded = false"
+    >
+      <div
+        class="sidebar-header"
+        :class="{ collapsed: !isSidebarExpanded, expanded: isSidebarExpanded }"
+      >
         <span>{{ isSidebarExpanded ? 'G2B PROJECT' : 'G2B' }}</span>
       </div>
       <ul>
         <li class="menu-item" id="toggle-report-data" @click="toggleReportSubmenu">
           <span class="menu-label">보고서 데이터</span>
         </li>
-        <ul v-show="isReportSubmenuOpen" class="submenu" style="padding-left: 20px;">
+        <ul v-show="isReportSubmenuOpen" class="submenu" style="padding-left: 20px">
           <li class="menu-item" @click="$router.push('/report-goods')">
             <span class="menu-label">물품</span>
           </li>
@@ -25,7 +33,7 @@
         <li class="menu-item" id="toggle-related-market-db" @click="toggleSubmenu">
           <span class="menu-label">관련업계 전체시장 DB</span>
         </li>
-        <ul v-show="isSubmenuOpen" class="submenu" style="padding-left: 20px;">
+        <ul v-show="isSubmenuOpen" class="submenu" style="padding-left: 20px">
           <li class="menu-item" @click="$router.push('/goods')">
             <span class="menu-label">물품</span>
           </li>
@@ -54,21 +62,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const router = useRouter();
-const isSidebarExpanded = ref(false);
-const isSubmenuOpen = ref(false);
-const isReportSubmenuOpen = ref(false);
+const router = useRouter()
+const isSidebarExpanded = ref(false)
+const isSubmenuOpen = ref(false)
+const isReportSubmenuOpen = ref(false)
 
 const toggleSubmenu = () => {
-  isSubmenuOpen.value = !isSubmenuOpen.value;
-};
+  isSubmenuOpen.value = !isSubmenuOpen.value
+}
 
 const toggleReportSubmenu = () => {
-  isReportSubmenuOpen.value = !isReportSubmenuOpen.value;
-};
+  isReportSubmenuOpen.value = !isReportSubmenuOpen.value
+}
 </script>
 
 <style scoped>
@@ -86,7 +94,10 @@ const toggleReportSubmenu = () => {
   background: linear-gradient(180deg, #223247 0%, #1f2a37 100%);
   color: #ecf0f1;
   position: fixed;
-  transition: width 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+  transition:
+    width 0.35s ease,
+    box-shadow 0.35s ease,
+    transform 0.35s ease;
   overflow: hidden;
   z-index: 1000;
   border-radius: 18px;
@@ -96,7 +107,7 @@ const toggleReportSubmenu = () => {
 }
 
 .sidebar.expanded {
-  width: 300px;
+  width: 360px;
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.35);
 }
 
@@ -148,7 +159,10 @@ const toggleReportSubmenu = () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: background-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    background-color 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
   cursor: pointer;
   border-radius: 12px;
   color: #e2e8f0;
@@ -162,10 +176,14 @@ const toggleReportSubmenu = () => {
 
 .menu-label {
   white-space: nowrap;
+  overflow: visible;
   opacity: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
   transform: translateX(-12px);
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .sidebar.expanded .menu-label {
@@ -181,8 +199,8 @@ const toggleReportSubmenu = () => {
 }
 
 .sidebar.expanded ~ .content {
-  margin-left: 330px;
-  width: calc(100% - 330px);
+  margin-left: 390px;
+  width: calc(100% - 390px);
 }
 
 /* Specific H1 styles from legacy templates */
