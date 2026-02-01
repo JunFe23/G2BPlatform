@@ -94,6 +94,30 @@
           </tbody>
         </table>
       </div>
+      <div v-if="recordsFiltered > 0" class="pagination">
+        <span class="pagination-info"
+          >{{ startDisplay }}-{{ endDisplay }} / {{ recordsFiltered }}건</span
+        >
+        <button class="page-btn" :disabled="currentPage <= 1" @click="goPage(currentPage - 1)">
+          이전
+        </button>
+        <button
+          v-for="p in pageNumbers"
+          :key="p"
+          class="page-num-btn"
+          :class="{ active: p === currentPage }"
+          @click="goPage(p)"
+        >
+          {{ p }}
+        </button>
+        <button
+          class="page-btn"
+          :disabled="currentPage >= totalPages"
+          @click="goPage(currentPage + 1)"
+        >
+          다음
+        </button>
+      </div>
     </div>
 
     <!-- 모달창 -->
@@ -160,7 +184,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
@@ -170,6 +194,8 @@ const MODAL_LIMIT = 50
 
 const isLoading = ref(false)
 const items = ref([])
+const recordsFiltered = ref(0)
+const currentPage = ref(1)
 const filters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
@@ -195,9 +221,10 @@ const modalOffset = ref(0)
 const modalAllLoaded = ref(false)
 
 function buildParams() {
+  const start = (currentPage.value - 1) * PAGE_SIZE
   return {
     draw: 1,
-    start: 0,
+    start,
     length: PAGE_SIZE,
     'search[value]': '',
     category: CATEGORY,
@@ -231,11 +258,28 @@ function buildExcelRequest() {
   }
 }
 
-const fetchData = async () => {
+const totalPages = computed(() => Math.max(1, Math.ceil(recordsFiltered.value / PAGE_SIZE)))
+const startDisplay = computed(() =>
+  recordsFiltered.value === 0 ? 0 : (currentPage.value - 1) * PAGE_SIZE + 1,
+)
+const endDisplay = computed(() => Math.min(currentPage.value * PAGE_SIZE, recordsFiltered.value))
+const pageNumbers = computed(() => {
+  const total = totalPages.value
+  if (total <= 10) return Array.from({ length: total }, (_, i) => i + 1)
+  const cur = currentPage.value
+  let start = Math.max(1, cur - 4)
+  let end = Math.min(total, start + 9)
+  if (end - start < 9) start = Math.max(1, end - 9)
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+})
+
+const fetchData = async (resetPage = false) => {
+  if (resetPage) currentPage.value = 1
   isLoading.value = true
   try {
     const { data } = await axios.get('/api/data', { params: buildParams() })
     items.value = Array.isArray(data.data) ? data.data : []
+    recordsFiltered.value = data.recordsFiltered ?? 0
   } catch (e) {
     console.error('데이터 조회 실패', e)
     items.value = []
@@ -244,8 +288,15 @@ const fetchData = async () => {
   }
 }
 
-const handleSearch = () => {
+const goPage = (page) => {
+  const total = Math.max(1, Math.ceil(recordsFiltered.value / PAGE_SIZE))
+  if (page < 1 || page > total) return
+  currentPage.value = page
   fetchData()
+}
+
+const handleSearch = () => {
+  fetchData(true)
 }
 
 const handleDownloadExcel = async () => {
@@ -634,5 +685,46 @@ a:hover {
 .data-table th,
 .data-table td {
   white-space: nowrap;
+}
+
+.pagination {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pagination-info {
+  margin-right: 12px;
+}
+.page-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.page-btn:not(:disabled):hover {
+  background: #f5f5f5;
+}
+.page-num-btn {
+  min-width: 36px;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.page-num-btn:hover {
+  background: #f5f5f5;
+}
+.page-num-btn.active {
+  background: #34495e;
+  color: #fff;
+  border-color: #34495e;
 }
 </style>
