@@ -1,18 +1,19 @@
-version: "3.8"
-
 services:
-  api:
-    build:
-      context: ./backend
-    ports:
-      - "8080:8080"
-    restart: always
-    volumes:
-      - ./config/top-service-account.json:/app/config/top-service-account.json
+    api:
+        build:
+            context: ./backend
+        ports:
+            - '8080:8080'
+        restart: always
+        volumes:
+            - ./config/top-service-account.json:/app/config/top-service-account.json
+        environment:
+            # 컨테이너 내부 마운트 경로 사용 (호스트 경로 아님)
+            - GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/app/config/top-service-account.json
 
-  web:
-    build:
-      context: ./frontend
-    ports:
-      - "80:80"
-    restart: always
+    web:
+        build:
+            context: ./frontend
+        ports:
+            - '80:80'
+        restart: always
