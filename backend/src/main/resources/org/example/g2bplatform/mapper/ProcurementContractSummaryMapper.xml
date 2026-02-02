@@ -52,7 +52,7 @@
             AND first_contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
         </if>
         <if test="showSavedOnly == true">
-            AND IFNULL(saved, 'N') = 'Y'
+            AND saved = 'Y'
         </if>
         ORDER BY first_contract_date DESC, bid_notice_no, vendor_biz_reg_no
         LIMIT #{start}, #{length}
@@ -90,7 +90,7 @@
             AND first_contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
         </if>
         <if test="showSavedOnly == true">
-            AND IFNULL(saved, 'N') = 'Y'
+            AND saved = 'Y'
         </if>
     </select>
 
