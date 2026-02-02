@@ -5,6 +5,108 @@
 
 <mapper namespace="org.example.g2bplatform.mapper.ProcurementContractSummaryMapper">
 
+    <!-- ========================================================= -->
+    <!-- 수요기관별 물품 조달시장 분석(대시보드) -->
+    <!-- - 동적 컬럼 치환 금지: FINAL/FIRST 각각 select 분리 -->
+    <!-- - procurement_contract_summary는 "집계 테이블 기반 대표 계약 단위" -->
+    <!-- ========================================================= -->
+
+    <select id="selectDemandAgencyTopSalesByFinalDate" resultType="map">
+        SELECT
+            demand_agency_name AS demandAgencyName,
+            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+            COUNT(*) AS contractCount,
+            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+        FROM procurement_contract_summary
+        WHERE demand_agency_name IS NOT NULL
+          AND demand_agency_name &lt;&gt; ''
+          AND final_contract_date &gt;= #{from}
+          AND final_contract_date &lt;= #{to}
+        GROUP BY demand_agency_name
+        ORDER BY salesAmount DESC
+        LIMIT #{topN}
+    </select>
+
+    <select id="selectDemandAgencyTopSalesByFirstDate" resultType="map">
+        SELECT
+            demand_agency_name AS demandAgencyName,
+            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+            COUNT(*) AS contractCount,
+            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+        FROM procurement_contract_summary
+        WHERE demand_agency_name IS NOT NULL
+          AND demand_agency_name &lt;&gt; ''
+          AND first_contract_date &gt;= #{from}
+          AND first_contract_date &lt;= #{to}
+        GROUP BY demand_agency_name
+        ORDER BY salesAmount DESC
+        LIMIT #{topN}
+    </select>
+
+    <select id="selectDemandAgencyTopContractCountByFinalDate" resultType="map">
+        SELECT
+            demand_agency_name AS demandAgencyName,
+            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+            COUNT(*) AS contractCount,
+            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+        FROM procurement_contract_summary
+        WHERE demand_agency_name IS NOT NULL
+          AND demand_agency_name &lt;&gt; ''
+          AND final_contract_date &gt;= #{from}
+          AND final_contract_date &lt;= #{to}
+        GROUP BY demand_agency_name
+        ORDER BY contractCount DESC, salesAmount DESC
+        LIMIT #{topN}
+    </select>
+
+    <select id="selectDemandAgencyTopContractCountByFirstDate" resultType="map">
+        SELECT
+            demand_agency_name AS demandAgencyName,
+            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+            COUNT(*) AS contractCount,
+            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+        FROM procurement_contract_summary
+        WHERE demand_agency_name IS NOT NULL
+          AND demand_agency_name &lt;&gt; ''
+          AND first_contract_date &gt;= #{from}
+          AND first_contract_date &lt;= #{to}
+        GROUP BY demand_agency_name
+        ORDER BY contractCount DESC, salesAmount DESC
+        LIMIT #{topN}
+    </select>
+
+    <select id="selectDemandAgencyTopAvgAmountByFinalDate" resultType="map">
+        SELECT
+            demand_agency_name AS demandAgencyName,
+            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+            COUNT(*) AS contractCount,
+            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+        FROM procurement_contract_summary
+        WHERE demand_agency_name IS NOT NULL
+          AND demand_agency_name &lt;&gt; ''
+          AND final_contract_date &gt;= #{from}
+          AND final_contract_date &lt;= #{to}
+        GROUP BY demand_agency_name
+        ORDER BY avgAmount DESC, salesAmount DESC
+        LIMIT #{topN}
+    </select>
+
+    <select id="selectDemandAgencyTopAvgAmountByFirstDate" resultType="map">
+        SELECT
+            demand_agency_name AS demandAgencyName,
+            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+            COUNT(*) AS contractCount,
+            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+        FROM procurement_contract_summary
+        WHERE demand_agency_name IS NOT NULL
+          AND demand_agency_name &lt;&gt; ''
+          AND first_contract_date &gt;= #{from}
+          AND first_contract_date &lt;= #{to}
+        GROUP BY demand_agency_name
+        ORDER BY avgAmount DESC, salesAmount DESC
+        LIMIT #{topN}
+    </select>
+
     <select id="selectReportGoodsList" resultType="map">
         SELECT
             bid_notice_no        AS bidNoticeNo,

@@ -91,6 +91,27 @@ public class ReportDataController {
     }
 
     /**
+     * 수요기관별 물품 조달시장 분석(대시보드) - 신규 집계 API.
+     */
+    @Operation(summary = "수요기관별 물품 조달시장 분석", description = "기간(from/to)과 기준일자(dateBasis)에 따라 수요기관별 매출/건수/평균단가 TopN을 집계합니다.")
+    @GetMapping("/demand-agency-market")
+    public ResponseEntity<Map<String, Object>> getDemandAgencyMarket(
+            @Parameter(description = "기간 기준 (FINAL|FIRST)", required = false) @RequestParam(required = false, defaultValue = "FINAL") String dateBasis,
+            @Parameter(description = "기간 시작 (yyyy-mm-dd)", required = true) @RequestParam String from,
+            @Parameter(description = "기간 종료 (yyyy-mm-dd)", required = true) @RequestParam String to,
+            @Parameter(description = "Top N (10 또는 20)", required = false) @RequestParam(required = false) Integer topN
+    ) {
+        try {
+            return ResponseEntity.ok(reportDataService.getDemandAgencyMarket(dateBasis, from, to, topN));
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        }
+    }
+
+    /**
      * 보고서 물품 목록 조회 (procurement_contract_summary 기반, 검색/페이징).
      */
     @Operation(summary = "보고서 물품 목록", description = "수요기관명/지역/품명/입찰방법/최초계약일자(연·월·기간) 검색, 저장여부 필터")
