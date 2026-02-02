@@ -3,6 +3,8 @@ package org.example.g2bplatform.service;
 import org.example.g2bplatform.mapper.ProcurementContractSummaryMapper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +125,84 @@ public class ReportDataService {
      */
     public int updateReportGoodsSaved(String bidNoticeNo, String vendorBizRegNo, String saved) {
         return procurementContractSummaryMapper.updateSaved(bidNoticeNo, vendorBizRegNo, saved);
+    }
+
+    /**
+     * 수요기관별 물품 조달시장 분석(대시보드) 집계.
+     *
+     * - dateBasis: FINAL(기본) / FIRST
+     * - from/to: yyyy-mm-dd (필수)
+     * - topN: 10(기본) / 20
+     */
+    public Map<String, Object> getDemandAgencyMarket(String dateBasis, String from, String to, Integer topN) {
+        if (from == null || from.isBlank()) {
+            throw new IllegalArgumentException("from은 필수입니다 (yyyy-mm-dd)");
+        }
+        if (to == null || to.isBlank()) {
+            throw new IllegalArgumentException("to는 필수입니다 (yyyy-mm-dd)");
+        }
+
+        // 날짜 파싱/검증 (ISO_LOCAL_DATE)
+        final LocalDate fromDate;
+        final LocalDate toDate;
+        try {
+            fromDate = LocalDate.parse(from.trim());
+            toDate = LocalDate.parse(to.trim());
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("from/to 날짜 형식이 올바르지 않습니다 (yyyy-mm-dd)");
+        }
+        if (fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException("from은 to보다 클 수 없습니다");
+        }
+
+        // dateBasis 보정 (FINAL/FIRST만 허용, 그 외 FINAL)
+        final String basis = "FIRST".equalsIgnoreCase(dateBasis) ? "FIRST" : "FINAL";
+
+        // topN 보정 (10/20만 허용)
+        final int resolvedTopN = (topN != null && (topN == 10 || topN == 20)) ? topN : 10;
+
+        List<Map<String, Object>> topSales;
+        List<Map<String, Object>> topContractCount;
+        List<Map<String, Object>> topAvgAmount;
+
+        if ("FIRST".equals(basis)) {
+            topSales = procurementContractSummaryMapper.selectDemandAgencyTopSalesByFirstDate(fromDate.toString(), toDate.toString(), resolvedTopN);
+            topContractCount = procurementContractSummaryMapper.selectDemandAgencyTopContractCountByFirstDate(fromDate.toString(), toDate.toString(), resolvedTopN);
+            topAvgAmount = procurementContractSummaryMapper.selectDemandAgencyTopAvgAmountByFirstDate(fromDate.toString(), toDate.toString(), resolvedTopN);
+        } else {
+            topSales = procurementContractSummaryMapper.selectDemandAgencyTopSalesByFinalDate(fromDate.toString(), toDate.toString(), resolvedTopN);
+            topContractCount = procurementContractSummaryMapper.selectDemandAgencyTopContractCountByFinalDate(fromDate.toString(), toDate.toString(), resolvedTopN);
+            topAvgAmount = procurementContractSummaryMapper.selectDemandAgencyTopAvgAmountByFinalDate(fromDate.toString(), toDate.toString(), resolvedTopN);
+        }
+
+        // rank(1..N) 부여
+        addRank(topSales);
+        addRank(topContractCount);
+        addRank(topAvgAmount);
+
+        Map<String, Object> condition = new LinkedHashMap<>();
+        condition.put("dateBasis", basis);
+        condition.put("from", fromDate.toString());
+        condition.put("to", toDate.toString());
+        condition.put("topN", resolvedTopN);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("topSales", topSales);
+        data.put("topContractCount", topContractCount);
+        data.put("topAvgAmount", topAvgAmount);
+        data.put("condition", condition);
+
+        return wrap(data);
+    }
+
+    private void addRank(List<Map<String, Object>> rows) {
+        if (rows == null || rows.isEmpty()) return;
+        for (int i = 0; i < rows.size(); i++) {
+            Map<String, Object> row = rows.get(i);
+            if (row != null) {
+                row.put("rank", i + 1);
+            }
+        }
     }
 
     /**

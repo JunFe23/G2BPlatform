@@ -42,4 +42,41 @@ public interface ProcurementContractSummaryMapper {
             @Param("vendorBizRegNo") String vendorBizRegNo,
             @Param("saved") String saved
     );
+
+    // ===== 수요기관별 물품 조달시장 분석(대시보드) =====
+    List<Map<String, Object>> selectDemandAgencyTopSalesByFinalDate(
+            @Param("from") String from,
+            @Param("to") String to,
+            @Param("topN") int topN
+    );
+
+    List<Map<String, Object>> selectDemandAgencyTopSalesByFirstDate(
+            @Param("from") String from,
+            @Param("to") String to,
+            @Param("topN") int topN
+    );
+
+    List<Map<String, Object>> selectDemandAgencyTopContractCountByFinalDate(
+            @Param("from") String from,
+            @Param("to") String to,
+            @Param("topN") int topN
+    );
+
+    List<Map<String, Object>> selectDemandAgencyTopContractCountByFirstDate(
+            @Param("from") String from,
+            @Param("to") String to,
+            @Param("topN") int topN
+    );
+
+    List<Map<String, Object>> selectDemandAgencyTopAvgAmountByFinalDate(
+            @Param("from") String from,
+            @Param("to") String to,
+            @Param("topN") int topN
+    );
+
+    List<Map<String, Object>> selectDemandAgencyTopAvgAmountByFirstDate(
+            @Param("from") String from,
+            @Param("to") String to,
+            @Param("topN") int topN
+    );
 }
