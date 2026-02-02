@@ -40,13 +40,16 @@
             AND first_contract_date = #{firstContractDate}
         </if>
         <if test="year != null">
-            AND YEAR(first_contract_date) = #{year}
+            AND first_contract_date &gt;= CONCAT(#{year}, '-01-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
         </if>
         <if test="month != null and month != ''">
-            AND DATE_FORMAT(first_contract_date, '%Y-%m') = #{month}
+            AND first_contract_date &gt;= CONCAT(#{month}, '-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
         </if>
         <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
-            AND DATE_FORMAT(first_contract_date, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+            AND first_contract_date &gt;= CONCAT(#{rangeStart}, '-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
         </if>
         <if test="showSavedOnly == true">
             AND IFNULL(saved, 'N') = 'Y'
@@ -75,13 +78,16 @@
             AND first_contract_date = #{firstContractDate}
         </if>
         <if test="year != null">
-            AND YEAR(first_contract_date) = #{year}
+            AND first_contract_date &gt;= CONCAT(#{year}, '-01-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
         </if>
         <if test="month != null and month != ''">
-            AND DATE_FORMAT(first_contract_date, '%Y-%m') = #{month}
+            AND first_contract_date &gt;= CONCAT(#{month}, '-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
         </if>
         <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
-            AND DATE_FORMAT(first_contract_date, '%Y-%m') BETWEEN #{rangeStart} AND #{rangeEnd}
+            AND first_contract_date &gt;= CONCAT(#{rangeStart}, '-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
         </if>
         <if test="showSavedOnly == true">
             AND IFNULL(saved, 'N') = 'Y'
