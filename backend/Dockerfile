@@ -1,12 +1,11 @@
-# 빌드 단계: 소스에서 JAR 생성 (docker compose up --build 시 로컬 JAR 없어도 동작)
-FROM eclipse-temurin:21-jdk AS build
+# 멀티스테이지 빌드: Gradle로 빌드 후 실행
+FROM gradle:8.5-jdk21 AS build
 WORKDIR /app
-
 COPY . .
-RUN chmod +x gradlew && ./gradlew bootJar --no-daemon -x test
+RUN gradle build -x test --no-daemon
 
-# 실행 단계
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/G2BPlatform-0.0.1-SNAPSHOT.jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+COPY newrelic newrelic
+ENTRYPOINT ["java", "-Xms512m", "-Xmx2048m", "-javaagent:newrelic/newrelic.jar", "-jar", "app.jar"]
