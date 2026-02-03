@@ -319,8 +319,21 @@
       <section v-if="activeTab === '지역별'" class="section">
         <h2 class="section-title">지역별 조달시장 분석</h2>
 
+        <div class="region-category-bar">
+          <button
+            v-for="cat in regionCategoryTabs"
+            :key="cat.value"
+            type="button"
+            class="region-category-btn"
+            :class="{ active: regionCategoryTab === cat.value }"
+            @click="regionCategoryTab = cat.value"
+          >
+            {{ cat.label }}
+          </button>
+        </div>
+
         <div class="chart-card wide">
-          <h3>지역별 전체 매출 현황</h3>
+          <h3>지역별 {{ regionCategoryTab }} 매출 현황</h3>
           <div class="stacked-chart">
             <div class="stacked-grid">
               <span v-for="tick in ['0만', '15.0억', '30.0억', '45.0억', '60.0억']" :key="tick">{{
@@ -351,7 +364,7 @@
 
         <div class="chart-grid">
           <div class="chart-card">
-            <h3>지역별 매출 비율</h3>
+            <h3>지역별 {{ regionCategoryTab }} 매출 비율</h3>
             <div class="pie-area">
               <div class="pie"></div>
               <div class="pie-labels">
@@ -366,7 +379,7 @@
             </div>
           </div>
           <div class="chart-card">
-            <h3>지역별 계약건수</h3>
+            <h3>지역별 {{ regionCategoryTab }} 계약건수</h3>
             <div class="bar-chart purple">
               <div v-for="bar in regionCountBars" :key="bar.label" class="bar-column">
                 <div class="bar" :style="{ height: bar.height }"></div>
@@ -377,7 +390,7 @@
         </div>
 
         <div class="table-card">
-          <h3>지역별 상세 현황</h3>
+          <h3>지역별 {{ regionCategoryTab }} 상세 현황</h3>
           <div class="table-wrapper">
             <table class="detail-table">
               <thead>
@@ -922,6 +935,14 @@ const fetchDemandAgencyMarket = async () => {
     agencyLoading.value = false
   }
 }
+
+const regionCategoryTabs = [
+  { label: '물품', value: '물품' },
+  { label: '공사', value: '공사' },
+  { label: '용역', value: '용역' },
+  { label: '3자단가', value: '3자단가' },
+]
+const regionCategoryTab = ref('물품')
 
 const regionLegend = ref([
   { label: '공사', color: '#f39c12' },
@@ -1733,6 +1754,43 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
   background: white;
   border: 1px solid #e0e0e0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* 지역별: 물품/공사/용역/3자단가 선택 탭 */
+.region-category-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 8px;
+  background: #f0f4f8;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.region-category-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.region-category-btn:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.region-category-btn.active {
+  background: #3f6ff0;
+  color: white;
+  box-shadow: 0 2px 6px rgba(63, 111, 240, 0.3);
 }
 
 .tab-icon {

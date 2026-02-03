@@ -6,6 +6,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.FileInputStream;
@@ -14,6 +15,7 @@ import java.security.GeneralSecurityException;
 import java.util.List;
 
 @Configuration
+@ConditionalOnProperty(name = "google.sheets.enabled", havingValue = "true")
 public class GoogleSheetConfig {
 
     // TODO 추후에 josn key 받으면 교체 필요

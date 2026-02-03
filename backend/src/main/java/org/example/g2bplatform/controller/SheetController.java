@@ -1,12 +1,14 @@
 package org.example.g2bplatform.controller;
 
 import org.example.g2bplatform.service.GoogleSheetService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/sheet")
+@ConditionalOnBean(GoogleSheetService.class)
 public class SheetController {
     private final GoogleSheetService sheetService;
 
