@@ -6,6 +6,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.example.g2bplatform.config.GoogleSheetConfig;
 import org.example.g2bplatform.mapper.GoogleSheetMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
+@ConditionalOnBean(GoogleSheetConfig.class)
 public class GoogleSheetService {
     private final Sheets sheets;
 //    private final String spreadsheetId = "1eIjkSF2RGMfRmpmA0JtOko-5DDlud7Luo3h1a6Mq7kA";

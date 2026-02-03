@@ -1,0 +1,7 @@
+build/
+.gradle/
+!gradle/wrapper/
+*.iml
+.idea/
+*.log
+.DS_Store
