@@ -332,94 +332,152 @@
           </button>
         </div>
 
-        <div class="chart-card wide">
-          <h3>지역별 {{ regionCategoryTab }} 매출 현황</h3>
-          <div class="stacked-chart">
-            <div class="stacked-grid">
-              <span v-for="tick in ['0만', '15.0억', '30.0억', '45.0억', '60.0억']" :key="tick">{{
-                tick
-              }}</span>
+        <div v-if="regionLoading" class="loading-banner loading-banner-prominent">
+          <div class="loading-spinner loading-spinner-large"></div>
+          <p class="loading-text">로딩 중</p>
+          <p class="loading-sub">지역별 물품 집계 데이터를 불러오고 있습니다.</p>
+        </div>
+        <template v-else-if="!regionLoading">
+          <div v-if="regionError" class="info-banner">
+            <div class="banner-left">
+              <div class="info-icon">!</div>
+              <div class="banner-text">
+                <strong>데이터 조회 실패</strong>
+                <p>{{ regionError }}</p>
+              </div>
             </div>
-            <div class="stacked-bars">
-              <div v-for="region in regionStackedBars" :key="region.name" class="stacked-column">
-                <div class="stacked-track">
-                  <div
-                    v-for="segment in region.segments"
-                    :key="segment.label"
-                    class="stacked-segment"
-                    :style="{ height: segment.height, backgroundColor: segment.color }"
-                  ></div>
+          </div>
+          <div
+            v-else-if="regionLoaded && !regionDetailRows.length && showRegionGoodsData"
+            class="info-banner"
+          >
+            <div class="banner-left">
+              <div class="info-icon">i</div>
+              <div class="banner-text">
+                <strong>데이터 없음</strong>
+                <p>선택한 기간에 지역별 물품 데이터가 없습니다. 기간을 바꿔 보세요.</p>
+              </div>
+            </div>
+          </div>
+          <template v-else>
+            <div class="chart-card wide">
+              <h3>지역별 {{ regionCategoryTab }} 매출 현황</h3>
+              <div v-if="showRegionGoodsData" class="region-chart-with-axis">
+                <div class="region-y-axis">
+                  <span v-for="(tick, i) in regionAmountAxisTicks" :key="i" class="region-y-tick">{{
+                    tick
+                  }}</span>
                 </div>
-                <span class="stacked-label">{{ region.name }}</span>
+                <div class="region-chart-scroll">
+                  <div class="bar-chart bar-chart-horizontal blue">
+                    <div
+                      v-for="bar in regionAmountBars"
+                      :key="bar.label"
+                      class="bar-column-fixed chart-hover-wrap"
+                    >
+                      <div class="bar-value-wrap">
+                        <div class="bar" :style="{ height: bar.height }" :title="bar.tooltip"></div>
+                        <span v-if="bar.tooltip" class="chart-tooltip chart-tooltip-bar">{{
+                          bar.tooltip
+                        }}</span>
+                      </div>
+                      <span class="bar-label-fixed" :title="bar.label">{{ bar.label }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="region-placeholder">
+                <p>물품 데이터만 제공됩니다. '전체' 또는 '물품' 탭을 선택하세요.</p>
               </div>
             </div>
-            <div class="stacked-legend">
-              <span v-for="legend in regionLegend" :key="legend.label" class="legend-item">
-                <span class="legend-dot" :style="{ backgroundColor: legend.color }"></span>
-                {{ legend.label }}
-              </span>
-            </div>
-          </div>
-        </div>
 
-        <div class="chart-grid">
-          <div class="chart-card">
-            <h3>지역별 {{ regionCategoryTab }} 매출 비율</h3>
-            <div class="pie-area">
-              <div class="pie"></div>
-              <div class="pie-labels">
-                <span
-                  v-for="item in regionPieLabels"
-                  :key="item.label"
-                  :style="{ color: item.color }"
-                >
-                  {{ item.label }}: {{ item.value }}
-                </span>
+            <div class="chart-grid">
+              <div class="chart-card">
+                <h3>지역별 {{ regionCategoryTab }} 매출 비율</h3>
+                <div v-if="showRegionGoodsData" class="pie-area">
+                  <div class="pie"></div>
+                  <div class="pie-labels">
+                    <span
+                      v-for="item in regionPieLabels"
+                      :key="item.label"
+                      :style="{ color: item.color }"
+                    >
+                      {{ item.label }}: {{ item.value }}
+                    </span>
+                  </div>
+                </div>
+                <div v-else class="region-placeholder"><p>데이터 없음</p></div>
+              </div>
+              <div class="chart-card">
+                <h3>지역별 {{ regionCategoryTab }} 계약건수</h3>
+                <div v-if="showRegionGoodsData" class="agency-chart-with-axis">
+                  <div class="agency-y-axis">
+                    <span
+                      v-for="(tick, i) in regionCountAxisTicks"
+                      :key="i"
+                      class="agency-y-tick"
+                      >{{ tick }}</span
+                    >
+                  </div>
+                  <div class="agency-chart-scroll">
+                    <div class="bar-chart bar-chart-horizontal purple">
+                      <div
+                        v-for="bar in regionCountBars"
+                        :key="bar.label"
+                        class="bar-column-fixed chart-hover-wrap"
+                      >
+                        <div class="bar-value-wrap">
+                          <div
+                            class="bar"
+                            :style="{ height: bar.height }"
+                            :title="bar.tooltip"
+                          ></div>
+                          <span v-if="bar.tooltip" class="chart-tooltip chart-tooltip-bar">{{
+                            bar.tooltip
+                          }}</span>
+                        </div>
+                        <span class="bar-label-fixed">{{ bar.label }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="region-placeholder"><p>데이터 없음</p></div>
               </div>
             </div>
-          </div>
-          <div class="chart-card">
-            <h3>지역별 {{ regionCategoryTab }} 계약건수</h3>
-            <div class="bar-chart purple">
-              <div v-for="bar in regionCountBars" :key="bar.label" class="bar-column">
-                <div class="bar" :style="{ height: bar.height }"></div>
-                <span>{{ bar.label }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div class="table-card">
-          <h3>지역별 {{ regionCategoryTab }} 상세 현황</h3>
-          <div class="table-wrapper">
-            <table class="detail-table">
-              <thead>
-                <tr>
-                  <th>순위</th>
-                  <th>지역</th>
-                  <th>물품+3자단가</th>
-                  <th>용역</th>
-                  <th>공사</th>
-                  <th>민수</th>
-                  <th>전체매출</th>
-                  <th>계약건수</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in regionDetailRows" :key="row.rank">
-                  <td>{{ row.rank }}</td>
-                  <td>{{ row.region }}</td>
-                  <td>{{ row.goods }}</td>
-                  <td>{{ row.service }}</td>
-                  <td>{{ row.construction }}</td>
-                  <td>{{ row.private }}</td>
-                  <td>{{ row.total }}</td>
-                  <td>{{ row.count }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+            <div class="table-card">
+              <h3>지역별 {{ regionCategoryTab }} 상세 현황</h3>
+              <div class="table-wrapper">
+                <table class="detail-table">
+                  <thead>
+                    <tr>
+                      <th>순위</th>
+                      <th>지역</th>
+                      <th>물품+3자단가</th>
+                      <th>용역</th>
+                      <th>공사</th>
+                      <th>민수</th>
+                      <th>전체매출</th>
+                      <th>계약건수</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="row in regionDetailRows" :key="row.rank">
+                      <td>{{ row.rank }}</td>
+                      <td>{{ row.region }}</td>
+                      <td>{{ row.goods }}</td>
+                      <td>{{ row.service }}</td>
+                      <td>{{ row.construction }}</td>
+                      <td>{{ row.private }}</td>
+                      <td>{{ row.total }}</td>
+                      <td>{{ row.count }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+        </template>
       </section>
 
       <section v-if="activeTab === '순위분석'" class="section">
@@ -655,7 +713,7 @@ import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 import axios from 'axios'
 import { ref, computed, onMounted, watch } from 'vue'
 
-const isYearSeparated = ref(true)
+const isYearSeparated = ref(false)
 const activeTab = ref('시장현황')
 
 // 대시보드 공통 기간 필터 (모든 탭 데이터에 반영)
@@ -664,7 +722,9 @@ const currentYear = new Date().getFullYear()
 const dashboardYear = ref(currentYear)
 const dashboardFrom = ref(`${currentYear}-01-01`)
 const dashboardTo = ref(`${currentYear}-12-31`)
-const dashboardYearOptions = ref(Array.from({ length: 11 }, (_, i) => currentYear - i))
+const dashboardYearOptions = ref(
+  Array.from({ length: currentYear - 2016 }, (_, i) => currentYear - i),
+)
 
 /** 현재 필터에 따른 from/to (yyyy-mm-dd) */
 const dashboardPeriod = computed(() => {
@@ -681,10 +741,13 @@ const dashboardPeriod = computed(() => {
 /** 필터 적용: 캐시 무효화 후 현재 탭 데이터 재조회 */
 function applyDashboardFilter() {
   agencyLoaded.value = false
+  regionLoaded.value = false
   if (activeTab.value === '수요기관별') {
     fetchDemandAgencyMarket()
   }
-  // 다른 탭(시장현황/지역별 등) API 연동 시 여기서 호출
+  if (activeTab.value === '지역별') {
+    fetchRegionMarket()
+  }
 }
 
 const tabs = [
@@ -936,13 +999,119 @@ const fetchDemandAgencyMarket = async () => {
   }
 }
 
+const fetchRegionMarket = async () => {
+  const { from, to } = dashboardPeriod.value
+  regionLoading.value = true
+  regionError.value = ''
+  try {
+    const { data } = await axios.get('/api/report/region-market', { params: { from, to } })
+
+    if (!data || data.success !== true || !data.data) {
+      throw new Error('API 응답 형식이 올바르지 않습니다.')
+    }
+
+    const regions = Array.isArray(data.data.regions) ? data.data.regions : []
+    const maxAmount = regions.reduce((m, r) => Math.max(m, toNumber(r?.salesAmount)), 0)
+    const maxCount = regions.reduce((m, r) => Math.max(m, toNumber(r?.contractCount)), 0)
+    const totalAmount = regions.reduce((s, r) => s + toNumber(r?.salesAmount), 0)
+
+    // 매출 현황 Y축
+    regionAmountAxisTicks.value = [1, 0.75, 0.5, 0.25, 0].map((r) =>
+      formatKrwCompact(maxAmount * r),
+    )
+    // 계약건수 Y축
+    regionCountAxisTicks.value = [1, 0.75, 0.5, 0.25, 0].map(
+      (r) => `${Math.round(maxCount * r).toLocaleString()}건`,
+    )
+
+    regionAmountBars.value = regions.map((r) => ({
+      label: r?.region ?? '-',
+      height: pct(r?.salesAmount, maxAmount),
+      tooltip: formatKrwCompact(r?.salesAmount),
+    }))
+
+    // 계약건수 그래프: 좌측부터 계약건수 내림차순
+    const byCount = [...regions].sort(
+      (a, b) => toNumber(b?.contractCount) - toNumber(a?.contractCount),
+    )
+    regionCountBars.value = byCount.map((r) => ({
+      label: r?.region ?? '-',
+      height: pct(r?.contractCount, maxCount),
+      tooltip: `${toNumber(r?.contractCount).toLocaleString()}건`,
+    }))
+
+    // 매출 비율 (pie labels)
+    const PIE_COLORS = [
+      '#3f7cf1',
+      '#2ecc71',
+      '#f39c12',
+      '#e74c3c',
+      '#9b59b6',
+      '#1abc9c',
+      '#34495e',
+      '#7f8c8d',
+      '#16a085',
+      '#8e44ad',
+    ]
+    regionPieLabels.value = regions.map((r, i) => {
+      const amt = toNumber(r?.salesAmount)
+      const pctVal = totalAmount > 0 ? ((amt / totalAmount) * 100).toFixed(1) : '0.0'
+      return {
+        label: r?.region ?? '-',
+        value: `${pctVal}%`,
+        color: PIE_COLORS[i % PIE_COLORS.length],
+      }
+    })
+
+    // 상세 현황 테이블 (물품만 있으므로 용역/공사/민수는 '-')
+    regionDetailRows.value = regions.map((r, idx) => ({
+      rank: toNumber(r?.rank) || idx + 1,
+      region: r?.region ?? '-',
+      goods: formatKrwCompact(r?.salesAmount),
+      service: '-',
+      construction: '-',
+      private: '-',
+      total: formatKrwCompact(r?.salesAmount),
+      count: `${toNumber(r?.contractCount)}건`,
+    }))
+
+    regionLoaded.value = true
+  } catch (e) {
+    regionError.value = e?.message || '지역별 물품 데이터 조회 실패'
+    regionAmountAxisTicks.value = ['0원', '0원', '0원', '0원', '0원']
+    regionCountAxisTicks.value = ['0건', '0건', '0건', '0건', '0건']
+    regionAmountBars.value = []
+    regionCountBars.value = []
+    regionPieLabels.value = []
+    regionDetailRows.value = []
+  } finally {
+    regionLoading.value = false
+  }
+}
+
 const regionCategoryTabs = [
+  { label: '전체', value: '전체' },
   { label: '물품', value: '물품' },
   { label: '공사', value: '공사' },
   { label: '용역', value: '용역' },
   { label: '3자단가', value: '3자단가' },
 ]
-const regionCategoryTab = ref('물품')
+const regionCategoryTab = ref('전체')
+
+// 지역별 물품 데이터: API 연동 (전체/물품 탭에서만 표시)
+const regionLoading = ref(false)
+const regionLoaded = ref(false)
+const regionError = ref('')
+const regionAmountAxisTicks = ref(['0원', '0원', '0원', '0원', '0원'])
+const regionAmountBars = ref([])
+const regionCountAxisTicks = ref(['0건', '0건', '0건', '0건', '0건'])
+const regionCountBars = ref([])
+const regionPieLabels = ref([])
+const regionDetailRows = ref([])
+
+const showRegionGoodsData = computed(
+  () => regionCategoryTab.value === '전체' || regionCategoryTab.value === '물품',
+)
 
 const regionLegend = ref([
   { label: '공사', color: '#f39c12' },
@@ -999,162 +1168,7 @@ const regionStackedBars = ref([
   },
 ])
 
-const regionPieLabels = ref([
-  { label: '서울', value: '40.2%', color: '#3f7cf1' },
-  { label: '충북', value: '20.8%', color: '#2ecc71' },
-  { label: '경기', value: '15.4%', color: '#f39c12' },
-  { label: '충남', value: '8.3%', color: '#e74c3c' },
-  { label: '울산', value: '5.1%', color: '#9b59b6' },
-  { label: '강원', value: '4.2%', color: '#1abc9c' },
-  { label: '전북', value: '2.4%', color: '#34495e' },
-  { label: '대전', value: '1.7%', color: '#7f8c8d' },
-  { label: '대구', value: '1.0%', color: '#16a085' },
-  { label: '부산', value: '0.9%', color: '#8e44ad' },
-])
-
-const regionCountBars = ref([
-  { label: '서울', height: '85%' },
-  { label: '충북', height: '25%' },
-  { label: '경기', height: '85%' },
-  { label: '충남', height: '12%' },
-  { label: '울산', height: '45%' },
-  { label: '강원', height: '12%' },
-  { label: '전북', height: '12%' },
-  { label: '대전', height: '12%' },
-])
-
-const regionDetailRows = ref([
-  {
-    rank: 1,
-    region: '서울',
-    goods: '51.3억',
-    service: '1.5억',
-    construction: '5.0억',
-    private: '2500만',
-    total: '58.0억',
-    count: '7건',
-  },
-  {
-    rank: 2,
-    region: '충북',
-    goods: '0만',
-    service: '0만',
-    construction: '30.0억',
-    private: '0만',
-    total: '30.0억',
-    count: '2건',
-  },
-  {
-    rank: 3,
-    region: '경기',
-    goods: '1.2억',
-    service: '12.0억',
-    construction: '8.0억',
-    private: '1.1억',
-    total: '22.3억',
-    count: '7건',
-  },
-  {
-    rank: 4,
-    region: '충남',
-    goods: '0만',
-    service: '0만',
-    construction: '12.0억',
-    private: '0만',
-    total: '12.0억',
-    count: '1건',
-  },
-  {
-    rank: 5,
-    region: '울산',
-    goods: '0만',
-    service: '1.2억',
-    construction: '0만',
-    private: '6.2억',
-    total: '7.4억',
-    count: '4건',
-  },
-  {
-    rank: 6,
-    region: '강원',
-    goods: '0만',
-    service: '0만',
-    construction: '6.0억',
-    private: '0만',
-    total: '6.0억',
-    count: '1건',
-  },
-  {
-    rank: 7,
-    region: '전북',
-    goods: '0만',
-    service: '0만',
-    construction: '3.5억',
-    private: '0만',
-    total: '3.5억',
-    count: '1건',
-  },
-  {
-    rank: 8,
-    region: '대전',
-    goods: '2.0억',
-    service: '0만',
-    construction: '0만',
-    private: '0만',
-    total: '2.0억',
-    count: '1건',
-  },
-  {
-    rank: 9,
-    region: '대구',
-    goods: '0만',
-    service: '9500만',
-    construction: '0만',
-    private: '0만',
-    total: '9500만',
-    count: '1건',
-  },
-  {
-    rank: 10,
-    region: '부산',
-    goods: '0만',
-    service: '8000만',
-    construction: '0만',
-    private: '0만',
-    total: '8000만',
-    count: '1건',
-  },
-  {
-    rank: 11,
-    region: '광주',
-    goods: '0만',
-    service: '6000만',
-    construction: '0만',
-    private: '0만',
-    total: '6000만',
-    count: '1건',
-  },
-  {
-    rank: 12,
-    region: '인천',
-    goods: '4500만',
-    service: '0만',
-    construction: '0만',
-    private: '0만',
-    total: '4500만',
-    count: '1건',
-  },
-  {
-    rank: 13,
-    region: '경북',
-    goods: '0만',
-    service: '0만',
-    construction: '0만',
-    private: '4000만',
-    total: '4000만',
-    count: '1건',
-  },
-])
+// regionPieLabels, regionCountBars, regionDetailRows are populated by fetchRegionMarket
 
 const activeRankTab = ref('매출액 순위')
 const rankTabs = ['매출액 순위', '계약건수 순위', '평균단가 순위']
@@ -1444,13 +1458,20 @@ watch(activeTab, (tab) => {
   if (tab === '수요기관별' && !agencyLoaded.value && !agencyLoading.value) {
     fetchDemandAgencyMarket()
   }
+  if (tab === '지역별' && !regionLoaded.value && !regionLoading.value) {
+    fetchRegionMarket()
+  }
 })
 
-// 기간 필터가 바뀌면(연도/기간/모드) 수요기관별 캐시 무효화 + 현재 탭이면 즉시 재조회
+// 기간 필터가 바뀌면 캐시 무효화 + 현재 탭이면 즉시 재조회
 watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
   agencyLoaded.value = false
+  regionLoaded.value = false
   if (activeTab.value === '수요기관별' && !agencyLoading.value) {
     fetchDemandAgencyMarket()
+  }
+  if (activeTab.value === '지역별' && !regionLoading.value) {
+    fetchRegionMarket()
   }
 })
 </script>
@@ -2029,11 +2050,10 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
   overflow: hidden;
 }
 
-/* Y축: 0이 맨 아래, max가 맨 위 (column 방향), 막대 영역 140px와 높이 맞춤 */
+/* Y축: 0이 맨 아래, max가 맨 위, 막대 영역 140px와 높이 맞춤 (grid로 틱 위치 정확히 맞춤) */
 .agency-y-axis {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: grid;
+  grid-template-rows: repeat(5, 1fr);
   flex-shrink: 0;
   width: 56px;
   height: 140px;
@@ -2041,13 +2061,17 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
   font-size: 11px;
   color: #64748b;
   text-align: right;
-  line-height: 1.2;
   align-self: flex-start;
+  box-sizing: border-box;
 }
 
 .agency-y-tick {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   white-space: nowrap;
   flex-shrink: 0;
+  line-height: 1;
 }
 
 .agency-chart-scroll {
@@ -2188,12 +2212,75 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
   padding: 16px;
 }
 
-.stacked-grid {
+/* 지역별 매출 현황: Y축 + 막대 (물품 API 연동) */
+.region-chart-with-axis {
   display: flex;
-  justify-content: space-between;
-  color: #9aa6b2;
-  font-size: 12px;
-  margin-left: 20px;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.region-chart-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.region-chart-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.region-chart-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.region-placeholder {
+  padding: 24px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.region-y-tick {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.region-stacked-with-axis {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+/* Y축: 막대 영역과 높이 맞춤 (지역별 매출 현황: 140px) */
+.region-chart-with-axis .region-y-axis {
+  display: grid;
+  grid-template-rows: repeat(5, 1fr);
+  flex-shrink: 0;
+  width: 56px;
+  height: 140px;
+  padding: 0 6px 0 0;
+  font-size: 11px;
+  color: #64748b;
+  text-align: right;
+  align-self: flex-start;
+  box-sizing: border-box;
+}
+
+.region-y-axis span {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  line-height: 1;
 }
 
 .stacked-bars {
@@ -2201,7 +2288,7 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
   gap: 16px;
   align-items: flex-end;
   height: 220px;
-  margin-top: 12px;
+  flex: 1;
 }
 
 .stacked-column {

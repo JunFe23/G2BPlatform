@@ -202,4 +202,22 @@
         WHERE bid_notice_no = #{bidNoticeNo}
           AND vendor_biz_reg_no = #{vendorBizRegNo}
     </update>
+
+    <!-- ========================================================= -->
+    <!-- 지역별 물품 조달시장 분석(대시보드) -->
+    <!-- - first_contract_date로 기간 필터, final_contract_amount 집계 -->
+    <!-- - demand_agency_region 기준 그룹 (시/도 단위: 구 제외, 공백 앞 부분만) -->
+    <!-- ========================================================= -->
+    <select id="selectRegionMarketByFirstDate" resultType="map">
+        SELECT
+            SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1) AS region,
+            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+            COUNT(*) AS contractCount,
+            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+        FROM procurement_contract_summary
+        WHERE first_contract_date &gt;= #{from}
+          AND first_contract_date &lt;= #{to}
+        GROUP BY SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1)
+        ORDER BY salesAmount DESC
+    </select>
 </mapper>

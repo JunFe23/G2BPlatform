@@ -61,6 +61,26 @@ public class ReportDataController {
     }
 
     /**
+     * 지역별 물품 조달시장 분석(대시보드) - procurement_contract_summary 기반.
+     * first_contract_date 기간 필터, final_contract_amount 집계.
+     */
+    @Operation(summary = "지역별 물품 조달시장 분석", description = "기간(from/to)에 맞는 최초계약일자로 필터, 최종계약금액 기준 지역별 집계")
+    @GetMapping("/region-market")
+    public ResponseEntity<Map<String, Object>> getRegionMarket(
+            @Parameter(description = "기간 시작 (yyyy-mm-dd)", required = true) @RequestParam String from,
+            @Parameter(description = "기간 종료 (yyyy-mm-dd)", required = true) @RequestParam String to
+    ) {
+        try {
+            return ResponseEntity.ok(reportDataService.getRegionMarket(from, to));
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        }
+    }
+
+    /**
      * 순위분석 탭에서 사용하는 Top 리스트/종합 순위표 데이터를 반환합니다.
      */
     @Operation(summary = "순위분석 데이터", description = "대시보드 순위분석 탭 데이터")

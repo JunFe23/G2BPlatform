@@ -195,6 +195,42 @@ public class ReportDataService {
         return wrap(data);
     }
 
+    /**
+     * 지역별 물품 조달시장 분석(대시보드).
+     * - first_contract_date로 기간 필터
+     * - final_contract_amount 기준 집계
+     */
+    public Map<String, Object> getRegionMarket(String from, String to) {
+        if (from == null || from.isBlank()) {
+            throw new IllegalArgumentException("from은 필수입니다 (yyyy-mm-dd)");
+        }
+        if (to == null || to.isBlank()) {
+            throw new IllegalArgumentException("to는 필수입니다 (yyyy-mm-dd)");
+        }
+        try {
+            LocalDate fromDate = LocalDate.parse(from.trim());
+            LocalDate toDate = LocalDate.parse(to.trim());
+            if (fromDate.isAfter(toDate)) {
+                throw new IllegalArgumentException("from은 to보다 클 수 없습니다");
+            }
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("from/to 날짜 형식이 올바르지 않습니다 (yyyy-mm-dd)");
+        }
+
+        List<Map<String, Object>> rows = procurementContractSummaryMapper.selectRegionMarketByFirstDate(from, to);
+        addRank(rows);
+
+        Map<String, Object> condition = new LinkedHashMap<>();
+        condition.put("from", from);
+        condition.put("to", to);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("regions", rows);
+        data.put("condition", condition);
+
+        return wrap(data);
+    }
+
     private void addRank(List<Map<String, Object>> rows) {
         if (rows == null || rows.isEmpty()) return;
         for (int i = 0; i < rows.size(); i++) {
