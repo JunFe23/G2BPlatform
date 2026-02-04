@@ -79,4 +79,10 @@ public interface ProcurementContractSummaryMapper {
             @Param("to") String to,
             @Param("topN") int topN
     );
+
+    /** 지역별 물품 조달시장 분석: first_contract_date 기간 필터, final_contract_amount 집계 */
+    List<Map<String, Object>> selectRegionMarketByFirstDate(
+            @Param("from") String from,
+            @Param("to") String to
+    );
 }
