@@ -3,7 +3,10 @@ package org.example.g2bplatform.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.example.g2bplatform.service.ExcelService;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.example.g2bplatform.service.ReportDataService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,11 +26,9 @@ import java.util.Map;
 public class ReportDataController {
 
     private final ReportDataService reportDataService;
-    private final ExcelService excelService;
 
-    public ReportDataController(ReportDataService reportDataService, ExcelService excelService) {
+    public ReportDataController(ReportDataService reportDataService) {
         this.reportDataService = reportDataService;
-        this.excelService = excelService;
     }
 
     /**
@@ -181,16 +182,61 @@ public class ReportDataController {
             @Parameter(description = "기간 종료") @RequestParam(required = false) String rangeEnd,
             @Parameter(description = "저장된 데이터만") @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly
     ) throws IOException {
-        List<Map<String, Object>> data = reportDataService.getReportGoodsForExcel(
-                dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
-                firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
-        byte[] bytes = excelService.createReportGoodsExcel(data).toByteArray();
         String filename = "report_goods_" + System.currentTimeMillis() + ".xlsx";
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=\"" + URLEncoder.encode(filename, StandardCharsets.UTF_8) + "\"; filename*=UTF-8''" + URLEncoder.encode(filename, StandardCharsets.UTF_8));
-        response.setContentLength(bytes.length);
-        response.getOutputStream().write(bytes);
-        response.getOutputStream().flush();
+
+        // 중요: 헤더를 먼저 커밋해 프록시(Nginx)가 "response header" 대기 중 타임아웃 나는 것을 방지
+        response.flushBuffer();
+
+        final String[] headerNames = {
+                "입찰공고번호", "업체명", "업체사업자등록번호", "계약명", "수요기관명", "수요기관지역명",
+                "품명내용", "입찰계약방법", "최초계약일자", "최초계약금액", "최종계약일자", "최종계약금액",
+                "계약차수", "장기계약여부"
+        };
+        final String[] keys = {
+                "bidNoticeNo", "vendorName", "vendorBizRegNo", "contractTitle", "demandAgencyName", "demandAgencyRegion",
+                "detailItemName", "contractMethod", "firstContractDate", "firstContractAmount", "finalContractDate", "finalContractAmount",
+                "contractCount", "isLongTerm"
+        };
+
+        // SXSSF: 대용량 엑셀 생성 시 메모리 사용량 완화 (row window)
+        try (SXSSFWorkbook workbook = new SXSSFWorkbook(200)) {
+            Sheet sheet = workbook.createSheet("보고서물품");
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headerNames.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headerNames[i]);
+            }
+
+            int rowNum = 1;
+            final int pageSize = 5000;
+            int start = 0;
+
+            while (true) {
+                List<Map<String, Object>> page = reportDataService.getReportGoodsList(
+                        start, pageSize, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
+                        firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly
+                );
+                if (page == null || page.isEmpty()) break;
+
+                for (Map<String, Object> row : page) {
+                    Row excelRow = sheet.createRow(rowNum++);
+                    for (int colNum = 0; colNum < keys.length; colNum++) {
+                        Object value = row != null ? row.getOrDefault(keys[colNum], "") : "";
+                        Cell cell = excelRow.createCell(colNum);
+                        cell.setCellValue(value != null ? String.valueOf(value) : "");
+                    }
+                }
+
+                start += pageSize;
+            }
+
+            workbook.write(response.getOutputStream());
+            response.getOutputStream().flush();
+            workbook.dispose(); // 임시파일 정리
+        }
     }
 
     /**
