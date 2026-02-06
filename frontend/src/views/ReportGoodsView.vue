@@ -39,6 +39,16 @@
         {{ isLoadingExcel ? '다운로드 중...' : '엑셀 다운로드' }}
       </button>
 
+      <!-- 엑셀 다운로드 중 프로그레스 오버레이 -->
+      <div v-if="isLoadingExcel" class="excel-download-overlay">
+        <div class="excel-download-progress">
+          <div class="excel-spinner"></div>
+          <p class="excel-progress-title">엑셀 생성 중</p>
+          <p class="excel-progress-desc">데이터가 많을 경우 1~10분 정도 걸릴 수 있습니다.</p>
+          <p class="excel-progress-hint">창을 닫지 마세요.</p>
+        </div>
+      </div>
+
       <div v-if="isLoading" class="loading-spinner-container">
         <div class="loading-spinner"></div>
       </div>
@@ -224,8 +234,10 @@ const handleDownloadExcel = async () => {
     Object.entries(buildParams(false)).forEach(([k, v]) => {
       if (v !== undefined && v !== '') params.append(k, v)
     })
+    // 대용량 엑셀 생성 대비 타임아웃 10분
     const { data } = await axios.get('/api/report/goods/excel?' + params.toString(), {
       responseType: 'blob',
+      timeout: 600000,
     })
     const url = URL.createObjectURL(new Blob([data]))
     const a = document.createElement('a')
@@ -235,7 +247,11 @@ const handleDownloadExcel = async () => {
     URL.revokeObjectURL(url)
   } catch (e) {
     console.error('엑셀 다운로드 실패', e)
-    alert('엑셀 다운로드에 실패했습니다.')
+    alert(
+      e?.code === 'ECONNABORTED'
+        ? '요청 시간이 초과되었습니다. 조건을 줄이거나 다시 시도해 주세요.'
+        : '엑셀 다운로드에 실패했습니다.',
+    )
   } finally {
     isLoadingExcel.value = false
   }
@@ -314,6 +330,53 @@ input[type='month'] {
 .excel-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.excel-download-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.excel-download-progress {
+  background: #fff;
+  padding: 28px 36px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.excel-spinner {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  border: 4px solid #ecf0f1;
+  border-top: 4px solid #27ae60;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.excel-progress-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #2c3e50;
+}
+
+.excel-progress-desc {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin: 0 0 4px;
+}
+
+.excel-progress-hint {
+  font-size: 12px;
+  color: #95a5a6;
+  margin: 0;
 }
 
 .checkbox-label {
