@@ -15,7 +15,12 @@ export default defineConfig({
   server: {
     host: '127.0.0.1', // IPv4만 사용 (::1 바인딩 EPERM 회피)
     proxy: {
-      '/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        proxyTimeout: 600000,
+        timeout: 600000,
+      },
     },
   },
 })

@@ -8,12 +8,16 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.example.g2bplatform.service.ReportDataService;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletResponse;
-
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -172,8 +176,7 @@ public class ReportDataController {
      */
     @Operation(summary = "보고서 물품 엑셀 다운로드")
     @GetMapping("/goods/excel")
-    public void getReportGoodsExcel(
-            HttpServletResponse response,
+    public ResponseEntity<Resource> getReportGoodsExcel(
             @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
             @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
             @Parameter(description = "품명내용") @RequestParam(required = false) String prdctClsfcNo,
@@ -196,7 +199,6 @@ public class ReportDataController {
                 "contractCount", "isLongTerm"
         };
 
-        // 엑셀을 임시파일로 완성한 뒤 응답에 스트리밍 → chunked 끊김/ERR_INCOMPLETE 방지
         Path tempFile = Files.createTempFile("report_goods_", ".xlsx");
         try {
             try (SXSSFWorkbook workbook = new SXSSFWorkbook(200); OutputStream out = Files.newOutputStream(tempFile)) {
@@ -234,15 +236,31 @@ public class ReportDataController {
                 workbook.dispose();
             }
 
-            String filename = "report_goods_" + System.currentTimeMillis() + ".xlsx";
             long size = Files.size(tempFile);
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setHeader("Content-Disposition", "attachment; filename=\"" + URLEncoder.encode(filename, StandardCharsets.UTF_8) + "\"; filename*=UTF-8''" + URLEncoder.encode(filename, StandardCharsets.UTF_8));
-            response.setContentLengthLong(size);
-            Files.copy(tempFile, response.getOutputStream());
-            response.getOutputStream().flush();
-        } finally {
+            String filename = "report_goods_" + System.currentTimeMillis() + ".xlsx";
+            InputStream in = Files.newInputStream(tempFile);
+            InputStream deletingStream = new FilterInputStream(in) {
+                @Override
+                public void close() throws IOException {
+                    try {
+                        super.close();
+                    } finally {
+                        Files.deleteIfExists(tempFile);
+                    }
+                }
+            };
+
+            return ResponseEntity.ok()
+                    .contentLength(size)
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + URLEncoder.encode(filename, StandardCharsets.UTF_8) + "\"; filename*=UTF-8''" + URLEncoder.encode(filename, StandardCharsets.UTF_8))
+                    .body(new InputStreamResource(deletingStream));
+        } catch (IOException e) {
             Files.deleteIfExists(tempFile);
+            throw e;
+        } catch (Exception e) {
+            Files.deleteIfExists(tempFile);
+            throw new IOException(e);
         }
     }
 
