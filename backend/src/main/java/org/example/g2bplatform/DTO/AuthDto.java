@@ -1,4 +1,4 @@
-package org.example.g2bplatform.dto;
+package org.example.g2bplatform.DTO;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

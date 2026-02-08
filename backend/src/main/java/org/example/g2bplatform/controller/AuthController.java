@@ -1,7 +1,7 @@
 package org.example.g2bplatform.controller;
 
 import jakarta.validation.Valid;
-import org.example.g2bplatform.dto.AuthDto;
+import org.example.g2bplatform.DTO.AuthDto;
 import org.example.g2bplatform.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

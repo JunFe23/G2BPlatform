@@ -1,6 +1,6 @@
 package org.example.g2bplatform.service;
 
-import org.example.g2bplatform.dto.AuthDto;
+import org.example.g2bplatform.DTO.AuthDto;
 import org.example.g2bplatform.entity.PasswordResetToken;
 import org.example.g2bplatform.entity.User;
 import org.example.g2bplatform.repository.PasswordResetTokenRepository;
