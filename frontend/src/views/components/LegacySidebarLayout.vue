@@ -53,6 +53,15 @@
         <li class="menu-item" @click="$router.push('/target-projects')">
           <span class="menu-label">수주대상 사업탐색</span>
         </li>
+        <template v-if="authStore.isLoggedIn">
+          <li class="menu-divider"></li>
+          <li class="menu-item menu-auth" @click="$router.push('/account')">
+            <span class="menu-label">계정정보</span>
+          </li>
+          <li class="menu-item menu-auth" @click="handleLogout">
+            <span class="menu-label">로그아웃</span>
+          </li>
+        </template>
       </ul>
     </div>
     <div class="content">
@@ -64,8 +73,15 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
+}
 const isSidebarExpanded = ref(false)
 const isSubmenuOpen = ref(false)
 const isReportSubmenuOpen = ref(false)
@@ -189,6 +205,13 @@ const toggleReportSubmenu = () => {
 .sidebar.expanded .menu-label {
   opacity: 1;
   transform: translateX(0);
+}
+
+.menu-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 12px 10px;
+  list-style: none;
 }
 
 .content {

@@ -44,7 +44,9 @@
         <div class="excel-download-progress">
           <div class="excel-spinner"></div>
           <p class="excel-progress-title">엑셀 생성 중</p>
-          <p class="excel-progress-desc">데이터가 많을 경우 1~10분 정도 걸릴 수 있습니다.</p>
+          <p class="excel-progress-desc">
+            데이터가 많을 경우 10~30분 정도 걸릴 수 있습니다. 조건을 좁히면 더 빠릅니다.
+          </p>
           <p class="excel-progress-hint">창을 닫지 마세요.</p>
         </div>
       </div>
@@ -234,10 +236,10 @@ const handleDownloadExcel = async () => {
     Object.entries(buildParams(false)).forEach(([k, v]) => {
       if (v !== undefined && v !== '') params.append(k, v)
     })
-    // 대용량 엑셀 생성 대비 타임아웃 10분
+    // 대용량 엑셀 생성 대비 타임아웃 30분
     const { data } = await axios.get('/api/report/goods/excel?' + params.toString(), {
       responseType: 'blob',
-      timeout: 600000,
+      timeout: 1800000,
     })
     const url = URL.createObjectURL(new Blob([data]))
     const a = document.createElement('a')

@@ -121,6 +121,19 @@ public class ReportDataService {
     }
 
     /**
+     * 엑셀용 Keyset 페이지네이션 - LIMIT offset 대비 대용량 시에도 O(1) 유지.
+     */
+    public List<Map<String, Object>> getReportGoodsListKeyset(int length,
+            String lastFirstContractDate, String lastBidNoticeNo, String lastVendorBizRegNo,
+            String demandAgencyName, String demandAgencyRegion, String detailItemName, String contractMethod,
+            String firstContractDate, Integer year, String month, String rangeStart, String rangeEnd, boolean showSavedOnly) {
+        return procurementContractSummaryMapper.selectReportGoodsListKeyset(
+                length, lastFirstContractDate, lastBidNoticeNo, lastVendorBizRegNo,
+                demandAgencyName, demandAgencyRegion, detailItemName, contractMethod,
+                firstContractDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+    }
+
+    /**
      * 보고서 물품 저장 여부 업데이트.
      */
     public int updateReportGoodsSaved(String bidNoticeNo, String vendorBizRegNo, String saved) {
