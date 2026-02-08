@@ -59,10 +59,10 @@ dependencies {
     implementation 'com.google.apis:google-api-services-sheets:v4-rev612-1.25.0'
     implementation 'com.google.http-client:google-http-client-jackson2:1.41.5'
 
-    // JWT
+    // JWT (jjwt 0.12.x)
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
 
     // 기타 유틸
     implementation 'org.apache.poi:poi-ooxml:5.2.3'
