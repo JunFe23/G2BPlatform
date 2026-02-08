@@ -24,6 +24,24 @@ public interface ProcurementContractSummaryMapper {
             @Param("showSavedOnly") boolean showSavedOnly
     );
 
+    /** 엑셀용 Keyset 페이지네이션 - LIMIT offset 대비 대용량 시 O(1) 유지 */
+    List<Map<String, Object>> selectReportGoodsListKeyset(
+            @Param("length") int length,
+            @Param("lastFirstContractDate") String lastFirstContractDate,
+            @Param("lastBidNoticeNo") String lastBidNoticeNo,
+            @Param("lastVendorBizRegNo") String lastVendorBizRegNo,
+            @Param("demandAgencyName") String demandAgencyName,
+            @Param("demandAgencyRegion") String demandAgencyRegion,
+            @Param("detailItemName") String detailItemName,
+            @Param("contractMethod") String contractMethod,
+            @Param("firstContractDate") String firstContractDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") boolean showSavedOnly
+    );
+
     int selectReportGoodsCount(
             @Param("demandAgencyName") String demandAgencyName,
             @Param("demandAgencyRegion") String demandAgencyRegion,

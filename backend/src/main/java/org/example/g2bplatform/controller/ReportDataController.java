@@ -211,12 +211,15 @@ public class ReportDataController {
                 }
 
                 int rowNum = 1;
-                final int pageSize = 5000;
-                int start = 0;
+                final int pageSize = 20000;
+                String lastFirstContractDate = null;
+                String lastBidNoticeNo = null;
+                String lastVendorBizRegNo = null;
 
                 while (true) {
-                    List<Map<String, Object>> page = reportDataService.getReportGoodsList(
-                            start, pageSize, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
+                    List<Map<String, Object>> page = reportDataService.getReportGoodsListKeyset(
+                            pageSize, lastFirstContractDate, lastBidNoticeNo, lastVendorBizRegNo,
+                            dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
                             firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly
                     );
                     if (page == null || page.isEmpty()) break;
@@ -228,8 +231,13 @@ public class ReportDataController {
                             Cell cell = excelRow.createCell(colNum);
                             cell.setCellValue(value != null ? String.valueOf(value) : "");
                         }
+                        Object fc = row != null ? row.get("firstContractDate") : null;
+                        Object bid = row != null ? row.get("bidNoticeNo") : null;
+                        Object ven = row != null ? row.get("vendorBizRegNo") : null;
+                        lastFirstContractDate = fc != null ? fc.toString() : null;
+                        lastBidNoticeNo = bid != null ? bid.toString() : null;
+                        lastVendorBizRegNo = ven != null ? ven.toString() : null;
                     }
-                    start += pageSize;
                 }
 
                 workbook.write(out);
