@@ -19,6 +19,12 @@ export const useAuthStore = defineStore('auth', () => {
   )
 
   const isLoggedIn = computed(() => !!token.value)
+  const isAdmin = computed(
+    () =>
+      !!user.value?.role &&
+      (user.value.role === 'ROLE_ADMIN' || user.value.role === 'ROLE_SUPER_ADMIN'),
+  )
+  const isSuperAdmin = computed(() => user.value?.role === 'ROLE_SUPER_ADMIN')
 
   function setAuth(accessToken, userData) {
     token.value = accessToken
@@ -51,5 +57,5 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
 
-  return { token, user, isLoggedIn, setAuth, logout, login, signup, fetchMe }
+  return { token, user, isLoggedIn, isAdmin, isSuperAdmin, setAuth, logout, login, signup, fetchMe }
 })

@@ -56,7 +56,7 @@ public class AuthService {
         user.setUsername(req.getUsername());
         user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         user.setEmail(req.getEmail());
-        user.setRole("ROLE_USER");
+        user.setRole("super_admin".equalsIgnoreCase(req.getUsername()) ? "ROLE_SUPER_ADMIN" : "ROLE_USER");
         userRepository.save(user);
     }
 

@@ -54,6 +54,12 @@
           <span class="menu-label">수주대상 사업탐색</span>
         </li>
         <template v-if="authStore.isLoggedIn">
+          <template v-if="authStore.isAdmin">
+            <li class="menu-divider"></li>
+            <li class="menu-item menu-auth" @click="$router.push('/admin/users')">
+              <span class="menu-label">관리자</span>
+            </li>
+          </template>
           <li class="menu-divider"></li>
           <li class="menu-item menu-auth" @click="$router.push('/account')">
             <span class="menu-label">계정정보</span>

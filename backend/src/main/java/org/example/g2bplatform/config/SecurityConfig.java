@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/signup", "/api/auth/login",
                                 "/api/auth/recovery/request", "/api/auth/recovery/reset").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .exceptionHandling(ex -> ex
