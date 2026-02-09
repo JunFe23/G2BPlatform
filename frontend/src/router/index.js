@@ -22,6 +22,7 @@ import SignupView from '../views/auth/SignupView.vue'
 import SignupSuccessView from '../views/auth/SignupSuccessView.vue'
 import AccountRecoveryView from '../views/auth/AccountRecoveryView.vue'
 import AccountView from '../views/auth/AccountView.vue'
+import AdminUsersView from '../views/admin/AdminUsersView.vue'
 
 const PUBLIC_PATHS = ['/login', '/signup', '/signup/success', '/account-recovery']
 
@@ -57,6 +58,12 @@ const router = createRouter({
       name: 'account',
       component: AccountView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: AdminUsersView,
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/',
@@ -174,6 +181,10 @@ router.beforeEach((to, _from, next) => {
   }
   if (!isLoggedIn) {
     next({ name: 'login', query: { redirect: to.fullPath } })
+    return
+  }
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    next({ name: 'report-goods' })
     return
   }
   next()
