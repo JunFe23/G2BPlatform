@@ -160,6 +160,59 @@
         LIMIT #{start}, #{length}
     </select>
 
+    <!-- 엑셀용 스트리밍: 동일 조건, LIMIT 없음. idx_pcs_order(first_contract_date DESC) 사용으로 정렬 비용 최소화 -->
+    <select id="selectReportGoodsListForExport" fetchSize="1000" resultType="map">
+        SELECT
+            bid_notice_no        AS bidNoticeNo,
+            vendor_name          AS vendorName,
+            vendor_biz_reg_no    AS vendorBizRegNo,
+            contract_title      AS contractTitle,
+            demand_agency_name  AS demandAgencyName,
+            demand_agency_region AS demandAgencyRegion,
+            detail_item_name     AS detailItemName,
+            contract_method      AS contractMethod,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')  AS firstContractDate,
+            first_contract_amount AS firstContractAmount,
+            DATE_FORMAT(final_contract_date, '%Y-%m-%d')  AS finalContractDate,
+            final_contract_amount AS finalContractAmount,
+            contract_count      AS contractCount,
+            is_long_term        AS isLongTerm,
+            IFNULL(saved, 'N')   AS saved
+        FROM procurement_contract_summary USE INDEX (idx_pcs_order)
+        WHERE 1=1
+        <if test="demandAgencyName != null and demandAgencyName != ''">
+            AND demand_agency_name LIKE CONCAT('%', #{demandAgencyName}, '%')
+        </if>
+        <if test="demandAgencyRegion != null and demandAgencyRegion != ''">
+            AND demand_agency_region LIKE CONCAT('%', #{demandAgencyRegion}, '%')
+        </if>
+        <if test="detailItemName != null and detailItemName != ''">
+            AND detail_item_name LIKE CONCAT('%', #{detailItemName}, '%')
+        </if>
+        <if test="contractMethod != null and contractMethod != ''">
+            AND contract_method LIKE CONCAT('%', #{contractMethod}, '%')
+        </if>
+        <if test="firstContractDate != null and firstContractDate != ''">
+            AND first_contract_date = #{firstContractDate}
+        </if>
+        <if test="year != null">
+            AND first_contract_date &gt;= CONCAT(#{year}, '-01-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
+        </if>
+        <if test="month != null and month != ''">
+            AND first_contract_date &gt;= CONCAT(#{month}, '-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
+            AND first_contract_date &gt;= CONCAT(#{rangeStart}, '-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="showSavedOnly == true">
+            AND saved = 'Y'
+        </if>
+        ORDER BY first_contract_date DESC, bid_notice_no, vendor_biz_reg_no
+    </select>
+
     <!-- 엑셀용 Keyset 페이지네이션: LIMIT offset 대비 대용량 시에도 O(1) 유지 -->
     <select id="selectReportGoodsListKeyset" resultType="map">
         SELECT

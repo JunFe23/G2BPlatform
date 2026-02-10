@@ -201,7 +201,8 @@ public class ReportDataController {
 
         Path tempFile = Files.createTempFile("report_goods_", ".xlsx");
         try {
-            try (SXSSFWorkbook workbook = new SXSSFWorkbook(200); OutputStream out = Files.newOutputStream(tempFile)) {
+            // 스트리밍: 한 번의 쿼리로 fetchSize 단위 전달, idx_pcs_order 사용. 2만 건대도 수십 초 내 완료 목표.
+            try (SXSSFWorkbook workbook = new SXSSFWorkbook(500); OutputStream out = Files.newOutputStream(tempFile)) {
                 Sheet sheet = workbook.createSheet("보고서물품");
 
                 Row headerRow = sheet.createRow(0);
@@ -210,35 +211,20 @@ public class ReportDataController {
                     cell.setCellValue(headerNames[i]);
                 }
 
-                int rowNum = 1;
-                final int pageSize = 20000;
-                String lastFirstContractDate = null;
-                String lastBidNoticeNo = null;
-                String lastVendorBizRegNo = null;
-
-                while (true) {
-                    List<Map<String, Object>> page = reportDataService.getReportGoodsListKeyset(
-                            pageSize, lastFirstContractDate, lastBidNoticeNo, lastVendorBizRegNo,
-                            dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
-                            firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly
-                    );
-                    if (page == null || page.isEmpty()) break;
-
-                    for (Map<String, Object> row : page) {
-                        Row excelRow = sheet.createRow(rowNum++);
-                        for (int colNum = 0; colNum < keys.length; colNum++) {
-                            Object value = row != null ? row.getOrDefault(keys[colNum], "") : "";
-                            Cell cell = excelRow.createCell(colNum);
-                            cell.setCellValue(value != null ? String.valueOf(value) : "");
+                final int[] rowNumRef = { 1 };
+                reportDataService.streamReportGoodsForExcel(
+                        dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
+                        firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly,
+                        resultContext -> {
+                            Map<String, Object> row = resultContext.getResultObject();
+                            Row excelRow = sheet.createRow(rowNumRef[0]++);
+                            for (int colNum = 0; colNum < keys.length; colNum++) {
+                                Object value = row != null ? row.getOrDefault(keys[colNum], "") : "";
+                                Cell cell = excelRow.createCell(colNum);
+                                cell.setCellValue(value != null ? String.valueOf(value) : "");
+                            }
                         }
-                        Object fc = row != null ? row.get("firstContractDate") : null;
-                        Object bid = row != null ? row.get("bidNoticeNo") : null;
-                        Object ven = row != null ? row.get("vendorBizRegNo") : null;
-                        lastFirstContractDate = fc != null ? fc.toString() : null;
-                        lastBidNoticeNo = bid != null ? bid.toString() : null;
-                        lastVendorBizRegNo = ven != null ? ven.toString() : null;
-                    }
-                }
+                );
 
                 workbook.write(out);
                 workbook.dispose();
