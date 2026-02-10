@@ -2,6 +2,7 @@ package org.example.g2bplatform.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.session.ResultHandler;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,21 @@ public interface ProcurementContractSummaryMapper {
             @Param("rangeStart") String rangeStart,
             @Param("rangeEnd") String rangeEnd,
             @Param("showSavedOnly") boolean showSavedOnly
+    );
+
+    /** 엑셀용 스트리밍: 동일 조건, LIMIT 없음, fetchSize로 행 단위 전달. idx_pcs_order 사용 권장. */
+    void selectReportGoodsListForExport(
+            @Param("demandAgencyName") String demandAgencyName,
+            @Param("demandAgencyRegion") String demandAgencyRegion,
+            @Param("detailItemName") String detailItemName,
+            @Param("contractMethod") String contractMethod,
+            @Param("firstContractDate") String firstContractDate,
+            @Param("year") Integer year,
+            @Param("month") String month,
+            @Param("rangeStart") String rangeStart,
+            @Param("rangeEnd") String rangeEnd,
+            @Param("showSavedOnly") boolean showSavedOnly,
+            ResultHandler<Map<String, Object>> handler
     );
 
     /** 엑셀용 Keyset 페이지네이션 - LIMIT offset 대비 대용량 시 O(1) 유지 */

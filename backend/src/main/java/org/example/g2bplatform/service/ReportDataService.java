@@ -1,5 +1,6 @@
 package org.example.g2bplatform.service;
 
+import org.apache.ibatis.session.ResultHandler;
 import org.example.g2bplatform.mapper.ProcurementContractSummaryMapper;
 import org.springframework.stereotype.Service;
 
@@ -118,6 +119,17 @@ public class ReportDataService {
         return procurementContractSummaryMapper.selectReportGoodsList(
                 0, Integer.MAX_VALUE, demandAgencyName, demandAgencyRegion, detailItemName, contractMethod,
                 firstContractDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+    }
+
+    /**
+     * 엑셀용 스트리밍: 한 번의 쿼리로 행 단위 전달(fetchSize). idx_pcs_order 사용.
+     */
+    public void streamReportGoodsForExcel(String demandAgencyName, String demandAgencyRegion,
+            String detailItemName, String contractMethod, String firstContractDate, Integer year, String month,
+            String rangeStart, String rangeEnd, boolean showSavedOnly, ResultHandler<Map<String, Object>> handler) {
+        procurementContractSummaryMapper.selectReportGoodsListForExport(
+                demandAgencyName, demandAgencyRegion, detailItemName, contractMethod,
+                firstContractDate, year, month, rangeStart, rangeEnd, showSavedOnly, handler);
     }
 
     /**
