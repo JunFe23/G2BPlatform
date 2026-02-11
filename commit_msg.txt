@@ -1,5 +1,0 @@
-perf: 보고서 물품 엑셀 다운로드 스트리밍 전환 및 idx_pcs_order 사용
-
-- Keyset 배치 조회 제거, 한 번의 쿼리로 ResultHandler + fetchSize 스트리밍
-- USE INDEX (idx_pcs_order)로 정렬 비용 최소화
-- selectReportGoodsListForExport 추가, streamReportGoodsForExcel 서비스/컨트롤러 연동
