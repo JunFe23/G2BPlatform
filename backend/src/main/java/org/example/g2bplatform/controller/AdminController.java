@@ -34,6 +34,15 @@ public class AdminController {
         return ResponseEntity.ok(adminService.listUsers());
     }
 
+    @PatchMapping("/users/{id}/approve")
+    public ResponseEntity<Void> approveUser(Authentication auth, @PathVariable Long id) {
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        adminService.approveUser(id, auth.getName());
+        return ResponseEntity.ok().build();
+    }
+
     @PatchMapping("/users/{id}/role")
     public ResponseEntity<Void> updateUserRole(
             Authentication auth,

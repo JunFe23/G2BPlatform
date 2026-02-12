@@ -31,6 +31,10 @@ public class User {
     @Column(nullable = false, length = 50)
     private String role = "ROLE_USER";
 
+    /** 승인 여부. false면 가입 후 승인 대기, 로그인 불가. */
+    @Column(nullable = false)
+    private Boolean approved = true;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -77,6 +81,14 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Boolean getApproved() {
+        return approved;
+    }
+
+    public void setApproved(Boolean approved) {
+        this.approved = approved;
     }
 
     public Instant getCreatedAt() {

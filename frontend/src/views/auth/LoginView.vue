@@ -64,7 +64,10 @@ const handleLogin = async () => {
     const redirect = route.query.redirect || '/report-goods'
     router.push(redirect)
   } catch (e) {
-    errorMsg.value = e.response?.data?.message || '아이디 또는 비밀번호가 올바르지 않습니다.'
+    const code = e.response?.data?.code
+    errorMsg.value = code === 'NOT_APPROVED'
+      ? (e.response?.data?.message || '승인 대기 중입니다. 관리자 승인 후 이용 가능합니다.')
+      : (e.response?.data?.message || '아이디 또는 비밀번호가 올바르지 않습니다.')
   } finally {
     loading.value = false
   }

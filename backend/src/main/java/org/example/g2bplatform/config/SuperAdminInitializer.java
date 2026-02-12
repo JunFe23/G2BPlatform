@@ -25,10 +25,16 @@ public class SuperAdminInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         userRepository.findByUsername(SUPER_ADMIN_USERNAME).ifPresent(user -> {
+            boolean changed = false;
             if (!ROLE_SUPER_ADMIN.equals(user.getRole())) {
                 user.setRole(ROLE_SUPER_ADMIN);
-                userRepository.save(user);
+                changed = true;
             }
+            if (user.getApproved() == null || !user.getApproved()) {
+                user.setApproved(true);
+                changed = true;
+            }
+            if (changed) userRepository.save(user);
         });
     }
 }

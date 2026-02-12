@@ -56,7 +56,9 @@ public class AuthService {
         user.setUsername(req.getUsername());
         user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         user.setEmail(req.getEmail());
-        user.setRole("super_admin".equalsIgnoreCase(req.getUsername()) ? "ROLE_SUPER_ADMIN" : "ROLE_USER");
+        boolean isSuperAdmin = "super_admin".equalsIgnoreCase(req.getUsername());
+        user.setRole(isSuperAdmin ? "ROLE_SUPER_ADMIN" : "ROLE_USER");
+        user.setApproved(isSuperAdmin); // 일반 가입은 미승인, super_admin만 즉시 승인
         userRepository.save(user);
     }
 
@@ -65,6 +67,9 @@ public class AuthService {
                 .orElseThrow(() -> new AuthException("UNAUTHORIZED", "아이디 또는 비밀번호가 올바르지 않습니다."));
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
             throw new AuthException("UNAUTHORIZED", "아이디 또는 비밀번호가 올바르지 않습니다.");
+        }
+        if (user.getApproved() == null || !user.getApproved()) {
+            throw new AuthException("NOT_APPROVED", "승인 대기 중입니다. 관리자 승인 후 이용 가능합니다.");
         }
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
         AuthDto.UserInfo userInfo = new AuthDto.UserInfo(user.getUsername(), user.getRole());
