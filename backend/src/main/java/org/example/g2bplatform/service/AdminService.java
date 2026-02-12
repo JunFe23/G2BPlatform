@@ -32,6 +32,22 @@ public class AdminService {
     }
 
     /**
+     * 회원 승인. SUPER_ADMIN만 호출 가능.
+     */
+    @Transactional
+    public void approveUser(Long userId, String currentUsername) {
+        User current = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new AuthService.AuthException("UNAUTHORIZED", "인증되지 않았습니다."));
+        if (!ROLE_SUPER_ADMIN.equals(current.getRole())) {
+            throw new AuthService.AuthException("FORBIDDEN", "권한이 없습니다. 슈퍼관리자만 승인할 수 있습니다.");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthService.AuthException("NOT_FOUND", "사용자를 찾을 수 없습니다."));
+        user.setApproved(true);
+        userRepository.save(user);
+    }
+
+    /**
      * role 변경. SUPER_ADMIN만 호출 가능.
      */
     @Transactional
@@ -56,6 +72,7 @@ public class AdminService {
         s.setUsername(u.getUsername());
         s.setEmail(maskEmail(u.getEmail()));
         s.setRole(u.getRole());
+        s.setApproved(Boolean.TRUE.equals(u.getApproved()));
         s.setCreatedAt(u.getCreatedAt());
         return s;
     }
@@ -73,6 +90,7 @@ public class AdminService {
         private String username;
         private String email;
         private String role;
+        private boolean approved;
         private java.time.Instant createdAt;
 
         public Long getId() { return id; }
@@ -83,6 +101,8 @@ public class AdminService {
         public void setEmail(String email) { this.email = email; }
         public String getRole() { return role; }
         public void setRole(String role) { this.role = role; }
+        public boolean isApproved() { return approved; }
+        public void setApproved(boolean approved) { this.approved = approved; }
         public java.time.Instant getCreatedAt() { return createdAt; }
         public void setCreatedAt(java.time.Instant createdAt) { this.createdAt = createdAt; }
     }

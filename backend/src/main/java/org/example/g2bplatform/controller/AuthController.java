@@ -57,6 +57,7 @@ public class AuthController {
         HttpStatus status = switch (e.getCode()) {
             case "USERNAME_CONFLICT", "EMAIL_CONFLICT" -> HttpStatus.CONFLICT;
             case "UNAUTHORIZED" -> HttpStatus.UNAUTHORIZED;
+            case "NOT_APPROVED" -> HttpStatus.FORBIDDEN;
             case "TOKEN_INVALID", "BAD_REQUEST" -> HttpStatus.BAD_REQUEST;
             default -> HttpStatus.BAD_REQUEST;
         };

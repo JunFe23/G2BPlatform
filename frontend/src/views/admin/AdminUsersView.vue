@@ -11,17 +11,20 @@
             <tr>
               <th>아이디</th>
               <th>이메일</th>
+              <th>승인</th>
               <th>역할</th>
               <th v-if="authStore.isSuperAdmin">역할 변경</th>
+              <th v-if="authStore.isSuperAdmin">승인하기</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="users.length === 0">
-              <td :colspan="authStore.isSuperAdmin ? 4 : 3" class="no-data">등록된 사용자가 없습니다.</td>
+              <td :colspan="authStore.isSuperAdmin ? 6 : 4" class="no-data">등록된 사용자가 없습니다.</td>
             </tr>
             <tr v-for="u in users" :key="u.id">
               <td>{{ u.username }}</td>
               <td>{{ u.email }}</td>
+              <td>{{ u.approved ? '승인됨' : '대기' }}</td>
               <td>{{ roleLabel(u.role) }}</td>
               <td v-if="authStore.isSuperAdmin">
                 <select
@@ -33,6 +36,17 @@
                   <option value="ROLE_ADMIN">관리자</option>
                   <option value="ROLE_SUPER_ADMIN">슈퍼관리자</option>
                 </select>
+              </td>
+              <td v-if="authStore.isSuperAdmin">
+                <button
+                  v-if="!u.approved"
+                  type="button"
+                  class="approve-btn"
+                  @click="handleApprove(u.id)"
+                >
+                  승인
+                </button>
+                <span v-else class="approved-text">-</span>
               </td>
             </tr>
           </tbody>
@@ -90,6 +104,18 @@ async function handleRoleChange(userId, role) {
   }
 }
 
+async function handleApprove(userId) {
+  successMsg.value = ''
+  errorMsg.value = ''
+  try {
+    await axios.patch(`/api/admin/users/${userId}/approve`)
+    successMsg.value = '승인되었습니다.'
+    loadUsers()
+  } catch (e) {
+    errorMsg.value = e.response?.data?.message || '승인 처리에 실패했습니다.'
+  }
+}
+
 onMounted(() => {
   loadUsers()
 })
@@ -136,6 +162,21 @@ onMounted(() => {
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 0.95em;
+}
+.approve-btn {
+  padding: 6px 12px;
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+.approve-btn:hover {
+  background: #219a52;
+}
+.approved-text {
+  color: #7f8c8d;
 }
 .error-msg {
   margin-bottom: 12px;
