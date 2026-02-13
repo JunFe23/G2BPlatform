@@ -11,26 +11,6 @@
         </div>
       </header>
 
-      <section class="info-banner">
-        <div class="banner-left">
-          <div class="info-icon">i</div>
-          <div class="banner-text">
-            <strong>연차계약 표시 방식</strong>
-            <p>각 연도별 계약을 개별적으로 표시합니다</p>
-            <span class="example-pill"
-              >예시: 2020년 50억원 계약 → 2020년 25억원, 2021년 25억원 (분리)</span
-            >
-          </div>
-        </div>
-        <div class="banner-right">
-          <span>연도별 분리</span>
-          <label class="switch">
-            <input type="checkbox" v-model="isYearSeparated" />
-            <span class="slider"></span>
-          </label>
-        </div>
-      </section>
-
       <!-- 대시보드 공통 기간 필터 (모든 탭 데이터에 반영) -->
       <section class="filter-bar">
         <div class="filter-row">
@@ -713,7 +693,6 @@ import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 import axios from 'axios'
 import { ref, computed, onMounted, watch } from 'vue'
 
-const isYearSeparated = ref(false)
 const activeTab = ref('시장현황')
 
 // 대시보드 공통 기간 필터 (모든 탭 데이터에 반영)
