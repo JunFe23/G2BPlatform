@@ -639,8 +639,8 @@
       <section v-if="activeTab === '민수관리'" class="section">
         <h2 class="section-title">민수 계약 관리</h2>
         <div class="private-header">
-          <span>조달시장이 아닌 민수 계약 관리</span>
-          <button class="add-button">
+          <span>조달시장이 아닌 민수 계약 관리 (물품·공사·용역)</span>
+          <button type="button" class="add-button" @click="openPrivateModal">
             <span class="plus">＋</span>
             민수 계약 추가
           </button>
@@ -650,6 +650,7 @@
           <table class="detail-table private-table">
             <thead>
               <tr>
+                <th>유형</th>
                 <th>제품명</th>
                 <th>고객사</th>
                 <th>지역</th>
@@ -661,7 +662,11 @@
               </tr>
             </thead>
             <tbody>
+              <tr v-if="privateRows.length === 0">
+                <td colspan="9" class="no-data-cell">등록된 민수 계약이 없습니다. ‘민수 계약 추가’로 등록하세요.</td>
+              </tr>
               <tr v-for="row in privateRows" :key="row.id" :class="{ highlight: row.highlight }">
+                <td><span class="type-pill" :class="typePillClass(row.type)">{{ row.type || '물품' }}</span></td>
                 <td>
                   <span class="row-title">{{ row.product }}</span>
                   <span v-if="row.linked" class="link-pill">↩</span>
@@ -674,8 +679,8 @@
                 <td class="year-cell">{{ row.year }}</td>
                 <td>
                   <div class="action-buttons">
-                    <button class="icon-btn">✎</button>
-                    <button class="icon-btn danger">🗑</button>
+                    <button type="button" class="icon-btn">✎</button>
+                    <button type="button" class="icon-btn danger">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -683,6 +688,60 @@
           </table>
         </div>
       </section>
+
+      <!-- 민수 계약 추가 모달 -->
+      <Teleport to="body">
+        <div v-if="showPrivateModal" class="private-modal-overlay" @click.self="closePrivateModal">
+          <div class="private-modal">
+            <div class="private-modal-header">
+              <h3>민수 계약 추가</h3>
+              <button type="button" class="modal-close" aria-label="닫기" @click="closePrivateModal">×</button>
+            </div>
+            <form class="private-modal-body" @submit.prevent="submitPrivateContract">
+              <div class="form-row">
+                <label>유형 <span class="required">*</span></label>
+                <select v-model="privateForm.type" required class="form-input">
+                  <option value="물품">물품</option>
+                  <option value="공사">공사</option>
+                  <option value="용역">용역</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>제품명 / 계약명 <span class="required">*</span></label>
+                <input v-model="privateForm.product" type="text" required placeholder="예: 사무기기 일괄납품" class="form-input" />
+              </div>
+              <div class="form-row">
+                <label>고객사 / 수요기관 <span class="required">*</span></label>
+                <input v-model="privateForm.client" type="text" required placeholder="예: 현대중공업" class="form-input" />
+              </div>
+              <div class="form-row">
+                <label>지역</label>
+                <input v-model="privateForm.region" type="text" placeholder="예: 울산" class="form-input" />
+              </div>
+              <div class="form-row">
+                <label>계약금액 <span class="required">*</span></label>
+                <input v-model="privateForm.amount" type="text" required placeholder="예: 300,000,000" class="form-input" />
+              </div>
+              <div class="form-row">
+                <label>수량</label>
+                <input v-model="privateForm.qty" type="text" placeholder="예: 500" class="form-input" />
+              </div>
+              <div class="form-row">
+                <label>계약일자 <span class="required">*</span></label>
+                <input v-model="privateForm.date" type="date" required class="form-input" />
+              </div>
+              <div class="form-row">
+                <label>연차</label>
+                <input v-model="privateForm.year" type="text" placeholder="예: 1차년도 (선택)" class="form-input" />
+              </div>
+              <div class="private-modal-footer">
+                <button type="button" class="btn-cancel" @click="closePrivateModal">취소</button>
+                <button type="submit" class="btn-submit">추가</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </Teleport>
     </div>
   </LegacySidebarLayout>
 </template>
@@ -1333,6 +1392,7 @@ const excellentDetailRows = ref([
 const privateRows = ref([
   {
     id: 1,
+    type: '물품',
     product: '사무용 의자',
     client: '삼성전자',
     region: '경기',
@@ -1344,6 +1404,7 @@ const privateRows = ref([
   },
   {
     id: 2,
+    type: '물품',
     product: '책상',
     client: 'LG전자',
     region: '서울',
@@ -1355,6 +1416,7 @@ const privateRows = ref([
   },
   {
     id: 3,
+    type: '물품',
     product: 'LED 조명',
     client: '현대자동차',
     region: '울산',
@@ -1366,6 +1428,7 @@ const privateRows = ref([
   },
   {
     id: 4,
+    type: '물품',
     product: '노트북',
     client: 'SK하이닉스',
     region: '경기',
@@ -1377,6 +1440,7 @@ const privateRows = ref([
   },
   {
     id: 5,
+    type: '용역',
     product: '프린터',
     client: '포스코',
     region: '경북',
@@ -1388,6 +1452,7 @@ const privateRows = ref([
   },
   {
     id: 6,
+    type: '물품',
     product: '사무기기 일괄납품',
     client: '현대중공업',
     region: '울산',
@@ -1400,6 +1465,7 @@ const privateRows = ref([
   },
   {
     id: 7,
+    type: '물품',
     product: '사무기기 일괄납품',
     client: '현대중공업',
     region: '울산',
@@ -1411,6 +1477,61 @@ const privateRows = ref([
     linked: true,
   },
 ])
+
+const showPrivateModal = ref(false)
+const privateForm = ref({
+  type: '물품',
+  product: '',
+  client: '',
+  region: '',
+  amount: '',
+  qty: '',
+  date: '',
+  year: '',
+})
+let privateNextId = 8
+
+function typePillClass(type) {
+  if (type === '공사') return 'type-pill-construction'
+  if (type === '용역') return 'type-pill-service'
+  return 'type-pill-goods'
+}
+
+function openPrivateModal() {
+  privateForm.value = {
+    type: '물품',
+    product: '',
+    client: '',
+    region: '',
+    amount: '',
+    qty: '',
+    date: '',
+    year: '',
+  }
+  showPrivateModal.value = true
+}
+
+function closePrivateModal() {
+  showPrivateModal.value = false
+}
+
+function submitPrivateContract() {
+  const a = privateForm.value.amount.trim()
+  const amountDisplay = a ? (a.replace(/,/g, '').match(/\d+/) ? Number(a.replace(/,/g, '')).toLocaleString() + '원' : a) : ''
+  privateRows.value.push({
+    id: ++privateNextId,
+    type: privateForm.value.type,
+    product: privateForm.value.product.trim() || '-',
+    client: privateForm.value.client.trim() || '-',
+    region: privateForm.value.region.trim() || '-',
+    amount: amountDisplay || '-',
+    qty: privateForm.value.qty.trim() || '-',
+    date: privateForm.value.date || '-',
+    year: privateForm.value.year.trim() || '-',
+    highlight: false,
+  })
+  closePrivateModal()
+}
 
 const loadDashboardData = async () => {
   // TODO: Replace with API calls when endpoints are ready.
@@ -2745,6 +2866,126 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
 .icon-btn.danger {
   color: #e74c3c;
   border-color: #f3c9c9;
+}
+
+.type-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.type-pill-goods { background: #e3f2fd; color: #1565c0; }
+.type-pill-construction { background: #e8f5e9; color: #2e7d32; }
+.type-pill-service { background: #f3e5f5; color: #6a1b9a; }
+
+.no-data-cell {
+  text-align: center;
+  color: #6b7a99;
+  padding: 32px 16px !important;
+}
+
+/* 민수 계약 추가 모달 */
+.private-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.private-modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow: auto;
+}
+.private-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.private-modal-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  color: #111827;
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.modal-close:hover {
+  color: #111827;
+}
+.private-modal-body {
+  padding: 20px;
+}
+.private-modal-body .form-row {
+  margin-bottom: 14px;
+}
+.private-modal-body .form-row label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #374151;
+}
+.private-modal-body .form-row .required {
+  color: #e74c3c;
+}
+.private-modal-body .form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.private-modal-body .form-input:focus {
+  outline: none;
+  border-color: #111827;
+}
+.private-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+.private-modal-footer .btn-cancel {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #374151;
+}
+.private-modal-footer .btn-cancel:hover {
+  background: #e5e7eb;
+}
+.private-modal-footer .btn-submit {
+  padding: 8px 16px;
+  background: #111827;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.private-modal-footer .btn-submit:hover {
+  background: #1f2937;
 }
 
 tr.highlight {
