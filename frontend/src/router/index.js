@@ -23,6 +23,7 @@ import SignupSuccessView from '../views/auth/SignupSuccessView.vue'
 import AccountRecoveryView from '../views/auth/AccountRecoveryView.vue'
 import AccountView from '../views/auth/AccountView.vue'
 import AdminUsersView from '../views/admin/AdminUsersView.vue'
+import RawDataImportView from '../views/RawDataImportView.vue'
 
 const PUBLIC_PATHS = ['/login', '/signup', '/signup/success', '/account-recovery']
 
@@ -96,6 +97,12 @@ const router = createRouter({
       name: 'report-dashboard',
       component: ReportDashboardView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/raw-data-import',
+      name: 'raw-data-import',
+      component: RawDataImportView,
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: '/goods',

@@ -56,9 +56,17 @@
         <template v-if="authStore.isLoggedIn">
           <template v-if="authStore.isAdmin">
             <li class="menu-divider"></li>
-            <li class="menu-item menu-auth" @click="$router.push('/admin/users')">
+            <li class="menu-item menu-auth" @click="toggleAdminSubmenu">
               <span class="menu-label">관리자</span>
             </li>
+            <ul v-show="isAdminSubmenuOpen" class="submenu" style="padding-left: 20px">
+              <li class="menu-item menu-auth" @click="$router.push('/admin/users')">
+                <span class="menu-label">회원관리</span>
+              </li>
+              <li class="menu-item menu-auth" @click="$router.push('/raw-data-import')">
+                <span class="menu-label">CSV 업로드</span>
+              </li>
+            </ul>
           </template>
           <li class="menu-divider"></li>
           <li class="menu-item menu-auth" @click="$router.push('/account')">
@@ -91,6 +99,7 @@ const handleLogout = () => {
 const isSidebarExpanded = ref(false)
 const isSubmenuOpen = ref(false)
 const isReportSubmenuOpen = ref(false)
+const isAdminSubmenuOpen = ref(false)
 
 const toggleSubmenu = () => {
   isSubmenuOpen.value = !isSubmenuOpen.value
@@ -98,6 +107,10 @@ const toggleSubmenu = () => {
 
 const toggleReportSubmenu = () => {
   isReportSubmenuOpen.value = !isReportSubmenuOpen.value
+}
+
+const toggleAdminSubmenu = () => {
+  isAdminSubmenuOpen.value = !isAdminSubmenuOpen.value
 }
 </script>
 
