@@ -82,6 +82,7 @@ const handleLogin = async () => {
   justify-content: center;
   background: linear-gradient(180deg, #223247 0%, #1f2a37 100%);
 }
+
 .auth-card {
   background: #fff;
   padding: 32px 40px;
@@ -90,6 +91,7 @@ const handleLogin = async () => {
   width: 100%;
   max-width: 380px;
 }
+
 .branding {
   margin-bottom: 24px;
   padding-bottom: 20px;

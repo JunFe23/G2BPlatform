@@ -3,10 +3,5 @@
 </template>
 
 <style>
-/* 전역 스타일 리셋 (필요시) */
-body {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* 전역 반응형은 main.js에서 responsive.css 로드 */
 </style>

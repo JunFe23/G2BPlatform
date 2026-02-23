@@ -13,7 +13,7 @@ export default defineConfig({
     },
   },
   server: {
-    host: '127.0.0.1', // IPv4만 사용 (::1 바인딩 EPERM 회피)
+    host: '0.0.0.0', // 같은 네트워크(와이파이)에서 폰 접속 가능 (PC IP:3000)
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

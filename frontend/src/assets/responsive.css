@@ -1,0 +1,108 @@
+/* 반응형 공통: 폰/태블릿에서 레이아웃 깨짐 방지 */
+html {
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+/* 인증 페이지: 작은 화면에서 카드가 화면 끝에 붙지 않도록 */
+.auth-page {
+  padding: 16px;
+}
+
+@media (max-width: 480px) {
+  .auth-page .auth-card {
+    padding: 24px 20px;
+  }
+}
+
+/* 공통: 작은 화면에서 테이블 가로 스크롤 유지 */
+@media (max-width: 768px) {
+  .table-container,
+  .table-wrap {
+    margin-left: -4px;
+    margin-right: -4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .search-container input,
+  .search-container select,
+  .search-container input[type='month'] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .search-container {
+    justify-content: flex-start;
+  }
+
+  .table-container .data-table,
+  .table-wrap .data-table {
+    min-width: 700px;
+  }
+
+  /* 페이지네이션: 모바일에서 정보 위·버튼 아래 정리, 터치하기 좋은 크기 */
+  .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 0;
+    margin-top: 12px;
+    row-gap: 10px;
+  }
+
+  .pagination-info {
+    width: 100%;
+    flex-basis: 100%;
+    text-align: center;
+    margin-right: 0;
+    margin-bottom: 0;
+    font-size: 0.9em;
+    color: #555;
+    order: -1;
+  }
+
+  .pagination .page-btn {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 0.9em;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .pagination .page-num-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px;
+    font-size: 0.9em;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  /* 페이지 번호가 많을 때 가로 스크롤로 정리 (한 줄 유지) */
+  .pagination {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .pagination .page-btn:first-of-type,
+  .pagination .page-num-btn,
+  .pagination .page-btn:last-of-type {
+    flex-shrink: 0;
+  }
+}
