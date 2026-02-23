@@ -1,10 +1,33 @@
 <template>
   <div class="legacy-layout">
+    <header class="mobile-header" aria-label="모바일 상단">
+      <button
+        type="button"
+        class="menu-toggle"
+        aria-label="메뉴 열기"
+        :aria-expanded="sidebarOpen"
+        @click="sidebarOpen = !sidebarOpen"
+      >
+        <span class="menu-toggle-bar"></span>
+        <span class="menu-toggle-bar"></span>
+        <span class="menu-toggle-bar"></span>
+      </button>
+      <span class="mobile-title">G2B</span>
+    </header>
+    <div
+      class="sidebar-overlay"
+      :class="{ active: isMobile && sidebarOpen }"
+      aria-hidden="true"
+      @click="sidebarOpen = false"
+    ></div>
     <div
       class="sidebar"
-      :class="{ expanded: isSidebarExpanded }"
-      @mouseenter="isSidebarExpanded = true"
-      @mouseleave="isSidebarExpanded = false"
+      :class="{
+        expanded: !isMobile && isSidebarExpanded,
+        'mobile-open': isMobile && sidebarOpen,
+      }"
+      @mouseenter="!isMobile && (isSidebarExpanded = true)"
+      @mouseleave="!isMobile && (isSidebarExpanded = false)"
     >
       <div
         class="sidebar-header"
@@ -85,12 +108,43 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
+
+const MOBILE_BREAKPOINT = 768
+const isMobile = ref(false)
+const sidebarOpen = ref(false)
+
+function checkMobile() {
+  isMobile.value = window.innerWidth <= MOBILE_BREAKPOINT
+  if (!isMobile.value) sidebarOpen.value = false
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+  document.body.style.overflow = ''
+})
+watch(
+  () => route.path,
+  () => {
+    if (isMobile.value) sidebarOpen.value = false
+  },
+)
+watch(
+  () => sidebarOpen.value && isMobile.value,
+  (open) => {
+    document.body.style.overflow = open ? 'hidden' : ''
+  },
+)
 
 const handleLogout = () => {
   authStore.logout()
@@ -245,6 +299,131 @@ const toggleAdminSubmenu = () => {
   width: calc(100% - 390px);
 }
 
+/* 모바일: 상단 바 + 햄버거 (공중에 떠다니지 않도록) */
+.mobile-header {
+  display: none;
+}
+
+.menu-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.menu-toggle-bar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.mobile-title {
+  display: none;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #f8fafc;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .mobile-header {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    z-index: 1001;
+    align-items: center;
+    padding: 0 8px 0 12px;
+    background: linear-gradient(180deg, #223247 0%, #1f2a37 100%);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .mobile-title {
+    display: block;
+    margin-left: 8px;
+  }
+
+  .sidebar-overlay.active {
+    top: 56px;
+    height: calc(100vh - 56px);
+  }
+
+  .sidebar {
+    width: min(320px, 85vw);
+    height: calc(100vh - 56px);
+    margin: 0;
+    top: 56px;
+    left: 0;
+    border-radius: 0;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    will-change: transform;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar .menu-label {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .sidebar.expanded {
+    width: min(320px, 85vw);
+  }
+
+  .content {
+    margin-left: 0;
+    width: 100%;
+    padding: 72px 12px 24px 12px;
+  }
+
+  .sidebar.expanded ~ .content,
+  .sidebar.mobile-open ~ .content {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
 /* Specific H1 styles from legacy templates */
 :deep(h1) {
   background-color: #34495e;
@@ -254,6 +433,13 @@ const toggleAdminSubmenu = () => {
   border: 2px solid #2c3e50;
   text-align: center;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+  :deep(h1) {
+    padding: 10px 12px;
+    font-size: 1.1rem;
+  }
 }
 
 :deep(h1.goods) {

@@ -201,6 +201,10 @@ a:hover {
   margin-right: 50px;
 }
 
+#serviceKeyContainer input {
+  min-width: 0;
+}
+
 button {
   margin-right: 10px;
   margin-bottom: 10px;
@@ -210,5 +214,45 @@ button {
 
 input[type="text"] {
   padding: 5px;
+}
+
+@media (max-width: 768px) {
+  #header {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 50px;
+    padding: 12px;
+  }
+
+  #header h1 {
+    font-size: 1.1em;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  #serviceKeyContainer {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  #serviceKeyContainer input {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #sidebar {
+    position: relative;
+    top: 0;
+    width: 100%;
+    height: auto;
+    padding: 12px;
+    margin-top: 60px;
+  }
+
+  #content {
+    margin-left: 0;
+    margin-top: 0;
+    padding: 12px;
+  }
 }
 </style>

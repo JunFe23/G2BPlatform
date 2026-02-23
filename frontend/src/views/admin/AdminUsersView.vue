@@ -147,6 +147,15 @@ onMounted(() => {
 }
 .table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 768px) {
+  .admin-card {
+    padding: 12px;
+  }
+  .admin-title {
+    font-size: 1.2em;
+  }
 }
 .data-table {
   width: 100%;
