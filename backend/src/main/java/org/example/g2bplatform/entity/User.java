@@ -35,6 +35,10 @@ public class User {
     @Column(nullable = false)
     private Boolean approved = true;
 
+    /** 최종 접속일(로그인 시점). null이면 미로그인. */
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -89,6 +93,14 @@ public class User {
 
     public void setApproved(Boolean approved) {
         this.approved = approved;
+    }
+
+    public Instant getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(Instant lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
     }
 
     public Instant getCreatedAt() {

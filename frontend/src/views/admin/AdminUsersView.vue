@@ -13,19 +13,21 @@
               <th>이메일</th>
               <th>승인</th>
               <th>역할</th>
+              <th>최종 접속일</th>
               <th v-if="authStore.isSuperAdmin">역할 변경</th>
               <th v-if="authStore.isSuperAdmin">승인하기</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="users.length === 0">
-              <td :colspan="authStore.isSuperAdmin ? 6 : 4" class="no-data">등록된 사용자가 없습니다.</td>
+              <td :colspan="authStore.isSuperAdmin ? 7 : 5" class="no-data">등록된 사용자가 없습니다.</td>
             </tr>
             <tr v-for="u in users" :key="u.id">
               <td>{{ u.username }}</td>
               <td>{{ u.email }}</td>
               <td>{{ u.approved ? '승인됨' : '대기' }}</td>
               <td>{{ roleLabel(u.role) }}</td>
+              <td>{{ formatLastLogin(u.lastLoginAt) }}</td>
               <td v-if="authStore.isSuperAdmin">
                 <select
                   :value="u.role"
@@ -72,6 +74,16 @@ function roleLabel(role) {
   if (role === 'ROLE_SUPER_ADMIN') return '슈퍼관리자'
   if (role === 'ROLE_ADMIN') return '관리자'
   return '일반 사용자'
+}
+
+function formatLastLogin(iso) {
+  if (!iso) return '-'
+  try {
+    const d = new Date(iso)
+    return d.toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })
+  } catch {
+    return iso
+  }
 }
 
 async function loadUsers() {

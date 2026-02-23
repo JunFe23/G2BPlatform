@@ -71,6 +71,8 @@ public class AuthService {
         if (user.getApproved() == null || !user.getApproved()) {
             throw new AuthException("NOT_APPROVED", "승인 대기 중입니다. 관리자 승인 후 이용 가능합니다.");
         }
+        user.setLastLoginAt(Instant.now());
+        userRepository.save(user);
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
         AuthDto.UserInfo userInfo = new AuthDto.UserInfo(user.getUsername(), user.getRole());
         return new AuthDto.LoginResponse(token, jwtUtil.getExpiresInSeconds(), userInfo);
