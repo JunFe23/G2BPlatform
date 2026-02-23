@@ -73,6 +73,7 @@ public class AdminService {
         s.setEmail(maskEmail(u.getEmail()));
         s.setRole(u.getRole());
         s.setApproved(Boolean.TRUE.equals(u.getApproved()));
+        s.setLastLoginAt(u.getLastLoginAt());
         s.setCreatedAt(u.getCreatedAt());
         return s;
     }
@@ -91,6 +92,7 @@ public class AdminService {
         private String email;
         private String role;
         private boolean approved;
+        private java.time.Instant lastLoginAt;
         private java.time.Instant createdAt;
 
         public Long getId() { return id; }
@@ -103,6 +105,8 @@ public class AdminService {
         public void setRole(String role) { this.role = role; }
         public boolean isApproved() { return approved; }
         public void setApproved(boolean approved) { this.approved = approved; }
+        public java.time.Instant getLastLoginAt() { return lastLoginAt; }
+        public void setLastLoginAt(java.time.Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
         public java.time.Instant getCreatedAt() { return createdAt; }
         public void setCreatedAt(java.time.Instant createdAt) { this.createdAt = createdAt; }
     }
