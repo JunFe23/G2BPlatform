@@ -107,22 +107,24 @@ const handleSignup = async () => {
 }
 .auth-card {
   background: #fff;
-  padding: 32px 40px;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  padding: 36px 44px;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
 }
 .auth-title {
-  margin: 0 0 24px;
-  font-size: 1.5em;
-  color: #2c3e50;
+  margin: 0 0 26px;
+  font-size: 1.35em;
+  font-weight: 600;
+  color: #334155;
   text-align: center;
+  letter-spacing: -0.02em;
 }
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 .form-group {
   display: flex;
@@ -130,56 +132,69 @@ const handleSignup = async () => {
   gap: 6px;
 }
 .form-group label {
-  font-size: 0.9em;
-  color: #34495e;
+  font-size: 0.875em;
+  font-weight: 500;
+  color: #475569;
 }
 .form-group input {
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
   font-size: 1em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-group input::placeholder {
+  color: #94a3b8;
 }
 .form-group input:focus {
   outline: none;
   border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
 }
 .error-msg {
   margin: 0;
-  font-size: 0.9em;
-  color: #e74c3c;
+  font-size: 0.875em;
+  color: #dc2626;
 }
 .field-error {
   margin: 6px 0 0;
-  font-size: 0.85em;
-  color: #e74c3c;
+  font-size: 0.825em;
+  color: #dc2626;
 }
 .auth-btn {
-  padding: 12px;
-  background-color: #34495e;
-  color: #ecf0f1;
+  padding: 12px 20px;
+  margin-top: 4px;
+  background: linear-gradient(180deg, #3d5a73 0%, #34495e 100%);
+  color: #f0f4f8;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 1em;
+  font-weight: 500;
   cursor: pointer;
-  margin-top: 8px;
+  transition: opacity 0.2s, transform 0.15s;
 }
 .auth-btn:hover:not(:disabled) {
-  background-color: #2c3e50;
+  opacity: 0.95;
+  transform: translateY(-1px);
 }
 .auth-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.65;
   cursor: not-allowed;
+  transform: none;
 }
 .auth-links {
-  margin-top: 20px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e8ecf0;
   display: flex;
   justify-content: center;
-  gap: 20px;
+  gap: 24px;
   font-size: 0.9em;
 }
 .auth-links a {
   color: #3498db;
   text-decoration: none;
+  font-weight: 500;
 }
 .auth-links a:hover {
   text-decoration: underline;
