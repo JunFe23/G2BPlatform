@@ -17,7 +17,7 @@ java {
 repositories {
     mavenCentral()
     google()
-    jcenter()
+    // jcenter() 제거: 서비스 종료로 인해 Docker 빌드 시 의존성 해석 실패 방지
 }
 
 dependencies {
@@ -66,7 +66,7 @@ dependencies {
 
     // 기타 유틸
     implementation 'org.apache.poi:poi-ooxml:5.2.3'
-    implementation 'io.netty:netty-resolver-dns-native-macos:4.1.75.Final'
+    // netty-resolver-dns-native-macos: macOS 전용이라 Docker(Linux) 빌드에서 해석 실패 → 제거. 로컬 Mac에서 필요 시 별도 추가
 
     // Lombok
     implementation 'org.projectlombok:lombok:1.18.30'
