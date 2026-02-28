@@ -289,9 +289,10 @@ const toggleAdminSubmenu = () => {
 
 .content {
   margin-left: 100px;
-  padding: 20px 24px;
+  padding: 24px 28px 32px;
   transition: margin-left 0.3s ease;
   width: calc(100% - 100px);
+  max-width: 1600px;
 }
 
 .sidebar.expanded ~ .content {
@@ -426,35 +427,40 @@ const toggleAdminSubmenu = () => {
 
 /* Specific H1 styles from legacy templates */
 :deep(h1) {
-  background-color: #34495e;
-  color: #ecf0f1;
-  padding: 15px;
-  border-radius: 8px;
-  border: 2px solid #2c3e50;
+  background: linear-gradient(135deg, #3d5a73 0%, #34495e 100%);
+  color: #f0f4f8;
+  padding: 14px 20px;
+  margin: 0 0 24px;
+  border-radius: 10px;
+  border: none;
   text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 @media (max-width: 768px) {
   :deep(h1) {
-    padding: 10px 12px;
-    font-size: 1.1rem;
+    padding: 12px 14px;
+    font-size: 1.05rem;
+    margin-bottom: 18px;
   }
 }
 
 :deep(h1.goods) {
-  border-left: 15px solid #3498db;
+  border-left: 4px solid #3498db;
 }
 
 :deep(h1.services) {
-  border-left: 15px solid #e67e22;
+  border-left: 4px solid #e67e22;
 }
 
 :deep(h1.construction) {
-  border-left: 15px solid #27ae60;
+  border-left: 4px solid #27ae60;
 }
 
 :deep(h1.servicesSelected) {
-  border-left: 15px solid #e84393;
+  border-left: 4px solid #e84393;
 }
 </style>

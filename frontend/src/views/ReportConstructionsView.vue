@@ -4,40 +4,65 @@
 
     <!-- 검색 필드 -->
     <div class="search-container">
-      <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
-      <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색" />
-      <input type="text" v-model="filters.prdctClsfcNo" placeholder="품명내용 검색" />
-      <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="입찰계약방법 검색" />
-      <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
+      <!-- 1줄: 필터만 -->
+      <div class="search-filter-row">
+        <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
+        <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색" />
+        <input type="text" v-model="filters.prdctClsfcNo" placeholder="품명내용 검색" />
+        <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="입찰계약방법 검색" />
+        <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
 
-      <select v-model="filters.dateType" class="date-select">
-        <option value="year">연도 검색</option>
-        <option value="month">특정 월 검색</option>
-        <option value="range">기간 검색</option>
-      </select>
+        <select v-model="filters.dateType" class="date-select">
+          <option value="year">연도 검색</option>
+          <option value="month">특정 월 검색</option>
+          <option value="range">기간 검색</option>
+        </select>
 
-      <select v-if="filters.dateType === 'year'" v-model="filters.year" class="date-select">
-        <option value="">선택</option>
-        <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
-      </select>
+        <select v-if="filters.dateType === 'year'" v-model="filters.year" class="date-select">
+          <option value="">선택</option>
+          <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+        </select>
 
-      <input v-if="filters.dateType === 'month'" type="month" v-model="filters.month" />
+        <input v-if="filters.dateType === 'month'" type="month" v-model="filters.month" />
 
-      <template v-if="filters.dateType === 'range'">
-        <input type="month" v-model="filters.rangeStart" placeholder="시작월" />
-        <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
-      </template>
+        <template v-if="filters.dateType === 'range'">
+          <input type="month" v-model="filters.rangeStart" placeholder="시작월" />
+          <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
+        </template>
+      </div>
 
-      <button @click="handleSearch" class="search-btn">검색</button>
+      <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 (오른쪽 정렬) -->
+      <div class="search-actions-row">
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="filters.showSavedOnly" />
+          저장된 데이터만 보기
+        </label>
+        <span class="actions-sep" aria-hidden="true"></span>
+        <div class="long-term-toggle-wrap">
+        <span class="long-term-toggle-label">장기계약 건</span>
+        <button
+          type="button"
+          role="switch"
+          :aria-checked="longTermViewMerged"
+          :title="longTermViewMerged ? '합쳐서 보기' : '풀어서 보기'"
+          class="long-term-toggle-switch"
+          :class="{ on: longTermViewMerged }"
+          @click="longTermViewMerged = !longTermViewMerged"
+        >
+          <span class="long-term-toggle-slider"></span>
+        </button>
+        <span class="long-term-toggle-caption">{{ longTermViewMerged ? '합쳐서 보기' : '풀어서 보기' }}</span>
+        </div>
 
-      <label class="checkbox-label">
-        <input type="checkbox" v-model="filters.showSavedOnly" />
-        저장된 데이터만 보기
-      </label>
+        <button @click="handleSearch" class="search-btn">검색</button>
+        <button @click="handleDownloadExcel" class="excel-btn" :disabled="isLoadingExcel">
+          {{ isLoadingExcel ? '다운로드 중...' : '엑셀 다운로드' }}
+        </button>
 
-      <button @click="handleDownloadExcel" class="excel-btn" :disabled="isLoadingExcel">
-        {{ isLoadingExcel ? '다운로드 중...' : '엑셀 다운로드' }}
-      </button>
+        <div v-if="isLoading" class="loading-spinner-container">
+          <div class="loading-spinner"></div>
+        </div>
+      </div>
 
       <div v-if="isLoadingExcel" class="excel-download-overlay">
         <div class="excel-download-progress">
@@ -50,9 +75,6 @@
         </div>
       </div>
 
-      <div v-if="isLoading" class="loading-spinner-container">
-        <div class="loading-spinner"></div>
-      </div>
     </div>
 
     <div class="table-container">
@@ -144,6 +166,9 @@ const isLoadingExcel = ref(false)
 const items = ref([])
 const recordsFiltered = ref(0)
 const currentPage = ref(1)
+
+/** true: 장기계약 합쳐서 보기, false: 풀어서 보기 (기능 연동 예정) */
+const longTermViewMerged = ref(true)
 
 const filters = reactive({
   dminsttNm: '',
@@ -288,39 +313,84 @@ onMounted(() => fetchData())
   color: #ecf0f1;
 }
 .search-container {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding: 18px 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.search-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.search-filter-row input[type='text'],
+.search-filter-row select,
+.search-filter-row input[type='month'] {
+  min-width: 100px;
+}
+.search-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex: 1 1 100%;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
 }
 input[type='text'],
 select,
 input[type='month'] {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9375em;
+  min-width: 120px;
+  transition: border-color 0.2s;
+}
+input[type='text']:focus,
+select:focus,
+input[type='month']:focus {
+  outline: none;
+  border-color: #3498db;
 }
 .search-btn {
-  padding: 8px 15px;
-  background-color: #34495e;
-  color: #ecf0f1;
+  padding: 10px 18px;
+  background: linear-gradient(180deg, #3d5a73 0%, #34495e 100%);
+  color: #f0f4f8;
   border: none;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9375em;
+}
+.search-btn:hover {
+  opacity: 0.95;
 }
 .excel-btn {
-  padding: 8px 15px;
-  background-color: #27ae60;
-  color: #ecf0f1;
+  padding: 10px 18px;
+  background: linear-gradient(180deg, #2e8b5e 0%, #27ae60 100%);
+  color: #fff;
   border: none;
   cursor: pointer;
-  margin-left: 10px;
-  border-radius: 4px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9375em;
+}
+.excel-btn:hover:not(:disabled) {
+  opacity: 0.95;
 }
 .excel-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.65;
   cursor: not-allowed;
 }
 .excel-download-overlay {
@@ -367,9 +437,77 @@ input[type='month'] {
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   cursor: pointer;
+  font-size: 0.9em;
+  color: #475569;
 }
+
+.actions-sep {
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: #cbd5e1;
+  opacity: 0.7;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.long-term-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.long-term-toggle-label {
+  font-size: 0.875em;
+  font-weight: 500;
+  color: #475569;
+}
+
+.long-term-toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border: 1px solid #cbd5e1;
+  border-radius: 24px;
+  background: #e2e8f0;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.long-term-toggle-switch:hover {
+  border-color: #94a3b8;
+}
+
+.long-term-toggle-switch.on {
+  background: #3498db;
+  border-color: #3498db;
+}
+
+.long-term-toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s;
+}
+
+.long-term-toggle-switch.on .long-term-toggle-slider {
+  transform: translateX(20px);
+}
+
+.long-term-toggle-caption {
+  font-size: 0.8125em;
+  color: #64748b;
+}
+
 .loading-spinner-container {
   margin-left: 10px;
 }
@@ -391,43 +529,48 @@ input[type='month'] {
 }
 .table-container {
   overflow-x: auto;
+  margin-top: 4px;
 }
 .data-table {
   width: 100%;
-  margin-top: 20px;
   border-collapse: collapse;
 }
 .data-table th,
 .data-table td {
-  padding: 10px;
-  border: 1px solid #ddd;
+  padding: 12px 10px;
+  border: 1px solid #e2e8f0;
   text-align: center;
+  font-size: 0.9em;
 }
 .data-table th {
-  background-color: #f8f9fa;
-  font-weight: bold;
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #334155;
 }
 .data-table tbody tr:nth-child(even) {
-  background-color: #f9f9f9;
+  background-color: #fafbfc;
 }
 .data-table tbody tr:hover {
-  background-color: #f1f1f1;
+  background-color: #f1f5f9;
 }
 .loading-text,
 .no-data {
   text-align: center;
-  padding: 20px;
-  color: #666;
+  padding: 24px;
+  color: #64748b;
+  font-size: 0.95em;
 }
 .table-wrapper {
   max-height: 70vh;
   overflow: auto;
-  border: 1px solid #ccc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 .data-table th {
   position: sticky;
   top: 0;
-  background-color: #f1f1f1;
+  background: #f1f5f9;
   z-index: 1;
 }
 .data-table th,
@@ -435,42 +578,51 @@ input[type='month'] {
   white-space: nowrap;
 }
 .pagination {
-  margin-top: 12px;
+  margin-top: 16px;
+  padding: 14px 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 .pagination-info {
-  margin-right: 12px;
+  margin-right: 14px;
+  font-size: 0.9em;
+  color: #64748b;
 }
 .page-btn {
-  padding: 6px 12px;
-  border: 1px solid #ddd;
+  padding: 8px 14px;
+  border: 1px solid #e2e8f0;
   background: #fff;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  transition: background 0.2s, border-color 0.2s;
 }
 .page-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .page-btn:not(:disabled):hover {
-  background: #f5f5f5;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 .page-num-btn {
-  min-width: 36px;
-  padding: 6px 10px;
-  border: 1px solid #ddd;
+  min-width: 38px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
   background: #fff;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  transition: background 0.2s, border-color 0.2s;
 }
 .page-num-btn:hover {
-  background: #f5f5f5;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 .page-num-btn.active {
-  background: #34495e;
+  background: linear-gradient(180deg, #3d5a73 0%, #34495e 100%);
   color: #fff;
   border-color: #34495e;
 }
