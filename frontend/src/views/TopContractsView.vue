@@ -110,7 +110,7 @@
       </div>
       <div v-if="recordsFiltered > 0" class="pagination">
         <span class="pagination-info"
-          >{{ startDisplay }}-{{ endDisplay }} / {{ recordsFiltered }}건</span
+          >{{ formatNumber(startDisplay) }}-{{ formatNumber(endDisplay) }} / {{ formatNumber(recordsFiltered) }}건</span
         >
         <button class="page-btn" :disabled="currentPage <= 1" @click="goPage(currentPage - 1)">
           이전
