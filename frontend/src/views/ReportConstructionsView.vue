@@ -47,7 +47,7 @@
           :title="longTermViewMerged ? '합쳐서 보기' : '풀어서 보기'"
           class="long-term-toggle-switch"
           :class="{ on: longTermViewMerged }"
-          @click="longTermViewMerged = !longTermViewMerged"
+          @click="onLongTermToggleClick"
         >
           <span class="long-term-toggle-slider"></span>
         </button>
@@ -169,6 +169,11 @@ const currentPage = ref(1)
 
 /** true: 장기계약 합쳐서 보기, false: 풀어서 보기 (기능 연동 예정) */
 const longTermViewMerged = ref(true)
+
+function onLongTermToggleClick() {
+  alert('해당 기능은 개발 중입니다.')
+  longTermViewMerged.value = !longTermViewMerged.value
+}
 
 const filters = reactive({
   dminsttNm: '',
