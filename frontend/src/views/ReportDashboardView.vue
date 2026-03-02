@@ -4,10 +4,12 @@
       <header class="page-header">
         <div class="title-block">
           <div class="title-row">
-            <span class="logo-dot"></span>
-            <h1>조달시장 관리 시스템</h1>
+            <span class="header-accent"></span>
+            <div class="header-titles">
+              <h1>조달시장 관리 시스템</h1>
+              <p class="header-sub">Procurement Market Management System</p>
+            </div>
           </div>
-          <p>Procurement Market Management System</p>
         </div>
       </header>
 
@@ -1584,39 +1586,53 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
 }
 
 .page-header {
-  padding: 16px 0 6px;
-  border-bottom: 1px solid #1f2937;
-  background: #1f2937;
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   border-radius: 12px;
-  padding-left: 16px;
-  padding-right: 16px;
+  margin-bottom: 4px;
 }
 
-.title-block h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  color: #f9fafb;
-}
-
-.title-block p {
-  margin: 6px 0 8px;
-  color: #e5e7eb;
-  font-size: 14px;
+.title-block {
+  width: 100%;
 }
 
 .title-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: stretch;
+  gap: 14px;
 }
 
-.logo-dot {
-  width: 22px;
-  height: 22px;
-  border-radius: 8px;
-  border: 2px solid #93c5fd;
-  background: #0f172a;
+.header-accent {
+  width: 4px;
+  min-height: 44px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+  flex-shrink: 0;
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.header-titles h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.header-sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
 .info-banner {
