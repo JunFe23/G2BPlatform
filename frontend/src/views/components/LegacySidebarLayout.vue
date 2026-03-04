@@ -174,6 +174,7 @@ const toggleAdminSubmenu = () => {
   margin: 0;
   display: flex;
   min-height: 100vh;
+  width: 100%;
 }
 
 .sidebar {
@@ -291,13 +292,12 @@ const toggleAdminSubmenu = () => {
   margin-left: 100px;
   padding: 24px 28px 32px;
   transition: margin-left 0.3s ease;
-  width: calc(100% - 100px);
-  max-width: 1600px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .sidebar.expanded ~ .content {
   margin-left: 390px;
-  width: calc(100% - 390px);
 }
 
 /* 모바일: 상단 바 + 햄버거 (공중에 떠다니지 않도록) */
