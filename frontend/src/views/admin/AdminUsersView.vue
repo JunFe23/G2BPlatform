@@ -134,10 +134,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 타이틀은 LegacySidebarLayout :deep(h1) 스타일과 동일하게 (배경·글자색 통일) */
 .admin-title {
   margin-bottom: 20px;
-  font-size: 1.4em;
-  color: #2c3e50;
 }
 .admin-card {
   background: #f8f9fa;
@@ -152,9 +151,6 @@ onMounted(() => {
 @media (max-width: 768px) {
   .admin-card {
     padding: 12px;
-  }
-  .admin-title {
-    font-size: 1.2em;
   }
 }
 .data-table {

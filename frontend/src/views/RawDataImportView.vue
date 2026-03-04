@@ -81,10 +81,9 @@ function onFileSelect(key, event) {
   max-width: 900px;
 }
 
+/* 타이틀은 LegacySidebarLayout :deep(h1) 스타일과 동일하게 */
 .page-title {
   margin: 0 0 8px;
-  font-size: 1.5em;
-  color: #111827;
 }
 
 .page-desc {
