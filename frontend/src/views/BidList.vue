@@ -251,7 +251,18 @@ onMounted(() => {
 /* 컨텐츠 */
 .content { margin-left: 75px; padding: 30px; width: calc(100% - 75px); transition: margin-left 0.3s; }
 .sidebar:hover ~ .content { margin-left: 300px; width: calc(100% - 300px); }
-.page-title { background: #34495e; color: #fff; padding: 15px; border-radius: 5px; text-align: center; margin-bottom: 20px; }
+.page-title {
+  background: linear-gradient(135deg, #3d5a73 0%, #34495e 100%);
+  color: #f0f4f8;
+  padding: 14px 20px;
+  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
 
 /* 검색 영역 */
 .search-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-bottom: 15px; align-items: center; }
