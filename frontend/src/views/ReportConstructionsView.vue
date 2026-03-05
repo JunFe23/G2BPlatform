@@ -336,6 +336,7 @@ onMounted(() => fetchData())
   gap: 10px 12px;
   flex: 1 1 100%;
   min-width: 0;
+  justify-content: flex-end;
 }
 .search-filter-row input[type='text'],
 .search-filter-row select,
