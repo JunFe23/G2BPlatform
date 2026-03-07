@@ -759,7 +759,8 @@ const activeTab = ref('시장현황')
 // 대시보드 공통 기간 필터 (모든 탭 데이터에 반영)
 const dashboardFilterMode = ref('year') // 'year' | 'range'
 const currentYear = new Date().getFullYear()
-const dashboardYear = ref(currentYear)
+// 기본 연도: 현재 데이터가 2025년까지라 2025 고정. 추후 데이터 확보 시 currentYear 로 변경
+const dashboardYear = ref(2025)
 const dashboardFrom = ref(`${currentYear}-01-01`)
 const dashboardTo = ref(`${currentYear}-12-31`)
 const dashboardYearOptions = ref(
