@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.example.g2bplatform.mapper.ConstructionContractMapper">
+
+    <!-- ========================================================= -->
+    <!-- 공통 날짜 필터 fragment                                       -->
+    <!-- flat 용: 기간 컬럼 = contract_date                          -->
+    <!-- grouped 용: 기간 컬럼 = initial_contract_date               -->
+    <!-- ========================================================= -->
+
+    <!-- ======================== FLAT ========================== -->
+
+    <sql id="flatWhere">
+        WHERE is_active = 'Y'
+        <if test="demandAgencyName != null and demandAgencyName != ''">
+            AND demand_agency_name LIKE CONCAT('%', #{demandAgencyName}, '%')
+        </if>
+        <if test="demandAgencyRegion != null and demandAgencyRegion != ''">
+            AND demand_agency_region LIKE CONCAT('%', #{demandAgencyRegion}, '%')
+        </if>
+        <if test="detailItemName != null and detailItemName != ''">
+            AND public_procurement_category_name LIKE CONCAT('%', #{detailItemName}, '%')
+        </if>
+        <if test="contractMethod != null and contractMethod != ''">
+            AND bid_contract_method LIKE CONCAT('%', #{contractMethod}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND first_contract_date = #{firstCntrctDate}
+        </if>
+        <if test="year != null">
+            AND contract_date &gt;= CONCAT(#{year}, '-01-01')
+            AND contract_date &lt; DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
+        </if>
+        <if test="month != null and month != ''">
+            AND contract_date &gt;= CONCAT(#{month}, '-01')
+            AND contract_date &lt; DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
+            AND contract_date &gt;= CONCAT(#{rangeStart}, '-01')
+            AND contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="showSavedOnly == true">
+            AND saved = 'Y'
+        </if>
+    </sql>
+
+    <select id="selectFlatList" resultType="map">
+        SELECT
+            contract_no                                                   AS contractNo,
+            vendor_name                                                   AS vendorName,
+            contract_title                                                AS contractTitle,
+            demand_agency_name                                            AS demandAgencyName,
+            demand_agency_region                                          AS demandAgencyRegion,
+            public_procurement_category_name                              AS detailItemName,
+            bid_contract_method                                           AS contractMethod,
+            bid_notice_no                                                 AS bidNoticeNo,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')                  AS firstContractDate,
+            first_contract_amount                                         AS firstContractAmount,
+            DATE_FORMAT(contract_date, '%Y-%m-%d')                        AS finalContractDate,
+            contract_amount                                               AS finalContractAmount,
+            latest_change_seq                                             AS contractCount,
+            is_long_term_contract                                         AS isLongTerm,
+            IFNULL(saved, 'N')                                            AS saved,
+            vendor_biz_reg_no                                             AS vendorBizRegNo
+        FROM construction_contract_flat
+        <include refid="flatWhere"/>
+        ORDER BY contract_date DESC, contract_no
+        LIMIT #{start}, #{length}
+    </select>
+
+    <select id="selectFlatCount" resultType="int">
+        SELECT COUNT(*)
+        FROM construction_contract_flat
+        <include refid="flatWhere"/>
+    </select>
+
+    <select id="selectFlatListForExport" fetchSize="1000" resultType="map">
+        SELECT
+            contract_no                                                   AS contractNo,
+            vendor_name                                                   AS vendorName,
+            contract_title                                                AS contractTitle,
+            demand_agency_name                                            AS demandAgencyName,
+            demand_agency_region                                          AS demandAgencyRegion,
+            public_procurement_category_name                              AS detailItemName,
+            bid_contract_method                                           AS contractMethod,
+            bid_notice_no                                                 AS bidNoticeNo,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')                  AS firstContractDate,
+            first_contract_amount                                         AS firstContractAmount,
+            DATE_FORMAT(contract_date, '%Y-%m-%d')                        AS finalContractDate,
+            contract_amount                                               AS finalContractAmount,
+            latest_change_seq                                             AS contractCount,
+            is_long_term_contract                                         AS isLongTerm,
+            IFNULL(saved, 'N')                                            AS saved,
+            vendor_biz_reg_no                                             AS vendorBizRegNo
+        FROM construction_contract_flat
+        <include refid="flatWhere"/>
+        ORDER BY contract_date DESC, contract_no
+    </select>
+
+    <update id="updateFlatSaved">
+        UPDATE construction_contract_flat
+        SET saved = #{saved}
+        WHERE contract_no = #{contractNo}
+    </update>
+
+    <!-- ====================== GROUPED ========================= -->
+
+    <sql id="groupedWhere">
+        WHERE is_active = 'Y'
+        <if test="demandAgencyName != null and demandAgencyName != ''">
+            AND demand_agency_name LIKE CONCAT('%', #{demandAgencyName}, '%')
+        </if>
+        <if test="demandAgencyRegion != null and demandAgencyRegion != ''">
+            AND demand_agency_region LIKE CONCAT('%', #{demandAgencyRegion}, '%')
+        </if>
+        <if test="detailItemName != null and detailItemName != ''">
+            AND public_procurement_category_name LIKE CONCAT('%', #{detailItemName}, '%')
+        </if>
+        <if test="contractMethod != null and contractMethod != ''">
+            AND bid_contract_method LIKE CONCAT('%', #{contractMethod}, '%')
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND initial_contract_date = #{firstCntrctDate}
+        </if>
+        <if test="year != null">
+            AND initial_contract_date &gt;= CONCAT(#{year}, '-01-01')
+            AND initial_contract_date &lt; DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
+        </if>
+        <if test="month != null and month != ''">
+            AND initial_contract_date &gt;= CONCAT(#{month}, '-01')
+            AND initial_contract_date &lt; DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
+            AND initial_contract_date &gt;= CONCAT(#{rangeStart}, '-01')
+            AND initial_contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="showSavedOnly == true">
+            AND saved = 'Y'
+        </if>
+    </sql>
+
+    <select id="selectGroupedList" resultType="map">
+        SELECT
+            group_key                                                     AS groupKey,
+            vendor_name                                                   AS vendorName,
+            contract_title                                                AS contractTitle,
+            demand_agency_name                                            AS demandAgencyName,
+            demand_agency_region                                          AS demandAgencyRegion,
+            public_procurement_category_name                              AS detailItemName,
+            bid_contract_method                                           AS contractMethod,
+            bid_notice_no                                                 AS bidNoticeNo,
+            DATE_FORMAT(initial_contract_date, '%Y-%m-%d')                AS firstContractDate,
+            initial_contract_amount                                       AS firstContractAmount,
+            DATE_FORMAT(final_contract_date, '%Y-%m-%d')                  AS finalContractDate,
+            final_contract_amount_sum                                     AS finalContractAmount,
+            final_change_seq                                              AS contractCount,
+            contract_count                                                AS groupContractCount,
+            is_long_term_contract                                         AS isLongTerm,
+            IFNULL(saved, 'N')                                            AS saved
+        FROM construction_contract_grouped
+        <include refid="groupedWhere"/>
+        ORDER BY initial_contract_date DESC, group_key
+        LIMIT #{start}, #{length}
+    </select>
+
+    <select id="selectGroupedCount" resultType="int">
+        SELECT COUNT(*)
+        FROM construction_contract_grouped
+        <include refid="groupedWhere"/>
+    </select>
+
+    <select id="selectGroupedListForExport" fetchSize="1000" resultType="map">
+        SELECT
+            group_key                                                     AS groupKey,
+            vendor_name                                                   AS vendorName,
+            contract_title                                                AS contractTitle,
+            demand_agency_name                                            AS demandAgencyName,
+            demand_agency_region                                          AS demandAgencyRegion,
+            public_procurement_category_name                              AS detailItemName,
+            bid_contract_method                                           AS contractMethod,
+            bid_notice_no                                                 AS bidNoticeNo,
+            DATE_FORMAT(initial_contract_date, '%Y-%m-%d')                AS firstContractDate,
+            initial_contract_amount                                       AS firstContractAmount,
+            DATE_FORMAT(final_contract_date, '%Y-%m-%d')                  AS finalContractDate,
+            final_contract_amount_sum                                     AS finalContractAmount,
+            final_change_seq                                              AS contractCount,
+            contract_count                                                AS groupContractCount,
+            is_long_term_contract                                         AS isLongTerm,
+            IFNULL(saved, 'N')                                            AS saved
+        FROM construction_contract_grouped
+        <include refid="groupedWhere"/>
+        ORDER BY initial_contract_date DESC, group_key
+    </select>
+
+    <update id="updateGroupedSaved">
+        UPDATE construction_contract_grouped
+        SET saved = #{saved}
+        WHERE group_key = #{groupKey}
+    </update>
+
+</mapper>

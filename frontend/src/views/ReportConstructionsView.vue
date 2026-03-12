@@ -94,6 +94,7 @@
               <th>최종계약일자</th>
               <th>최종계약금액</th>
               <th>계약변경차수</th>
+              <th>장기계약여부</th>
               <th>저장</th>
             </tr>
           </thead>
@@ -116,7 +117,8 @@
               <td>{{ formatNumber(item.firstContractAmount) }}</td>
               <td>{{ item.finalContractDate }}</td>
               <td>{{ formatNumber(item.finalContractAmount) }}</td>
-              <td>{{ item.contractCount ?? item.contractChangeCount ?? '-' }}</td>
+              <td>{{ item.contractCount ?? '-' }}</td>
+              <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
               <td>
                 <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
               </td>
@@ -158,7 +160,7 @@ import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
 const API_BASE = '/api/report/constructions'
-const COL_SPAN = 13
+const COL_SPAN = 14
 const PAGE_SIZE = 100
 
 const isLoading = ref(false)
@@ -167,12 +169,12 @@ const items = ref([])
 const recordsFiltered = ref(0)
 const currentPage = ref(1)
 
-/** true: 장기계약 합쳐서 보기, false: 풀어서 보기 (기능 연동 예정) */
+/** true: 합쳐서 보기(grouped), false: 풀어서 보기(flat) */
 const longTermViewMerged = ref(true)
 
 function onLongTermToggleClick() {
-  alert('해당 기능은 개발 중입니다.')
   longTermViewMerged.value = !longTermViewMerged.value
+  fetchData(true)
 }
 
 const filters = reactive({
@@ -192,11 +194,13 @@ const filters = reactive({
 const years = ['2025', '2024', '2023', '2022', '2021', '2020']
 
 function rowKey(item) {
-  return (item.bidNoticeNo || '') + '_' + (item.vendorBizRegNo || '')
+  // grouped → group_key, flat → contract_no
+  return item.groupKey || item.contractNo || (item.bidNoticeNo || '') + '_' + (item.vendorBizRegNo || '')
 }
 
 function buildParams(includePaging = true) {
   const p = {
+    grouped: longTermViewMerged.value,
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
     prdctClsfcNo: filters.prdctClsfcNo || undefined,
@@ -287,11 +291,13 @@ const handleDownloadExcel = async () => {
 const toggleSave = async (item) => {
   const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
   try {
-    await axios.patch(API_BASE + '/saved', {
-      bidNoticeNo: item.bidNoticeNo,
-      vendorBizRegNo: item.vendorBizRegNo,
-      saved: nextSaved,
-    })
+    const payload = { grouped: longTermViewMerged.value, saved: nextSaved }
+    if (longTermViewMerged.value) {
+      payload.groupKey = item.groupKey
+    } else {
+      payload.contractNo = item.contractNo
+    }
+    await axios.patch(API_BASE + '/saved', payload)
     item.saved = nextSaved
   } catch (e) {
     console.error('저장 여부 업데이트 실패', e)
