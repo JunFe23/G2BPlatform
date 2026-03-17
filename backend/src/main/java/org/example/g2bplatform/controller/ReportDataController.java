@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataFormat;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
@@ -25,9 +27,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Tag(name = "Report Data", description = "보고서 데이터 API")
 @RestController
@@ -221,10 +226,17 @@ public class ReportDataController {
                         "contractMethod", "bidNoticeNo", "firstContractDate", "firstContractAmount", "finalContractDate",
                         "finalContractAmount", "contractCount", "isLongTerm"};
 
+        final Set<String> constructionAmountKeys = new HashSet<>(Arrays.asList(
+                "firstContractAmount", "finalContractAmount"));
+
         Path tempFile = Files.createTempFile("report_constructions_", ".xlsx");
         try {
             try (SXSSFWorkbook workbook = new SXSSFWorkbook(500); OutputStream out = Files.newOutputStream(tempFile)) {
                 Sheet sheet = workbook.createSheet("보고서공사");
+                DataFormat dataFormat = workbook.createDataFormat();
+                CellStyle numStyle = workbook.createCellStyle();
+                numStyle.setDataFormat(dataFormat.getFormat("#,##0"));
+
                 Row headerRow = sheet.createRow(0);
                 for (int i = 0; i < headerNames.length; i++) {
                     Cell cell = headerRow.createCell(i);
@@ -241,7 +253,16 @@ public class ReportDataController {
                             for (int colNum = 0; colNum < keys.length; colNum++) {
                                 Object value = row != null ? row.getOrDefault(keys[colNum], "") : "";
                                 Cell cell = excelRow.createCell(colNum);
-                                cell.setCellValue(value != null ? String.valueOf(value) : "");
+                                if (constructionAmountKeys.contains(keys[colNum]) && value != null && !value.toString().isEmpty()) {
+                                    try {
+                                        cell.setCellValue(Long.parseLong(value.toString()));
+                                        cell.setCellStyle(numStyle);
+                                    } catch (NumberFormatException e) {
+                                        cell.setCellValue(value.toString());
+                                    }
+                                } else {
+                                    cell.setCellValue(value != null ? String.valueOf(value) : "");
+                                }
                             }
                         });
                 workbook.write(out);
@@ -378,10 +399,18 @@ public class ReportDataController {
                         "itemIdentifierNo", "itemIdentifierName", "unit", "unitPrice", "quantity", "isMas", "isExcellentProduct", "isSmeCompetitive",
                         "firstContractDate", "contractDate", "contractAmount", "latestChangeSeq", "isLongTerm"};
 
+        final Set<String> procurementAmountKeys = new HashSet<>(Arrays.asList(
+                "initialContractAmount", "finalContractAmountSum",
+                "unitPrice", "quantity", "contractAmount"));
+
         Path tempFile = Files.createTempFile("report_procurements_", ".xlsx");
         try {
             try (SXSSFWorkbook workbook = new SXSSFWorkbook(500); OutputStream out = Files.newOutputStream(tempFile)) {
                 Sheet sheet = workbook.createSheet("보고서물품계약");
+                DataFormat dataFormat = workbook.createDataFormat();
+                CellStyle numStyle = workbook.createCellStyle();
+                numStyle.setDataFormat(dataFormat.getFormat("#,##0"));
+
                 Row headerRow = sheet.createRow(0);
                 for (int i = 0; i < headerNames.length; i++) {
                     Cell cell = headerRow.createCell(i);
@@ -398,7 +427,16 @@ public class ReportDataController {
                             for (int colNum = 0; colNum < keys.length; colNum++) {
                                 Object value = row != null ? row.getOrDefault(keys[colNum], "") : "";
                                 Cell cell = excelRow.createCell(colNum);
-                                cell.setCellValue(value != null ? String.valueOf(value) : "");
+                                if (procurementAmountKeys.contains(keys[colNum]) && value != null && !value.toString().isEmpty()) {
+                                    try {
+                                        cell.setCellValue(Long.parseLong(value.toString()));
+                                        cell.setCellStyle(numStyle);
+                                    } catch (NumberFormatException e) {
+                                        cell.setCellValue(value.toString());
+                                    }
+                                } else {
+                                    cell.setCellValue(value != null ? String.valueOf(value) : "");
+                                }
                             }
                         });
                 workbook.write(out);
