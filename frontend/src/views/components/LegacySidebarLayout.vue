@@ -154,7 +154,6 @@ const isSidebarExpanded = ref(false)
 const isSubmenuOpen = ref(false)
 const isReportSubmenuOpen = ref(false)
 const isAdminSubmenuOpen = ref(false)
-
 const toggleSubmenu = () => {
   isSubmenuOpen.value = !isSubmenuOpen.value
 }
