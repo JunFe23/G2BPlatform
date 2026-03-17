@@ -4,11 +4,12 @@
 
     <!-- 검색 필드 -->
     <div class="search-container">
-      <!-- 1줄: 필터만 -->
+      <!-- 1줄: 필터 -->
       <div class="search-filter-row">
         <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
         <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색" />
-        <input type="text" v-model="filters.prdctClsfcNo" placeholder="품명내용 검색" />
+        <input type="text" v-model="filters.prdctClsfcNo" placeholder="세부품명 검색" />
+        <input type="text" v-model="filters.itemCategoryNo" placeholder="물품분류번호 검색" />
         <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="입찰계약방법 검색" />
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
 
@@ -31,7 +32,7 @@
         </template>
       </div>
 
-      <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 (오른쪽 정렬) -->
+      <!-- 2줄: 토글·체크박스·버튼 -->
       <div class="search-actions-row">
         <label class="checkbox-label">
           <input type="checkbox" v-model="filters.showSavedOnly" />
@@ -39,19 +40,19 @@
         </label>
         <span class="actions-sep" aria-hidden="true"></span>
         <div class="long-term-toggle-wrap">
-        <span class="long-term-toggle-label">장기계약 건</span>
-        <button
-          type="button"
-          role="switch"
-          :aria-checked="longTermViewMerged"
-          :title="longTermViewMerged ? '합쳐서 보기' : '풀어서 보기'"
-          class="long-term-toggle-switch"
-          :class="{ on: longTermViewMerged }"
-          @click="onLongTermToggleClick"
-        >
-          <span class="long-term-toggle-slider"></span>
-        </button>
-        <span class="long-term-toggle-caption">{{ longTermViewMerged ? '합쳐서 보기' : '풀어서 보기' }}</span>
+          <span class="long-term-toggle-label">장기계약 건</span>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="grouped"
+            :title="grouped ? '합쳐서 보기' : '풀어서 보기'"
+            class="long-term-toggle-switch"
+            :class="{ on: grouped }"
+            @click="onToggleClick"
+          >
+            <span class="long-term-toggle-slider"></span>
+          </button>
+          <span class="long-term-toggle-caption">{{ grouped ? '합쳐서 보기' : '풀어서 보기' }}</span>
         </div>
 
         <button @click="handleSearch" class="search-btn">검색</button>
@@ -64,7 +65,6 @@
         </div>
       </div>
 
-      <!-- 엑셀 다운로드 중 프로그레스 오버레이 -->
       <div v-if="isLoadingExcel" class="excel-download-overlay">
         <div class="excel-download-progress">
           <div class="excel-spinner"></div>
@@ -82,74 +82,123 @@
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
-            <tr>
+            <!-- 합쳐서 보기 (grouped) 헤더 -->
+            <tr v-if="grouped">
               <th>업체명</th>
-              <th>계약건명</th>
+              <th>계약명</th>
               <th>수요기관명</th>
               <th>수요기관지역명</th>
-              <th>품명내용</th>
               <th>입찰계약방법</th>
               <th>입찰공고번호</th>
+              <th>세부품명</th>
               <th>최초계약일자</th>
               <th>최초계약금액</th>
               <th>최종계약일자</th>
-              <th>최종계약금액</th>
-              <th>계약차수</th>
-              <th>장기계약여부</th>
+              <th>최종계약금액(합계)</th>
+              <th>계약건수</th>
+              <th>장기여부</th>
+              <th>저장</th>
+            </tr>
+            <!-- 풀어서 보기 (flat) 헤더 -->
+            <tr v-else>
+              <th>업체명</th>
+              <th>계약명</th>
+              <th>수요기관명</th>
+              <th>수요기관지역명</th>
+              <th>입찰계약방법</th>
+              <th>입찰공고번호</th>
+              <th>물품분류번호</th>
+              <th>세부품명번호</th>
+              <th>세부품명</th>
+              <th>물품식별명</th>
+              <th>단위</th>
+              <th>단가</th>
+              <th>수량</th>
+              <th>MAS</th>
+              <th>우수제품</th>
+              <th>중기간경쟁</th>
+              <th>최초계약일자</th>
+              <th>계약일자</th>
+              <th>계약금액</th>
+              <th>장기여부</th>
               <th>저장</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="15" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td :colspan="grouped ? 14 : 21" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td colspan="15" class="no-data">데이터가 없습니다.</td>
+              <td :colspan="grouped ? 14 : 21" class="no-data">데이터가 없습니다.</td>
             </tr>
-            <tr v-else v-for="item in items" :key="rowKey(item)">
-              <td>{{ item.vendorName }}</td>
-              <td>{{ item.contractTitle }}</td>
-              <td>{{ item.demandAgencyName }}</td>
-              <td>{{ item.demandAgencyRegion }}</td>
-              <td>{{ item.detailItemName }}</td>
-              <td>{{ item.contractMethod }}</td>
-              <td>{{ item.bidNoticeNo }}</td>
-              <td>{{ item.firstContractDate }}</td>
-              <td>{{ formatNumber(item.firstContractAmount) }}</td>
-              <td>{{ item.finalContractDate }}</td>
-              <td>{{ formatNumber(item.finalContractAmount) }}</td>
-              <td>{{ item.contractCount }}</td>
-              <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
-              <td>
-                <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
-              </td>
-            </tr>
+
+            <!-- 합쳐서 보기 행 -->
+            <template v-else-if="grouped">
+              <tr v-for="item in items" :key="groupedRowKey(item)">
+                <td>{{ item.vendorName }}</td>
+                <td>{{ item.contractTitle }}</td>
+                <td>{{ item.demandAgencyName }}</td>
+                <td>{{ item.demandAgencyRegion }}</td>
+                <td>{{ item.contractMethod }}</td>
+                <td>{{ item.bidNoticeNo }}</td>
+                <td>{{ item.detailItemName }}</td>
+                <td>{{ item.initialContractDate }}</td>
+                <td>{{ formatNumber(item.initialContractAmount) }}</td>
+                <td>{{ item.finalContractDate }}</td>
+                <td>{{ formatNumber(item.finalContractAmountSum) }}</td>
+                <td>{{ item.contractCount }}</td>
+                <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
+                <td>
+                  <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
+                </td>
+              </tr>
+            </template>
+
+            <!-- 풀어서 보기 행 -->
+            <template v-else>
+              <tr v-for="item in items" :key="flatRowKey(item)">
+                <td>{{ item.vendorName }}</td>
+                <td>{{ item.contractTitle }}</td>
+                <td>{{ item.demandAgencyName }}</td>
+                <td>{{ item.demandAgencyRegion }}</td>
+                <td>{{ item.contractMethod }}</td>
+                <td>{{ item.bidNoticeNo }}</td>
+                <td>{{ item.itemCategoryNo }}</td>
+                <td>{{ item.detailItemNo }}</td>
+                <td>{{ item.detailItemName }}</td>
+                <td>{{ item.itemIdentifierName }}</td>
+                <td>{{ item.unit }}</td>
+                <td>{{ formatNumber(item.unitPrice) }}</td>
+                <td>{{ formatNumber(item.quantity) }}</td>
+                <td>{{ item.isMas }}</td>
+                <td>{{ item.isExcellentProduct }}</td>
+                <td>{{ item.isSmeCompetitive }}</td>
+                <td>{{ item.firstContractDate }}</td>
+                <td>{{ item.contractDate }}</td>
+                <td>{{ formatNumber(item.contractAmount) }}</td>
+                <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
+                <td>
+                  <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
+
       <div v-if="recordsFiltered > 0" class="pagination">
-        <span class="pagination-info"
-          >{{ formatNumber(startDisplay) }}-{{ formatNumber(endDisplay) }} / {{ formatNumber(recordsFiltered) }}건</span
-        >
-        <button class="page-btn" :disabled="currentPage <= 1" @click="goPage(currentPage - 1)">
-          이전
-        </button>
+        <span class="pagination-info">
+          {{ formatNumber(startDisplay) }}-{{ formatNumber(endDisplay) }} / {{ formatNumber(recordsFiltered) }}건
+        </span>
+        <button class="page-btn" :disabled="currentPage <= 1" @click="goPage(currentPage - 1)">이전</button>
         <button
           v-for="p in pageNumbers"
           :key="p"
           class="page-num-btn"
           :class="{ active: p === currentPage }"
           @click="goPage(p)"
-        >
-          {{ p }}
-        </button>
-        <button
-          class="page-btn"
-          :disabled="currentPage >= totalPages"
-          @click="goPage(currentPage + 1)"
-        >
-          다음
-        </button>
+        >{{ p }}</button>
+        <button class="page-btn" :disabled="currentPage >= totalPages" @click="goPage(currentPage + 1)">다음</button>
       </div>
     </div>
   </LegacySidebarLayout>
@@ -160,6 +209,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
+const API_BASE = '/api/report/procurements'
 const PAGE_SIZE = 100
 
 const isLoading = ref(false)
@@ -168,18 +218,19 @@ const items = ref([])
 const recordsFiltered = ref(0)
 const currentPage = ref(1)
 
-/** true: 장기계약 합쳐서 보기, false: 풀어서 보기 (기능 연동 예정) */
-const longTermViewMerged = ref(true)
+/** true: 합쳐서 보기(grouped), false: 풀어서 보기(flat) */
+const grouped = ref(true)
 
-function onLongTermToggleClick() {
-  alert('해당 기능은 개발 중입니다.')
-  longTermViewMerged.value = !longTermViewMerged.value
+function onToggleClick() {
+  grouped.value = !grouped.value
+  fetchData(true)
 }
 
 const filters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
   prdctClsfcNo: '',
+  itemCategoryNo: '',
   cntctCnclsMthdNm: '',
   firstCntrctDate: '',
   dateType: 'year',
@@ -192,15 +243,21 @@ const filters = reactive({
 
 const years = ['2025', '2024', '2023', '2022', '2021', '2020']
 
-function rowKey(item) {
-  return (item.bidNoticeNo || '') + '_' + (item.vendorBizRegNo || '')
+function groupedRowKey(item) {
+  return `${item.bidNoticeNo || ''}_${item.vendorBizRegNo || ''}_${item.contractNo || ''}`
+}
+
+function flatRowKey(item) {
+  return `${item.contractNo || ''}_${item.itemSeq ?? ''}`
 }
 
 function buildParams(includePaging = true) {
   const p = {
+    grouped: grouped.value,
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
     prdctClsfcNo: filters.prdctClsfcNo || undefined,
+    itemCategoryNo: filters.itemCategoryNo || undefined,
     cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
     firstCntrctDate: filters.firstCntrctDate || undefined,
     year: filters.dateType === 'year' && filters.year ? parseInt(filters.year, 10) : undefined,
@@ -235,7 +292,7 @@ const fetchData = async (resetPage = false) => {
   if (resetPage) currentPage.value = 1
   isLoading.value = true
   try {
-    const { data } = await axios.get('/api/report/goods', { params: buildParams(true) })
+    const { data } = await axios.get(API_BASE, { params: buildParams(true) })
     items.value = Array.isArray(data.data) ? data.data : []
     recordsFiltered.value = data.recordsFiltered ?? items.value.length
   } catch (e) {
@@ -254,9 +311,7 @@ const goPage = (page) => {
   fetchData()
 }
 
-const handleSearch = () => {
-  fetchData(true)
-}
+const handleSearch = () => fetchData(true)
 
 const handleDownloadExcel = async () => {
   isLoadingExcel.value = true
@@ -265,8 +320,7 @@ const handleDownloadExcel = async () => {
     Object.entries(buildParams(false)).forEach(([k, v]) => {
       if (v !== undefined && v !== '') params.append(k, v)
     })
-    // 대용량 엑셀 생성 대비 타임아웃 30분
-    const { data } = await axios.get('/api/report/goods/excel?' + params.toString(), {
+    const { data } = await axios.get(API_BASE + '/excel?' + params.toString(), {
       responseType: 'blob',
       timeout: 1800000,
     })
@@ -291,11 +345,16 @@ const handleDownloadExcel = async () => {
 const toggleSave = async (item) => {
   const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
   try {
-    await axios.patch('/api/report/goods/saved', {
-      bidNoticeNo: item.bidNoticeNo,
-      vendorBizRegNo: item.vendorBizRegNo,
-      saved: nextSaved,
-    })
+    let payload = { grouped: grouped.value, saved: nextSaved }
+    if (grouped.value) {
+      payload.bidNoticeNo = item.bidNoticeNo ?? ''
+      payload.vendorBizRegNo = item.vendorBizRegNo ?? ''
+      payload.contractNo = item.contractNo ?? ''
+    } else {
+      payload.contractNo = item.contractNo
+      payload.itemSeq = item.itemSeq
+    }
+    await axios.patch(API_BASE + '/saved', payload)
     item.saved = nextSaved
   } catch (e) {
     console.error('저장 여부 업데이트 실패', e)
@@ -311,14 +370,10 @@ const formatNumber = (num) => {
 
 watch(
   () => filters.showSavedOnly,
-  () => {
-    fetchData(true)
-  },
+  () => fetchData(true),
 )
 
-onMounted(() => {
-  fetchData()
-})
+onMounted(() => fetchData())
 </script>
 
 <style scoped>
@@ -333,7 +388,6 @@ onMounted(() => {
   gap: 12px;
   align-items: flex-start;
 }
-
 .search-filter-row {
   display: flex;
   flex-wrap: wrap;
@@ -358,7 +412,6 @@ onMounted(() => {
   padding-top: 10px;
   border-top: 1px solid #e2e8f0;
 }
-
 input[type='text'],
 select,
 input[type='month'] {
@@ -375,7 +428,6 @@ input[type='month']:focus {
   outline: none;
   border-color: #3498db;
 }
-
 .search-btn {
   padding: 10px 18px;
   background: linear-gradient(180deg, #3d5a73 0%, #34495e 100%);
@@ -389,7 +441,6 @@ input[type='month']:focus {
 .search-btn:hover {
   opacity: 0.95;
 }
-
 .excel-btn {
   padding: 10px 18px;
   background: linear-gradient(180deg, #2e8b5e 0%, #27ae60 100%);
@@ -407,7 +458,6 @@ input[type='month']:focus {
   opacity: 0.65;
   cursor: not-allowed;
 }
-
 .excel-download-overlay {
   position: fixed;
   inset: 0;
@@ -417,7 +467,6 @@ input[type='month']:focus {
   justify-content: center;
   z-index: 9999;
 }
-
 .excel-download-progress {
   background: #fff;
   padding: 28px 36px;
@@ -425,7 +474,6 @@ input[type='month']:focus {
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
-
 .excel-spinner {
   width: 48px;
   height: 48px;
@@ -435,26 +483,22 @@ input[type='month']:focus {
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
-
 .excel-progress-title {
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 8px;
   color: #2c3e50;
 }
-
 .excel-progress-desc {
   font-size: 14px;
   color: #7f8c8d;
   margin: 0 0 4px;
 }
-
 .excel-progress-hint {
   font-size: 12px;
   color: #95a5a6;
   margin: 0;
 }
-
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -463,7 +507,6 @@ input[type='month']:focus {
   font-size: 0.9em;
   color: #475569;
 }
-
 .actions-sep {
   display: inline-block;
   width: 1px;
@@ -474,19 +517,16 @@ input[type='month']:focus {
   border-radius: 1px;
   flex-shrink: 0;
 }
-
 .long-term-toggle-wrap {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .long-term-toggle-label {
   font-size: 0.875em;
   font-weight: 500;
   color: #475569;
 }
-
 .long-term-toggle-switch {
   position: relative;
   width: 44px;
@@ -498,16 +538,13 @@ input[type='month']:focus {
   padding: 0;
   transition: background 0.2s, border-color 0.2s;
 }
-
 .long-term-toggle-switch:hover {
   border-color: #94a3b8;
 }
-
 .long-term-toggle-switch.on {
   background: #3498db;
   border-color: #3498db;
 }
-
 .long-term-toggle-slider {
   position: absolute;
   top: 2px;
@@ -519,20 +556,16 @@ input[type='month']:focus {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s;
 }
-
 .long-term-toggle-switch.on .long-term-toggle-slider {
   transform: translateX(20px);
 }
-
 .long-term-toggle-caption {
   font-size: 0.8125em;
   color: #64748b;
 }
-
 .loading-spinner-container {
   margin-left: 10px;
 }
-
 .loading-spinner {
   width: 24px;
   height: 24px;
@@ -541,26 +574,18 @@ input[type='month']:focus {
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
-
 .table-container {
   overflow-x: auto;
   margin-top: 4px;
 }
-
 .data-table {
   width: 100%;
   border-collapse: collapse;
 }
-
 .data-table th,
 .data-table td {
   padding: 12px 10px;
@@ -568,21 +593,17 @@ input[type='month']:focus {
   text-align: center;
   font-size: 0.9em;
 }
-
 .data-table th {
   background: #f1f5f9;
   font-weight: 600;
   color: #334155;
 }
-
 .data-table tbody tr:nth-child(even) {
   background-color: #fafbfc;
 }
-
 .data-table tbody tr:hover {
   background-color: #f1f5f9;
 }
-
 .loading-text,
 .no-data {
   text-align: center;
@@ -590,7 +611,6 @@ input[type='month']:focus {
   color: #64748b;
   font-size: 0.95em;
 }
-
 .table-wrapper {
   max-height: 70vh;
   overflow: auto;
@@ -598,19 +618,16 @@ input[type='month']:focus {
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
-
 .data-table th {
   position: sticky;
   top: 0;
   background: #f1f5f9;
   z-index: 1;
 }
-
 .data-table th,
 .data-table td {
   white-space: nowrap;
 }
-
 .pagination {
   margin-top: 16px;
   padding: 14px 0;
