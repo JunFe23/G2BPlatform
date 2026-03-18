@@ -4,12 +4,12 @@
 
     <!-- 검색 필드 -->
     <div class="search-container">
-      <!-- 1줄: 필터만 -->
       <div class="search-filter-row">
         <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
-        <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색" />
-        <input type="text" v-model="filters.prdctClsfcNo" placeholder="품명내용 검색" />
-        <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="입찰계약방법 검색" />
+        <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역 검색" />
+        <input type="text" v-model="filters.detailItemName" placeholder="세부품명 검색" />
+        <input type="text" v-model="filters.procurementWorkArea" placeholder="조달업무영역 (일반용역/기술용역)" />
+        <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="계약방법 검색" />
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
 
         <select v-model="filters.dateType" class="date-select">
@@ -31,7 +31,7 @@
         </template>
       </div>
 
-      <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 (오른쪽 정렬) -->
+      <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 -->
       <div class="search-actions-row">
         <label class="checkbox-label">
           <input type="checkbox" v-model="filters.showSavedOnly" />
@@ -39,19 +39,19 @@
         </label>
         <span class="actions-sep" aria-hidden="true"></span>
         <div class="long-term-toggle-wrap">
-        <span class="long-term-toggle-label">장기계약 건</span>
-        <button
-          type="button"
-          role="switch"
-          :aria-checked="longTermViewMerged"
-          :title="longTermViewMerged ? '합쳐서 보기' : '풀어서 보기'"
-          class="long-term-toggle-switch"
-          :class="{ on: longTermViewMerged }"
-          @click="onLongTermToggleClick"
-        >
-          <span class="long-term-toggle-slider"></span>
-        </button>
-        <span class="long-term-toggle-caption">{{ longTermViewMerged ? '합쳐서 보기' : '풀어서 보기' }}</span>
+          <span class="long-term-toggle-label">장기계약 건</span>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="grouped"
+            :title="grouped ? '합쳐서 보기' : '풀어서 보기'"
+            class="long-term-toggle-switch"
+            :class="{ on: grouped }"
+            @click="onGroupedToggleClick"
+          >
+            <span class="long-term-toggle-slider"></span>
+          </button>
+          <span class="long-term-toggle-caption">{{ grouped ? '합쳐서 보기' : '풀어서 보기' }}</span>
         </div>
 
         <button @click="handleSearch" class="search-btn">검색</button>
@@ -78,44 +78,109 @@
 
     <div class="table-container">
       <div class="table-wrapper">
-        <table class="data-table">
+        <!-- 합쳐서 보기 (grouped) -->
+        <table v-if="grouped" class="data-table">
           <thead>
             <tr>
               <th>업체명</th>
-              <th>계약건명</th>
+              <th>계약명</th>
               <th>수요기관명</th>
-              <th>수요기관지역명</th>
-              <th>품명내용</th>
-              <th>입찰계약방법</th>
-              <th>입찰공고번호</th>
+              <th>수요기관지역</th>
+              <th>조달업무영역</th>
+              <th>계약방법</th>
+              <th>세부품명</th>
               <th>최초계약일자</th>
               <th>최초계약금액</th>
               <th>최종계약일자</th>
-              <th>최종계약금액</th>
-              <th>계약변경차수</th>
+              <th>최종계약금액(합계)</th>
+              <th>계약건수</th>
+              <th>장기여부</th>
               <th>저장</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td :colspan="COL_SPAN" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td colspan="14" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td :colspan="COL_SPAN" class="no-data">데이터가 없습니다.</td>
+              <td colspan="14" class="no-data">데이터가 없습니다.</td>
             </tr>
-            <tr v-else v-for="item in items" :key="rowKey(item)">
+            <tr v-else v-for="item in items" :key="groupedRowKey(item)">
               <td>{{ item.vendorName }}</td>
               <td>{{ item.contractTitle }}</td>
-              <td>{{ item.demandAgencyName }}</td>
+              <td>{{ item.demandAgency }}</td>
               <td>{{ item.demandAgencyRegion }}</td>
-              <td>{{ item.detailItemName }}</td>
+              <td>{{ item.procurementWorkArea }}</td>
               <td>{{ item.contractMethod }}</td>
-              <td>{{ item.bidNoticeNo }}</td>
-              <td>{{ item.firstContractDate }}</td>
-              <td>{{ formatNumber(item.firstContractAmount) }}</td>
+              <td>{{ item.detailItemName }}</td>
+              <td>{{ item.initialContractDate }}</td>
+              <td>{{ formatNumber(item.initialContractAmount) }}</td>
               <td>{{ item.finalContractDate }}</td>
-              <td>{{ formatNumber(item.finalContractAmount) }}</td>
-              <td>{{ item.contractCount ?? item.contractChangeCount ?? '-' }}</td>
+              <td>{{ formatNumber(item.finalContractAmountSum) }}</td>
+              <td>{{ item.contractCount }}</td>
+              <td>{{ item.isLongTerm }}</td>
+              <td>
+                <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 풀어서 보기 (flat) -->
+        <table v-else class="data-table">
+          <thead>
+            <tr>
+              <th>업체명</th>
+              <th>계약명</th>
+              <th>수요기관명</th>
+              <th>수요기관지역</th>
+              <th>조달업무영역</th>
+              <th>계약방법</th>
+              <th>계약유형</th>
+              <th>입찰공고번호</th>
+              <th>세부품명</th>
+              <th>공공조달분류(대)</th>
+              <th>공공조달분류(중)</th>
+              <th>최초기준일자</th>
+              <th>기준일자</th>
+              <th>착수일자</th>
+              <th>완수일자</th>
+              <th>최초계약금액</th>
+              <th>계약금액</th>
+              <th>계약지분율</th>
+              <th>계약지분금액</th>
+              <th>장기여부</th>
+              <th>저장</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="isLoading">
+              <td colspan="21" class="loading-text">데이터를 불러오는 중입니다...</td>
+            </tr>
+            <tr v-else-if="items.length === 0">
+              <td colspan="21" class="no-data">데이터가 없습니다.</td>
+            </tr>
+            <tr v-else v-for="item in items" :key="flatRowKey(item)">
+              <td>{{ item.vendorName }}</td>
+              <td>{{ item.contractTitle }}</td>
+              <td>{{ item.demandAgency }}</td>
+              <td>{{ item.demandAgencyRegion }}</td>
+              <td>{{ item.procurementWorkArea }}</td>
+              <td>{{ item.contractMethod }}</td>
+              <td>{{ item.contractType }}</td>
+              <td>{{ item.bidNoticeNo }}</td>
+              <td>{{ item.detailItemName }}</td>
+              <td>{{ item.publicProcurementCategoryMajor }}</td>
+              <td>{{ item.publicProcurementCategoryMid }}</td>
+              <td>{{ item.firstContractDate }}</td>
+              <td>{{ item.contractDate }}</td>
+              <td>{{ item.startDate }}</td>
+              <td>{{ item.completionDate }}</td>
+              <td>{{ formatNumber(item.firstContractAmount) }}</td>
+              <td>{{ formatNumber(item.contractAmount) }}</td>
+              <td>{{ item.contractSharePct }}</td>
+              <td>{{ formatNumber(item.contractShareAmount) }}</td>
+              <td>{{ item.isLongTerm }}</td>
               <td>
                 <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
               </td>
@@ -123,13 +188,12 @@
           </tbody>
         </table>
       </div>
+
       <div v-if="recordsFiltered > 0" class="pagination">
-        <span class="pagination-info"
-          >{{ formatNumber(startDisplay) }}-{{ formatNumber(endDisplay) }} / {{ formatNumber(recordsFiltered) }}건</span
-        >
-        <button class="page-btn" :disabled="currentPage <= 1" @click="goPage(currentPage - 1)">
-          이전
-        </button>
+        <span class="pagination-info">
+          {{ formatNumber(startDisplay) }}-{{ formatNumber(endDisplay) }} / {{ formatNumber(recordsFiltered) }}건
+        </span>
+        <button class="page-btn" :disabled="currentPage <= 1" @click="goPage(currentPage - 1)">이전</button>
         <button
           v-for="p in pageNumbers"
           :key="p"
@@ -139,13 +203,7 @@
         >
           {{ p }}
         </button>
-        <button
-          class="page-btn"
-          :disabled="currentPage >= totalPages"
-          @click="goPage(currentPage + 1)"
-        >
-          다음
-        </button>
+        <button class="page-btn" :disabled="currentPage >= totalPages" @click="goPage(currentPage + 1)">다음</button>
       </div>
     </div>
   </LegacySidebarLayout>
@@ -157,7 +215,6 @@ import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
 const API_BASE = '/api/report/services'
-const COL_SPAN = 13
 const PAGE_SIZE = 100
 
 const isLoading = ref(false)
@@ -166,18 +223,19 @@ const items = ref([])
 const recordsFiltered = ref(0)
 const currentPage = ref(1)
 
-/** true: 장기계약 합쳐서 보기, false: 풀어서 보기 (기능 연동 예정) */
-const longTermViewMerged = ref(true)
+/** true: 합쳐서 보기 (grouped), false: 풀어서 보기 (flat) */
+const grouped = ref(true)
 
-function onLongTermToggleClick() {
-  alert('해당 기능은 개발 중입니다.')
-  longTermViewMerged.value = !longTermViewMerged.value
+function onGroupedToggleClick() {
+  grouped.value = !grouped.value
+  fetchData(true)
 }
 
 const filters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
-  prdctClsfcNo: '',
+  detailItemName: '',
+  procurementWorkArea: '',
   cntctCnclsMthdNm: '',
   firstCntrctDate: '',
   dateType: 'year',
@@ -190,15 +248,23 @@ const filters = reactive({
 
 const years = ['2025', '2024', '2023', '2022', '2021', '2020']
 
-function rowKey(item) {
-  return (item.bidNoticeNo || '') + '_' + (item.vendorBizRegNo || '')
+/** grouped PK: (group_key, vendor_biz_reg_no) */
+function groupedRowKey(item) {
+  return (item.groupKey || '') + '_' + (item.vendorBizRegNo || '')
+}
+
+/** flat PK: (contract_delivery_integrated_no, vendor_biz_reg_no) */
+function flatRowKey(item) {
+  return (item.contractDeliveryIntegratedNo || '') + '_' + (item.vendorBizRegNo || '')
 }
 
 function buildParams(includePaging = true) {
   const p = {
+    grouped: grouped.value,
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
-    prdctClsfcNo: filters.prdctClsfcNo || undefined,
+    detailItemName: filters.detailItemName || undefined,
+    procurementWorkArea: filters.procurementWorkArea || undefined,
     cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
     firstCntrctDate: filters.firstCntrctDate || undefined,
     year: filters.dateType === 'year' && filters.year ? parseInt(filters.year, 10) : undefined,
@@ -286,11 +352,15 @@ const handleDownloadExcel = async () => {
 const toggleSave = async (item) => {
   const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
   try {
-    await axios.patch(API_BASE + '/saved', {
-      bidNoticeNo: item.bidNoticeNo,
-      vendorBizRegNo: item.vendorBizRegNo,
-      saved: nextSaved,
-    })
+    const payload = { grouped: grouped.value, saved: nextSaved }
+    if (grouped.value) {
+      payload.groupKey = item.groupKey
+      payload.vendorBizRegNo = item.vendorBizRegNo
+    } else {
+      payload.contractDeliveryIntegratedNo = item.contractDeliveryIntegratedNo
+      payload.vendorBizRegNo = item.vendorBizRegNo
+    }
+    await axios.patch(API_BASE + '/saved', payload)
     item.saved = nextSaved
   } catch (e) {
     console.error('저장 여부 업데이트 실패', e)
