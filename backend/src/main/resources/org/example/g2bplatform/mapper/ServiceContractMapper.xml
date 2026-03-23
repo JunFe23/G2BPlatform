@@ -30,6 +30,12 @@
         <if test="contractMethod != null and contractMethod != ''">
             AND contract_method LIKE CONCAT('%', #{contractMethod}, '%')
         </if>
+        <if test="publicProcurementCategoryMid != null and publicProcurementCategoryMid != ''">
+            AND public_procurement_category_mid = #{publicProcurementCategoryMid}
+        </if>
+        <if test="publicProcurementCategory != null and publicProcurementCategory != ''">
+            AND public_procurement_category = #{publicProcurementCategory}
+        </if>
         <if test="firstCntrctDate != null and firstCntrctDate != ''">
             AND first_contract_date = #{firstCntrctDate}
         </if>

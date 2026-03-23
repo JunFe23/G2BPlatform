@@ -541,6 +541,8 @@ public class ReportDataController {
             @Parameter(description = "세부품명") @RequestParam(required = false) String detailItemName,
             @Parameter(description = "조달업무영역") @RequestParam(required = false) String procurementWorkArea,
             @Parameter(description = "계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
+            @Parameter(description = "공공조달분류 중분류") @RequestParam(required = false) String publicProcurementCategoryMid,
+            @Parameter(description = "공공조달분류 소분류") @RequestParam(required = false) String publicProcurementCategory,
             @Parameter(description = "최초계약일자(YYYY-MM-DD)") @RequestParam(required = false) String firstCntrctDate,
             @Parameter(description = "연도") @RequestParam(required = false) Integer year,
             @Parameter(description = "월(YYYY-MM)") @RequestParam(required = false) String month,
@@ -551,10 +553,12 @@ public class ReportDataController {
         List<Map<String, Object>> list = reportServiceContractService.getList(
                 grouped, start, length,
                 dminsttNm, dminsttNmDetail, detailItemName, procurementWorkArea, cntctCnclsMthdNm,
+                publicProcurementCategoryMid, publicProcurementCategory,
                 firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         int filtered = reportServiceContractService.getCount(
                 grouped,
                 dminsttNm, dminsttNmDetail, detailItemName, procurementWorkArea, cntctCnclsMthdNm,
+                publicProcurementCategoryMid, publicProcurementCategory,
                 firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         Map<String, Object> respBody = new HashMap<>();
         respBody.put("success", true);
@@ -575,6 +579,8 @@ public class ReportDataController {
             @Parameter(description = "세부품명") @RequestParam(required = false) String detailItemName,
             @Parameter(description = "조달업무영역") @RequestParam(required = false) String procurementWorkArea,
             @Parameter(description = "계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
+            @Parameter(description = "공공조달분류 중분류") @RequestParam(required = false) String publicProcurementCategoryMid,
+            @Parameter(description = "공공조달분류 소분류") @RequestParam(required = false) String publicProcurementCategory,
             @Parameter(description = "최초계약일자") @RequestParam(required = false) String firstCntrctDate,
             @Parameter(description = "연도") @RequestParam(required = false) Integer year,
             @Parameter(description = "월") @RequestParam(required = false) String month,
@@ -624,6 +630,7 @@ public class ReportDataController {
                 reportServiceContractService.streamForExcel(
                         grouped,
                         dminsttNm, dminsttNmDetail, detailItemName, procurementWorkArea, cntctCnclsMthdNm,
+                        publicProcurementCategoryMid, publicProcurementCategory,
                         firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly,
                         resultContext -> {
                             Map<String, Object> row = resultContext.getResultObject();

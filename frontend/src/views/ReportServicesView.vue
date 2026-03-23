@@ -10,6 +10,17 @@
         <input type="text" v-model="filters.detailItemName" placeholder="세부품명 검색" />
         <input type="text" v-model="filters.procurementWorkArea" placeholder="조달업무영역 (일반용역/기술용역)" />
         <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="계약방법 검색" />
+
+        <!-- 공공조달분류 중분류 / 소분류 (flat 뷰 전용 필터) -->
+        <select v-model="filters.publicProcurementCategoryMid" class="date-select" @change="onMidCategoryChange">
+          <option value="">공공조달분류 중분류 (전체)</option>
+          <option v-for="mid in midCategories" :key="mid" :value="mid">{{ mid }}</option>
+        </select>
+        <select v-model="filters.publicProcurementCategory" class="date-select">
+          <option value="">공공조달분류 소분류 (전체)</option>
+          <option v-for="sub in filteredSubCategories" :key="sub" :value="sub">{{ sub }}</option>
+        </select>
+
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
 
         <select v-model="filters.dateType" class="date-select">
@@ -237,6 +248,8 @@ const filters = reactive({
   detailItemName: '',
   procurementWorkArea: '',
   cntctCnclsMthdNm: '',
+  publicProcurementCategoryMid: '',
+  publicProcurementCategory: '',
   firstCntrctDate: '',
   dateType: 'year',
   year: '',
@@ -247,6 +260,25 @@ const filters = reactive({
 })
 
 const years = ['2025', '2024', '2023', '2022', '2021', '2020']
+
+/** 공공조달분류 계층 정의 */
+const categoryMap = {
+  설계: ['토목설계용역', '건축설계용역', '상하수도설계용역', '전기설계용역', '교통설계용역', '정보통신설계용역'],
+  감리: ['건축감리용역', '토목감리용역', '전기감리용역', '정보통신감리용역'],
+  CM: ['건축CM용역', '토목CM용역'],
+  기타: ['기타기술용역'],
+}
+const midCategories = Object.keys(categoryMap)
+
+const filteredSubCategories = computed(() => {
+  if (!filters.publicProcurementCategoryMid) return Object.values(categoryMap).flat()
+  return categoryMap[filters.publicProcurementCategoryMid] ?? []
+})
+
+function onMidCategoryChange() {
+  // 중분류 바뀌면 소분류 초기화
+  filters.publicProcurementCategory = ''
+}
 
 /** grouped PK: (group_key, vendor_biz_reg_no) */
 function groupedRowKey(item) {
@@ -266,6 +298,8 @@ function buildParams(includePaging = true) {
     detailItemName: filters.detailItemName || undefined,
     procurementWorkArea: filters.procurementWorkArea || undefined,
     cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
+    publicProcurementCategoryMid: filters.publicProcurementCategoryMid || undefined,
+    publicProcurementCategory: filters.publicProcurementCategory || undefined,
     firstCntrctDate: filters.firstCntrctDate || undefined,
     year: filters.dateType === 'year' && filters.year ? parseInt(filters.year, 10) : undefined,
     month: filters.dateType === 'month' ? filters.month || undefined : undefined,

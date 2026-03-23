@@ -20,6 +20,7 @@ public class ReportServiceContractService {
             boolean grouped, int start, int length,
             String demandAgency, String demandAgencyRegion,
             String detailItemName, String procurementWorkArea, String contractMethod,
+            String publicProcurementCategoryMid, String publicProcurementCategory,
             String firstCntrctDate, Integer year, String month,
             String rangeStart, String rangeEnd, boolean showSavedOnly
     ) {
@@ -32,6 +33,7 @@ public class ReportServiceContractService {
             return serviceContractMapper.selectFlatList(
                     start, length, demandAgency, demandAgencyRegion,
                     detailItemName, procurementWorkArea, contractMethod,
+                    publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         }
     }
@@ -40,6 +42,7 @@ public class ReportServiceContractService {
             boolean grouped,
             String demandAgency, String demandAgencyRegion,
             String detailItemName, String procurementWorkArea, String contractMethod,
+            String publicProcurementCategoryMid, String publicProcurementCategory,
             String firstCntrctDate, Integer year, String month,
             String rangeStart, String rangeEnd, boolean showSavedOnly
     ) {
@@ -52,6 +55,7 @@ public class ReportServiceContractService {
             return serviceContractMapper.selectFlatCount(
                     demandAgency, demandAgencyRegion,
                     detailItemName, procurementWorkArea, contractMethod,
+                    publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         }
     }
@@ -60,6 +64,7 @@ public class ReportServiceContractService {
             boolean grouped,
             String demandAgency, String demandAgencyRegion,
             String detailItemName, String procurementWorkArea, String contractMethod,
+            String publicProcurementCategoryMid, String publicProcurementCategory,
             String firstCntrctDate, Integer year, String month,
             String rangeStart, String rangeEnd, boolean showSavedOnly,
             ResultHandler<Map<String, Object>> handler
@@ -74,6 +79,7 @@ public class ReportServiceContractService {
             serviceContractMapper.selectFlatListForExport(
                     demandAgency, demandAgencyRegion,
                     detailItemName, procurementWorkArea, contractMethod,
+                    publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly,
                     handler);
         }
