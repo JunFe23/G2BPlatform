@@ -21,9 +21,6 @@
         <if test="demandAgencyRegion != null and demandAgencyRegion != ''">
             AND demand_agency_region LIKE CONCAT('%', #{demandAgencyRegion}, '%')
         </if>
-        <if test="detailItemName != null and detailItemName != ''">
-            AND detail_item_name LIKE CONCAT('%', #{detailItemName}, '%')
-        </if>
         <if test="procurementWorkArea != null and procurementWorkArea != ''">
             AND procurement_work_area LIKE CONCAT('%', #{procurementWorkArea}, '%')
         </if>
@@ -73,9 +70,7 @@
             representative_item_category_code                        AS representativeItemCategoryCode,
             representative_item_category                             AS representativeItemCategory,
             detail_item_code                                         AS detailItemCode,
-            detail_item_name                                         AS detailItemName,
             public_procurement_category                              AS publicProcurementCategory,
-            public_procurement_category_major                        AS publicProcurementCategoryMajor,
             public_procurement_category_mid                          AS publicProcurementCategoryMid,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')             AS firstContractDate,
             DATE_FORMAT(contract_date, '%Y-%m-%d')                   AS contractDate,
@@ -83,8 +78,6 @@
             DATE_FORMAT(completion_date, '%Y-%m-%d')                 AS completionDate,
             first_contract_amount                                    AS firstContractAmount,
             contract_amount                                          AS contractAmount,
-            contract_share_pct                                       AS contractSharePct,
-            contract_share_amount                                    AS contractShareAmount,
             latest_change_seq                                        AS latestChangeSeq,
             IFNULL(saved, 'N')                                       AS saved
         FROM service_contract_flat
@@ -116,9 +109,7 @@
             representative_item_category_code                        AS representativeItemCategoryCode,
             representative_item_category                             AS representativeItemCategory,
             detail_item_code                                         AS detailItemCode,
-            detail_item_name                                         AS detailItemName,
             public_procurement_category                              AS publicProcurementCategory,
-            public_procurement_category_major                        AS publicProcurementCategoryMajor,
             public_procurement_category_mid                          AS publicProcurementCategoryMid,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')             AS firstContractDate,
             DATE_FORMAT(contract_date, '%Y-%m-%d')                   AS contractDate,
@@ -126,8 +117,6 @@
             DATE_FORMAT(completion_date, '%Y-%m-%d')                 AS completionDate,
             first_contract_amount                                    AS firstContractAmount,
             contract_amount                                          AS contractAmount,
-            contract_share_pct                                       AS contractSharePct,
-            contract_share_amount                                    AS contractShareAmount,
             latest_change_seq                                        AS latestChangeSeq,
             IFNULL(saved, 'N')                                       AS saved
         FROM service_contract_flat
@@ -152,14 +141,17 @@
         <if test="demandAgencyRegion != null and demandAgencyRegion != ''">
             AND demand_agency_region LIKE CONCAT('%', #{demandAgencyRegion}, '%')
         </if>
-        <if test="detailItemName != null and detailItemName != ''">
-            AND detail_item_name LIKE CONCAT('%', #{detailItemName}, '%')
-        </if>
         <if test="procurementWorkArea != null and procurementWorkArea != ''">
             AND procurement_work_area LIKE CONCAT('%', #{procurementWorkArea}, '%')
         </if>
         <if test="contractMethod != null and contractMethod != ''">
             AND contract_method LIKE CONCAT('%', #{contractMethod}, '%')
+        </if>
+        <if test="publicProcurementCategoryMid != null and publicProcurementCategoryMid != ''">
+            AND public_procurement_category_mid = #{publicProcurementCategoryMid}
+        </if>
+        <if test="publicProcurementCategory != null and publicProcurementCategory != ''">
+            AND public_procurement_category = #{publicProcurementCategory}
         </if>
         <if test="firstCntrctDate != null and firstCntrctDate != ''">
             AND initial_contract_date = #{firstCntrctDate}
@@ -191,8 +183,8 @@
             demand_agency_region                                     AS demandAgencyRegion,
             contract_method                                          AS contractMethod,
             procurement_work_area                                    AS procurementWorkArea,
-            detail_item_code                                         AS detailItemCode,
-            detail_item_name                                         AS detailItemName,
+            public_procurement_category                              AS publicProcurementCategory,
+            public_procurement_category_mid                          AS publicProcurementCategoryMid,
             DATE_FORMAT(initial_contract_date, '%Y-%m-%d')           AS initialContractDate,
             initial_contract_amount                                  AS initialContractAmount,
             DATE_FORMAT(final_contract_date, '%Y-%m-%d')             AS finalContractDate,
@@ -222,8 +214,8 @@
             demand_agency_region                                     AS demandAgencyRegion,
             contract_method                                          AS contractMethod,
             procurement_work_area                                    AS procurementWorkArea,
-            detail_item_code                                         AS detailItemCode,
-            detail_item_name                                         AS detailItemName,
+            public_procurement_category                              AS publicProcurementCategory,
+            public_procurement_category_mid                          AS publicProcurementCategoryMid,
             DATE_FORMAT(initial_contract_date, '%Y-%m-%d')           AS initialContractDate,
             initial_contract_amount                                  AS initialContractAmount,
             DATE_FORMAT(final_contract_date, '%Y-%m-%d')             AS finalContractDate,

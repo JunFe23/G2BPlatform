@@ -8,7 +8,6 @@
       <div class="search-filter-row">
         <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
         <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역 검색" />
-        <input type="text" v-model="filters.detailItemName" placeholder="세부품명 검색" />
         <input type="text" v-model="filters.procurementWorkArea" placeholder="조달업무영역 (일반용역/기술용역)" />
         <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="계약방법 검색" />
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
@@ -102,7 +101,6 @@
               <th>수요기관지역</th>
               <th>조달업무영역</th>
               <th>계약방법</th>
-              <th>세부품명</th>
               <th>최초계약일자</th>
               <th>최초계약금액</th>
               <th>최종계약일자</th>
@@ -114,10 +112,10 @@
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="14" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td colspan="13" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td colspan="14" class="no-data">데이터가 없습니다.</td>
+              <td colspan="13" class="no-data">데이터가 없습니다.</td>
             </tr>
             <tr v-else v-for="item in items" :key="groupedRowKey(item)">
               <td>{{ item.vendorName }}</td>
@@ -126,7 +124,6 @@
               <td>{{ item.demandAgencyRegion }}</td>
               <td>{{ item.procurementWorkArea }}</td>
               <td>{{ item.contractMethod }}</td>
-              <td>{{ item.detailItemName }}</td>
               <td>{{ item.initialContractDate }}</td>
               <td>{{ formatNumber(item.initialContractAmount) }}</td>
               <td>{{ item.finalContractDate }}</td>
@@ -152,27 +149,24 @@
               <th>계약방법</th>
               <th>계약유형</th>
               <th>입찰공고번호</th>
-              <th>세부품명</th>
-              <th>공공조달분류(대)</th>
               <th>공공조달분류(중)</th>
+              <th>공공조달분류(소)</th>
               <th>최초기준일자</th>
               <th>기준일자</th>
               <th>착수일자</th>
               <th>완수일자</th>
               <th>최초계약금액</th>
               <th>계약금액</th>
-              <th>계약지분율</th>
-              <th>계약지분금액</th>
               <th>장기여부</th>
               <th>저장</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="21" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td colspan="18" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td colspan="21" class="no-data">데이터가 없습니다.</td>
+              <td colspan="18" class="no-data">데이터가 없습니다.</td>
             </tr>
             <tr v-else v-for="item in items" :key="flatRowKey(item)">
               <td>{{ item.vendorName }}</td>
@@ -183,17 +177,14 @@
               <td>{{ item.contractMethod }}</td>
               <td>{{ item.contractType }}</td>
               <td>{{ item.bidNoticeNo }}</td>
-              <td>{{ item.detailItemName }}</td>
-              <td>{{ item.publicProcurementCategoryMajor }}</td>
               <td>{{ item.publicProcurementCategoryMid }}</td>
+              <td>{{ item.publicProcurementCategory }}</td>
               <td>{{ item.firstContractDate }}</td>
               <td>{{ item.contractDate }}</td>
               <td>{{ item.startDate }}</td>
               <td>{{ item.completionDate }}</td>
               <td>{{ formatNumber(item.firstContractAmount) }}</td>
               <td>{{ formatNumber(item.contractAmount) }}</td>
-              <td>{{ item.contractSharePct }}</td>
-              <td>{{ formatNumber(item.contractShareAmount) }}</td>
               <td>{{ item.isLongTerm }}</td>
               <td>
                 <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
@@ -248,7 +239,6 @@ function onGroupedToggleClick() {
 const filters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
-  detailItemName: '',
   procurementWorkArea: '',
   cntctCnclsMthdNm: '',
   publicProcurementCategoryMid: '',
@@ -298,7 +288,6 @@ function buildParams(includePaging = true) {
     grouped: grouped.value,
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
-    detailItemName: filters.detailItemName || undefined,
     procurementWorkArea: filters.procurementWorkArea || undefined,
     cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
     publicProcurementCategoryMid: filters.publicProcurementCategoryMid || undefined,

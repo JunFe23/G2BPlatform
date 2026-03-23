@@ -19,7 +19,7 @@ public class ReportServiceContractService {
     public List<Map<String, Object>> getList(
             boolean grouped, int start, int length,
             String demandAgency, String demandAgencyRegion,
-            String detailItemName, String procurementWorkArea, String contractMethod,
+            String procurementWorkArea, String contractMethod,
             String publicProcurementCategoryMid, String publicProcurementCategory,
             String firstCntrctDate, Integer year, String month,
             String rangeStart, String rangeEnd, boolean showSavedOnly
@@ -27,12 +27,13 @@ public class ReportServiceContractService {
         if (grouped) {
             return serviceContractMapper.selectGroupedList(
                     start, length, demandAgency, demandAgencyRegion,
-                    detailItemName, procurementWorkArea, contractMethod,
+                    procurementWorkArea, contractMethod,
+                    publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         } else {
             return serviceContractMapper.selectFlatList(
                     start, length, demandAgency, demandAgencyRegion,
-                    detailItemName, procurementWorkArea, contractMethod,
+                    procurementWorkArea, contractMethod,
                     publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         }
@@ -41,7 +42,7 @@ public class ReportServiceContractService {
     public int getCount(
             boolean grouped,
             String demandAgency, String demandAgencyRegion,
-            String detailItemName, String procurementWorkArea, String contractMethod,
+            String procurementWorkArea, String contractMethod,
             String publicProcurementCategoryMid, String publicProcurementCategory,
             String firstCntrctDate, Integer year, String month,
             String rangeStart, String rangeEnd, boolean showSavedOnly
@@ -49,12 +50,13 @@ public class ReportServiceContractService {
         if (grouped) {
             return serviceContractMapper.selectGroupedCount(
                     demandAgency, demandAgencyRegion,
-                    detailItemName, procurementWorkArea, contractMethod,
+                    procurementWorkArea, contractMethod,
+                    publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         } else {
             return serviceContractMapper.selectFlatCount(
                     demandAgency, demandAgencyRegion,
-                    detailItemName, procurementWorkArea, contractMethod,
+                    procurementWorkArea, contractMethod,
                     publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         }
@@ -63,7 +65,7 @@ public class ReportServiceContractService {
     public void streamForExcel(
             boolean grouped,
             String demandAgency, String demandAgencyRegion,
-            String detailItemName, String procurementWorkArea, String contractMethod,
+            String procurementWorkArea, String contractMethod,
             String publicProcurementCategoryMid, String publicProcurementCategory,
             String firstCntrctDate, Integer year, String month,
             String rangeStart, String rangeEnd, boolean showSavedOnly,
@@ -72,13 +74,14 @@ public class ReportServiceContractService {
         if (grouped) {
             serviceContractMapper.selectGroupedListForExport(
                     demandAgency, demandAgencyRegion,
-                    detailItemName, procurementWorkArea, contractMethod,
+                    procurementWorkArea, contractMethod,
+                    publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly,
                     handler);
         } else {
             serviceContractMapper.selectFlatListForExport(
                     demandAgency, demandAgencyRegion,
-                    detailItemName, procurementWorkArea, contractMethod,
+                    procurementWorkArea, contractMethod,
                     publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly,
                     handler);
