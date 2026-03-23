@@ -4,23 +4,13 @@
 
     <!-- 검색 필드 -->
     <div class="search-container">
+      <!-- 1줄: 기본 필터 -->
       <div class="search-filter-row">
         <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
         <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역 검색" />
         <input type="text" v-model="filters.detailItemName" placeholder="세부품명 검색" />
         <input type="text" v-model="filters.procurementWorkArea" placeholder="조달업무영역 (일반용역/기술용역)" />
         <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="계약방법 검색" />
-
-        <!-- 공공조달분류 중분류 / 소분류 (flat 뷰 전용 필터) -->
-        <select v-model="filters.publicProcurementCategoryMid" class="date-select" @change="onMidCategoryChange">
-          <option value="">공공조달분류 중분류 (전체)</option>
-          <option v-for="mid in midCategories" :key="mid" :value="mid">{{ mid }}</option>
-        </select>
-        <select v-model="filters.publicProcurementCategory" class="date-select">
-          <option value="">공공조달분류 소분류 (전체)</option>
-          <option v-for="sub in filteredSubCategories" :key="sub" :value="sub">{{ sub }}</option>
-        </select>
-
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
 
         <select v-model="filters.dateType" class="date-select">
@@ -40,6 +30,19 @@
           <input type="month" v-model="filters.rangeStart" placeholder="시작월" />
           <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
         </template>
+      </div>
+
+      <!-- 2줄: 공공조달분류 중분류 / 소분류 필터 -->
+      <div class="search-filter-row search-category-row">
+        <span class="category-row-label">공공조달분류</span>
+        <select v-model="filters.publicProcurementCategoryMid" class="date-select" @change="onMidCategoryChange">
+          <option value="">중분류 (전체)</option>
+          <option v-for="mid in midCategories" :key="mid" :value="mid">{{ mid }}</option>
+        </select>
+        <select v-model="filters.publicProcurementCategory" class="date-select">
+          <option value="">소분류 (전체)</option>
+          <option v-for="sub in filteredSubCategories" :key="sub" :value="sub">{{ sub }}</option>
+        </select>
       </div>
 
       <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 -->
@@ -445,6 +448,18 @@ onMounted(() => fetchData())
 .search-filter-row select,
 .search-filter-row input[type='month'] {
   min-width: 100px;
+}
+.search-category-row {
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+  justify-content: flex-end;
+}
+.category-row-label {
+  font-size: 0.875em;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+  align-self: center;
 }
 .search-actions-row {
   display: flex;
