@@ -538,7 +538,6 @@ public class ReportDataController {
             @Parameter(description = "조회 건수") @RequestParam(defaultValue = "100") int length,
             @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
             @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
-            @Parameter(description = "세부품명") @RequestParam(required = false) String detailItemName,
             @Parameter(description = "조달업무영역") @RequestParam(required = false) String procurementWorkArea,
             @Parameter(description = "계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
             @Parameter(description = "공공조달분류 중분류") @RequestParam(required = false) String publicProcurementCategoryMid,
@@ -552,12 +551,12 @@ public class ReportDataController {
     ) {
         List<Map<String, Object>> list = reportServiceContractService.getList(
                 grouped, start, length,
-                dminsttNm, dminsttNmDetail, detailItemName, procurementWorkArea, cntctCnclsMthdNm,
+                dminsttNm, dminsttNmDetail, procurementWorkArea, cntctCnclsMthdNm,
                 publicProcurementCategoryMid, publicProcurementCategory,
                 firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         int filtered = reportServiceContractService.getCount(
                 grouped,
-                dminsttNm, dminsttNmDetail, detailItemName, procurementWorkArea, cntctCnclsMthdNm,
+                dminsttNm, dminsttNmDetail, procurementWorkArea, cntctCnclsMthdNm,
                 publicProcurementCategoryMid, publicProcurementCategory,
                 firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         Map<String, Object> respBody = new HashMap<>();
@@ -576,7 +575,6 @@ public class ReportDataController {
             @Parameter(description = "합쳐서 보기 여부") @RequestParam(defaultValue = "true") boolean grouped,
             @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
             @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
-            @Parameter(description = "세부품명") @RequestParam(required = false) String detailItemName,
             @Parameter(description = "조달업무영역") @RequestParam(required = false) String procurementWorkArea,
             @Parameter(description = "계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
             @Parameter(description = "공공조달분류 중분류") @RequestParam(required = false) String publicProcurementCategoryMid,
@@ -590,28 +588,28 @@ public class ReportDataController {
     ) throws IOException {
         final String[] headerNames = grouped
                 ? new String[]{"그룹키", "업체사업자번호", "업체명", "계약명", "수요기관명", "수요기관지역",
-                        "계약방법", "조달업무영역", "세부품명코드", "세부품명",
+                        "계약방법", "조달업무영역", "공공조달분류(중)", "공공조달분류(소)",
                         "최초계약일자", "최초계약금액", "최종계약일자", "최종계약금액(합계)", "계약건수", "장기계속여부"}
                 : new String[]{"계약납품통합번호", "업체사업자번호", "업체명", "계약명", "수요기관명", "수요기관지역",
                         "계약방법", "계약유형", "조달업무영역", "입찰공고번호", "초년도계약번호",
-                        "장기계속여부", "대표물품분류코드", "대표물품분류명", "세부품명코드", "세부품명",
-                        "공공조달분류코드", "공공조달분류(대)", "공공조달분류(중)",
+                        "장기계속여부", "대표물품분류코드", "대표물품분류명", "세부품명코드",
+                        "공공조달분류(소)", "공공조달분류(중)",
                         "최초기준일자", "기준일자", "착수일자", "완수일자",
-                        "최초계약금액", "계약금액", "계약지분율", "계약지분금액", "계약변경차수"};
+                        "최초계약금액", "계약금액", "계약변경차수"};
         final String[] keys = grouped
                 ? new String[]{"groupKey", "vendorBizRegNo", "vendorName", "contractTitle", "demandAgency", "demandAgencyRegion",
-                        "contractMethod", "procurementWorkArea", "detailItemCode", "detailItemName",
+                        "contractMethod", "procurementWorkArea", "publicProcurementCategoryMid", "publicProcurementCategory",
                         "initialContractDate", "initialContractAmount", "finalContractDate", "finalContractAmountSum", "contractCount", "isLongTerm"}
                 : new String[]{"contractDeliveryIntegratedNo", "vendorBizRegNo", "vendorName", "contractTitle", "demandAgency", "demandAgencyRegion",
                         "contractMethod", "contractType", "procurementWorkArea", "bidNoticeNo", "initialYearContractNo",
-                        "isLongTerm", "representativeItemCategoryCode", "representativeItemCategory", "detailItemCode", "detailItemName",
-                        "publicProcurementCategory", "publicProcurementCategoryMajor", "publicProcurementCategoryMid",
+                        "isLongTerm", "representativeItemCategoryCode", "representativeItemCategory", "detailItemCode",
+                        "publicProcurementCategory", "publicProcurementCategoryMid",
                         "firstContractDate", "contractDate", "startDate", "completionDate",
-                        "firstContractAmount", "contractAmount", "contractSharePct", "contractShareAmount", "latestChangeSeq"};
+                        "firstContractAmount", "contractAmount", "latestChangeSeq"};
 
         final Set<String> serviceAmountKeys = new HashSet<>(Arrays.asList(
                 "initialContractAmount", "finalContractAmountSum",
-                "firstContractAmount", "contractAmount", "contractShareAmount"));
+                "firstContractAmount", "contractAmount"));
 
         Path tempFile = Files.createTempFile("report_services_", ".xlsx");
         try {
@@ -629,7 +627,7 @@ public class ReportDataController {
                 final int[] rowNumRef = {1};
                 reportServiceContractService.streamForExcel(
                         grouped,
-                        dminsttNm, dminsttNmDetail, detailItemName, procurementWorkArea, cntctCnclsMthdNm,
+                        dminsttNm, dminsttNmDetail, procurementWorkArea, cntctCnclsMthdNm,
                         publicProcurementCategoryMid, publicProcurementCategory,
                         firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly,
                         resultContext -> {
