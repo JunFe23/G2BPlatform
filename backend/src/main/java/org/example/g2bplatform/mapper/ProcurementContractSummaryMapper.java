@@ -81,42 +81,49 @@ public interface ProcurementContractSummaryMapper {
     List<Map<String, Object>> selectDemandAgencyTopSalesByFinalDate(
             @Param("from") String from,
             @Param("to") String to,
-            @Param("topN") int topN
+            @Param("topN") int topN,
+            @Param("dataSource") String dataSource
     );
 
     List<Map<String, Object>> selectDemandAgencyTopSalesByFirstDate(
             @Param("from") String from,
             @Param("to") String to,
-            @Param("topN") int topN
+            @Param("topN") int topN,
+            @Param("dataSource") String dataSource
     );
 
     List<Map<String, Object>> selectDemandAgencyTopContractCountByFinalDate(
             @Param("from") String from,
             @Param("to") String to,
-            @Param("topN") int topN
+            @Param("topN") int topN,
+            @Param("dataSource") String dataSource
     );
 
     List<Map<String, Object>> selectDemandAgencyTopContractCountByFirstDate(
             @Param("from") String from,
             @Param("to") String to,
-            @Param("topN") int topN
+            @Param("topN") int topN,
+            @Param("dataSource") String dataSource
     );
 
     List<Map<String, Object>> selectDemandAgencyTopAvgAmountByFinalDate(
             @Param("from") String from,
             @Param("to") String to,
-            @Param("topN") int topN
+            @Param("topN") int topN,
+            @Param("dataSource") String dataSource
     );
 
     List<Map<String, Object>> selectDemandAgencyTopAvgAmountByFirstDate(
             @Param("from") String from,
             @Param("to") String to,
-            @Param("topN") int topN
+            @Param("topN") int topN,
+            @Param("dataSource") String dataSource
     );
 
     /** 지역별 물품 조달시장 분석: first_contract_date 기간 필터, final_contract_amount 집계 */
     List<Map<String, Object>> selectRegionMarketByFirstDate(
             @Param("from") String from,
-            @Param("to") String to
+            @Param("to") String to,
+            @Param("dataSource") String dataSource
     );
 }

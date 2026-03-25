@@ -49,6 +49,45 @@
         </div>
       </section>
 
+      <section class="data-source-bar" aria-label="대시보드 데이터 소스">
+        <span class="filter-label">데이터</span>
+        <div class="data-source-segment" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            class="segment-btn"
+            :class="{ active: dataSource === 'all' }"
+            :aria-selected="dataSource === 'all'"
+            @click="dataSource = 'all'"
+          >
+            전체
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="segment-btn"
+            :class="{ active: dataSource === 'procurement' }"
+            :aria-selected="dataSource === 'procurement'"
+            @click="dataSource = 'procurement'"
+          >
+            물품
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="segment-btn"
+            :class="{ active: dataSource === 'shopping_mall' }"
+            :aria-selected="dataSource === 'shopping_mall'"
+            @click="dataSource = 'shopping_mall'"
+          >
+            쇼핑몰
+          </button>
+        </div>
+        <p class="data-source-hint">
+          물품: 계약금액 합계 · 쇼핑몰: 공급금액 합계(납품요구 단위) · 전체: 두 소스 합산
+        </p>
+      </section>
+
       <section class="tab-bar">
         <button
           v-for="tab in tabs"
@@ -756,6 +795,9 @@ import { ref, computed, onMounted, watch } from 'vue'
 
 const activeTab = ref('시장현황')
 
+/** 수요기관별·지역별 집계 데이터 소스: procurement | shopping_mall | all */
+const dataSource = ref('procurement')
+
 // 대시보드 공통 기간 필터 (모든 탭 데이터에 반영)
 const dashboardFilterMode = ref('year') // 'year' | 'range'
 const currentYear = new Date().getFullYear()
@@ -967,7 +1009,7 @@ const fetchDemandAgencyMarket = async () => {
   agencyError.value = ''
   try {
     const { data } = await axios.get('/api/report/demand-agency-market', {
-      params: { dateBasis: 'FINAL', from, to, topN: 10 },
+      params: { dateBasis: 'FINAL', from, to, topN: 10, dataSource: dataSource.value },
     })
 
     if (!data || data.success !== true || !data.data) {
@@ -1045,7 +1087,9 @@ const fetchRegionMarket = async () => {
   regionLoading.value = true
   regionError.value = ''
   try {
-    const { data } = await axios.get('/api/report/region-market', { params: { from, to } })
+    const { data } = await axios.get('/api/report/region-market', {
+      params: { from, to, dataSource: dataSource.value },
+    })
 
     if (!data || data.success !== true || !data.data) {
       throw new Error('API 응답 형식이 올바르지 않습니다.')
@@ -1577,6 +1621,13 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
     fetchRegionMarket()
   }
 })
+
+watch(dataSource, () => {
+  agencyLoaded.value = false
+  regionLoaded.value = false
+  fetchDemandAgencyMarket()
+  fetchRegionMarket()
+})
 </script>
 
 <style scoped>
@@ -1864,6 +1915,57 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
 
 .filter-apply:hover {
   background: #3558d4;
+}
+
+.data-source-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-top: -8px;
+}
+
+.data-source-segment {
+  display: inline-flex;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+}
+
+.segment-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segment-btn + .segment-btn {
+  border-left: 1px solid #e2e8f0;
+}
+
+.segment-btn:hover {
+  background: #f1f5f9;
+}
+
+.segment-btn.active {
+  background: linear-gradient(180deg, #3d5a73 0%, #34495e 100%);
+  color: #f8fafc;
+}
+
+.data-source-hint {
+  margin: 0;
+  flex: 1 1 100%;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
 }
 
 .tab-bar {

@@ -93,10 +93,11 @@ public class ReportDataController {
     @GetMapping("/region-market")
     public ResponseEntity<Map<String, Object>> getRegionMarket(
             @Parameter(description = "기간 시작 (yyyy-mm-dd)", required = true) @RequestParam String from,
-            @Parameter(description = "기간 종료 (yyyy-mm-dd)", required = true) @RequestParam String to
+            @Parameter(description = "기간 종료 (yyyy-mm-dd)", required = true) @RequestParam String to,
+            @Parameter(description = "데이터 소스: procurement | shopping_mall | all") @RequestParam(required = false, defaultValue = "procurement") String dataSource
     ) {
         try {
-            return ResponseEntity.ok(reportDataService.getRegionMarket(from, to));
+            return ResponseEntity.ok(reportDataService.getRegionMarket(from, to, dataSource));
         } catch (IllegalArgumentException e) {
             Map<String, Object> err = new HashMap<>();
             err.put("success", false);
@@ -144,10 +145,11 @@ public class ReportDataController {
             @Parameter(description = "기간 기준 (FINAL|FIRST)", required = false) @RequestParam(required = false, defaultValue = "FINAL") String dateBasis,
             @Parameter(description = "기간 시작 (yyyy-mm-dd)", required = true) @RequestParam String from,
             @Parameter(description = "기간 종료 (yyyy-mm-dd)", required = true) @RequestParam String to,
-            @Parameter(description = "Top N (10 또는 20)", required = false) @RequestParam(required = false) Integer topN
+            @Parameter(description = "Top N (10 또는 20)", required = false) @RequestParam(required = false) Integer topN,
+            @Parameter(description = "데이터 소스: procurement | shopping_mall | all") @RequestParam(required = false, defaultValue = "procurement") String dataSource
     ) {
         try {
-            return ResponseEntity.ok(reportDataService.getDemandAgencyMarket(dateBasis, from, to, topN));
+            return ResponseEntity.ok(reportDataService.getDemandAgencyMarket(dateBasis, from, to, topN, dataSource));
         } catch (IllegalArgumentException e) {
             Map<String, Object> err = new HashMap<>();
             err.put("success", false);

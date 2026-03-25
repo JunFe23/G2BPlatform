@@ -12,99 +12,351 @@
     <!-- ========================================================= -->
 
     <select id="selectDemandAgencyTopSalesByFinalDate" resultType="map">
-        SELECT
-            demand_agency_name AS demandAgencyName,
-            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
-            COUNT(*) AS contractCount,
-            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
-        FROM procurement_contract_summary
-        WHERE demand_agency_name IS NOT NULL
-          AND demand_agency_name &lt;&gt; ''
-          AND final_contract_date &gt;= #{from}
-          AND final_contract_date &lt;= #{to}
-        GROUP BY demand_agency_name
-        ORDER BY salesAmount DESC
-        LIMIT #{topN}
+        <choose>
+            <when test="dataSource == 'shopping_mall'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(total_supply_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(total_supply_amount), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM shopping_mall_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND final_ref_date &gt;= #{from}
+                  AND final_ref_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'all'">
+                SELECT demand_agency_name AS demandAgencyName,
+                       SUM(amount) AS salesAmount,
+                       COUNT(*) AS contractCount,
+                       SUM(amount) / COUNT(*) AS avgAmount
+                FROM (
+                    SELECT demand_agency_name,
+                           IFNULL(final_contract_amount, 0) AS amount
+                    FROM procurement_contract_summary
+                    WHERE final_contract_date &gt;= #{from}
+                      AND final_contract_date &lt;= #{to}
+                    UNION ALL
+                    SELECT demand_agency_name,
+                           IFNULL(total_supply_amount, 0) AS amount
+                    FROM shopping_mall_summary
+                    WHERE final_ref_date &gt;= #{from}
+                      AND final_ref_date &lt;= #{to}
+                ) combined
+                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
+                GROUP BY demand_agency_name
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <otherwise>
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+                FROM procurement_contract_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectDemandAgencyTopSalesByFirstDate" resultType="map">
-        SELECT
-            demand_agency_name AS demandAgencyName,
-            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
-            COUNT(*) AS contractCount,
-            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
-        FROM procurement_contract_summary
-        WHERE demand_agency_name IS NOT NULL
-          AND demand_agency_name &lt;&gt; ''
-          AND first_contract_date &gt;= #{from}
-          AND first_contract_date &lt;= #{to}
-        GROUP BY demand_agency_name
-        ORDER BY salesAmount DESC
-        LIMIT #{topN}
+        <choose>
+            <when test="dataSource == 'shopping_mall'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(total_supply_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(total_supply_amount), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM shopping_mall_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND first_ref_date &gt;= #{from}
+                  AND first_ref_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'all'">
+                SELECT demand_agency_name AS demandAgencyName,
+                       SUM(amount) AS salesAmount,
+                       COUNT(*) AS contractCount,
+                       SUM(amount) / COUNT(*) AS avgAmount
+                FROM (
+                    SELECT demand_agency_name,
+                           IFNULL(final_contract_amount, 0) AS amount
+                    FROM procurement_contract_summary
+                    WHERE first_contract_date &gt;= #{from}
+                      AND first_contract_date &lt;= #{to}
+                    UNION ALL
+                    SELECT demand_agency_name,
+                           IFNULL(total_supply_amount, 0) AS amount
+                    FROM shopping_mall_summary
+                    WHERE first_ref_date &gt;= #{from}
+                      AND first_ref_date &lt;= #{to}
+                ) combined
+                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
+                GROUP BY demand_agency_name
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <otherwise>
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+                FROM procurement_contract_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND first_contract_date &gt;= #{from}
+                  AND first_contract_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectDemandAgencyTopContractCountByFinalDate" resultType="map">
-        SELECT
-            demand_agency_name AS demandAgencyName,
-            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
-            COUNT(*) AS contractCount,
-            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
-        FROM procurement_contract_summary
-        WHERE demand_agency_name IS NOT NULL
-          AND demand_agency_name &lt;&gt; ''
-          AND final_contract_date &gt;= #{from}
-          AND final_contract_date &lt;= #{to}
-        GROUP BY demand_agency_name
-        ORDER BY contractCount DESC, salesAmount DESC
-        LIMIT #{topN}
+        <choose>
+            <when test="dataSource == 'shopping_mall'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(total_supply_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(total_supply_amount), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM shopping_mall_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND final_ref_date &gt;= #{from}
+                  AND final_ref_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'all'">
+                SELECT demand_agency_name AS demandAgencyName,
+                       SUM(amount) AS salesAmount,
+                       COUNT(*) AS contractCount,
+                       SUM(amount) / COUNT(*) AS avgAmount
+                FROM (
+                    SELECT demand_agency_name,
+                           IFNULL(final_contract_amount, 0) AS amount
+                    FROM procurement_contract_summary
+                    WHERE final_contract_date &gt;= #{from}
+                      AND final_contract_date &lt;= #{to}
+                    UNION ALL
+                    SELECT demand_agency_name,
+                           IFNULL(total_supply_amount, 0) AS amount
+                    FROM shopping_mall_summary
+                    WHERE final_ref_date &gt;= #{from}
+                      AND final_ref_date &lt;= #{to}
+                ) combined
+                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
+                GROUP BY demand_agency_name
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <otherwise>
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+                FROM procurement_contract_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectDemandAgencyTopContractCountByFirstDate" resultType="map">
-        SELECT
-            demand_agency_name AS demandAgencyName,
-            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
-            COUNT(*) AS contractCount,
-            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
-        FROM procurement_contract_summary
-        WHERE demand_agency_name IS NOT NULL
-          AND demand_agency_name &lt;&gt; ''
-          AND first_contract_date &gt;= #{from}
-          AND first_contract_date &lt;= #{to}
-        GROUP BY demand_agency_name
-        ORDER BY contractCount DESC, salesAmount DESC
-        LIMIT #{topN}
+        <choose>
+            <when test="dataSource == 'shopping_mall'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(total_supply_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(total_supply_amount), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM shopping_mall_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND first_ref_date &gt;= #{from}
+                  AND first_ref_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'all'">
+                SELECT demand_agency_name AS demandAgencyName,
+                       SUM(amount) AS salesAmount,
+                       COUNT(*) AS contractCount,
+                       SUM(amount) / COUNT(*) AS avgAmount
+                FROM (
+                    SELECT demand_agency_name,
+                           IFNULL(final_contract_amount, 0) AS amount
+                    FROM procurement_contract_summary
+                    WHERE first_contract_date &gt;= #{from}
+                      AND first_contract_date &lt;= #{to}
+                    UNION ALL
+                    SELECT demand_agency_name,
+                           IFNULL(total_supply_amount, 0) AS amount
+                    FROM shopping_mall_summary
+                    WHERE first_ref_date &gt;= #{from}
+                      AND first_ref_date &lt;= #{to}
+                ) combined
+                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
+                GROUP BY demand_agency_name
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <otherwise>
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+                FROM procurement_contract_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND first_contract_date &gt;= #{from}
+                  AND first_contract_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectDemandAgencyTopAvgAmountByFinalDate" resultType="map">
-        SELECT
-            demand_agency_name AS demandAgencyName,
-            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
-            COUNT(*) AS contractCount,
-            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
-        FROM procurement_contract_summary
-        WHERE demand_agency_name IS NOT NULL
-          AND demand_agency_name &lt;&gt; ''
-          AND final_contract_date &gt;= #{from}
-          AND final_contract_date &lt;= #{to}
-        GROUP BY demand_agency_name
-        ORDER BY avgAmount DESC, salesAmount DESC
-        LIMIT #{topN}
+        <choose>
+            <when test="dataSource == 'shopping_mall'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(total_supply_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(total_supply_amount), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM shopping_mall_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND final_ref_date &gt;= #{from}
+                  AND final_ref_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'all'">
+                SELECT demand_agency_name AS demandAgencyName,
+                       SUM(amount) AS salesAmount,
+                       COUNT(*) AS contractCount,
+                       SUM(amount) / COUNT(*) AS avgAmount
+                FROM (
+                    SELECT demand_agency_name,
+                           IFNULL(final_contract_amount, 0) AS amount
+                    FROM procurement_contract_summary
+                    WHERE final_contract_date &gt;= #{from}
+                      AND final_contract_date &lt;= #{to}
+                    UNION ALL
+                    SELECT demand_agency_name,
+                           IFNULL(total_supply_amount, 0) AS amount
+                    FROM shopping_mall_summary
+                    WHERE final_ref_date &gt;= #{from}
+                      AND final_ref_date &lt;= #{to}
+                ) combined
+                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
+                GROUP BY demand_agency_name
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <otherwise>
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+                FROM procurement_contract_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectDemandAgencyTopAvgAmountByFirstDate" resultType="map">
-        SELECT
-            demand_agency_name AS demandAgencyName,
-            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
-            COUNT(*) AS contractCount,
-            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
-        FROM procurement_contract_summary
-        WHERE demand_agency_name IS NOT NULL
-          AND demand_agency_name &lt;&gt; ''
-          AND first_contract_date &gt;= #{from}
-          AND first_contract_date &lt;= #{to}
-        GROUP BY demand_agency_name
-        ORDER BY avgAmount DESC, salesAmount DESC
-        LIMIT #{topN}
+        <choose>
+            <when test="dataSource == 'shopping_mall'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(total_supply_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(total_supply_amount), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM shopping_mall_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND first_ref_date &gt;= #{from}
+                  AND first_ref_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'all'">
+                SELECT demand_agency_name AS demandAgencyName,
+                       SUM(amount) AS salesAmount,
+                       COUNT(*) AS contractCount,
+                       SUM(amount) / COUNT(*) AS avgAmount
+                FROM (
+                    SELECT demand_agency_name,
+                           IFNULL(final_contract_amount, 0) AS amount
+                    FROM procurement_contract_summary
+                    WHERE first_contract_date &gt;= #{from}
+                      AND first_contract_date &lt;= #{to}
+                    UNION ALL
+                    SELECT demand_agency_name,
+                           IFNULL(total_supply_amount, 0) AS amount
+                    FROM shopping_mall_summary
+                    WHERE first_ref_date &gt;= #{from}
+                      AND first_ref_date &lt;= #{to}
+                ) combined
+                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
+                GROUP BY demand_agency_name
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <otherwise>
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+                FROM procurement_contract_summary
+                WHERE demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND first_contract_date &gt;= #{from}
+                  AND first_contract_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectReportGoodsList" resultType="map">
@@ -319,15 +571,53 @@
     <!-- - demand_agency_region 기준 그룹 (시/도 단위: 구 제외, 공백 앞 부분만) -->
     <!-- ========================================================= -->
     <select id="selectRegionMarketByFirstDate" resultType="map">
-        SELECT
-            SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1) AS region,
-            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
-            COUNT(*) AS contractCount,
-            IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
-        FROM procurement_contract_summary
-        WHERE first_contract_date &gt;= #{from}
-          AND first_contract_date &lt;= #{to}
-        GROUP BY SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1)
-        ORDER BY salesAmount DESC
+        <choose>
+            <when test="dataSource == 'shopping_mall'">
+                SELECT
+                    SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1) AS region,
+                    IFNULL(SUM(total_supply_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(total_supply_amount), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM shopping_mall_summary
+                WHERE first_ref_date &gt;= #{from}
+                  AND first_ref_date &lt;= #{to}
+                GROUP BY SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1)
+                ORDER BY salesAmount DESC
+            </when>
+            <when test="dataSource == 'all'">
+                SELECT
+                    SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(region), ''), '(미지정)'), ' ', 1) AS region,
+                    SUM(amount) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    SUM(amount) / COUNT(*) AS avgAmount
+                FROM (
+                    SELECT demand_agency_region AS region,
+                           IFNULL(final_contract_amount, 0) AS amount
+                    FROM procurement_contract_summary
+                    WHERE first_contract_date &gt;= #{from}
+                      AND first_contract_date &lt;= #{to}
+                    UNION ALL
+                    SELECT demand_agency_region AS region,
+                           IFNULL(total_supply_amount, 0) AS amount
+                    FROM shopping_mall_summary
+                    WHERE first_ref_date &gt;= #{from}
+                      AND first_ref_date &lt;= #{to}
+                ) combined
+                GROUP BY SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(region), ''), '(미지정)'), ' ', 1)
+                ORDER BY salesAmount DESC
+            </when>
+            <otherwise>
+                SELECT
+                    SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1) AS region,
+                    IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount), 0) / COUNT(*) AS avgAmount
+                FROM procurement_contract_summary
+                WHERE first_contract_date &gt;= #{from}
+                  AND first_contract_date &lt;= #{to}
+                GROUP BY SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1)
+                ORDER BY salesAmount DESC
+            </otherwise>
+        </choose>
     </select>
 </mapper>
