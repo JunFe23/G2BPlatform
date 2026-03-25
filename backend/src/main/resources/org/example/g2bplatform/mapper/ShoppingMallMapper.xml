@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.example.g2bplatform.mapper.ShoppingMallMapper">
+
+    <sql id="flatWhere">
+        WHERE is_active = 'Y'
+        <if test="dateFrom != null and dateFrom != ''">
+            AND ref_date &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null and dateTo != ''">
+            AND ref_date &lt;= #{dateTo}
+        </if>
+        <if test="vendorBizRegNo != null and vendorBizRegNo != ''">
+            AND vendor_biz_reg_no = #{vendorBizRegNo}
+        </if>
+        <if test="demandAgencyName != null and demandAgencyName != ''">
+            AND demand_agency_name LIKE CONCAT('%', #{demandAgencyName}, '%')
+        </if>
+        <if test="demandAgencyRegion != null and demandAgencyRegion != ''">
+            AND demand_agency_region LIKE CONCAT('%', #{demandAgencyRegion}, '%')
+        </if>
+        <if test="itemCategoryNo != null and itemCategoryNo != ''">
+            AND item_category_no = #{itemCategoryNo}
+        </if>
+        <if test="detailItemNo != null and detailItemNo != ''">
+            AND detail_item_no = #{detailItemNo}
+        </if>
+        <if test="isMas != null and isMas != ''">
+            AND is_mas = #{isMas}
+        </if>
+        <if test="isExcellentProduct != null and isExcellentProduct != ''">
+            AND is_excellent_product = #{isExcellentProduct}
+        </if>
+    </sql>
+
+    <select id="selectFlatList" resultType="org.example.g2bplatform.DTO.ShoppingMallFlatDto">
+        SELECT
+            delivery_contract_no           AS deliveryContractNo,
+            delivery_contract_change_seq   AS deliveryContractChangeSeq,
+            delivery_item_seq              AS deliveryItemSeq,
+            vendor_biz_reg_no              AS vendorBizRegNo,
+            vendor_name                    AS vendorName,
+            contract_title                 AS contractTitle,
+            demand_agency_name             AS demandAgencyName,
+            demand_agency_region           AS demandAgencyRegion,
+            contract_method                AS contractMethod,
+            contract_no                    AS contractNo,
+            delivery_place_name            AS deliveryPlaceName,
+            item_category_no               AS itemCategoryNo,
+            item_category_name             AS itemCategoryName,
+            detail_item_no                 AS detailItemNo,
+            detail_item_name               AS detailItemName,
+            item_identifier_no             AS itemIdentifierNo,
+            item_identifier_name           AS itemIdentifierName,
+            unit                           AS unit,
+            unit_price                     AS unitPrice,
+            quantity                       AS quantity,
+            supply_amount                  AS supplyAmount,
+            is_mas                         AS isMas,
+            is_excellent_product           AS isExcellentProduct,
+            is_direct_purchase_target      AS isDirectPurchaseTarget,
+            ref_date                       AS refDate,
+            first_ref_date                 AS firstRefDate,
+            delivery_deadline_date         AS deliveryDeadlineDate
+        FROM shopping_mall_flat
+        <include refid="flatWhere"/>
+        ORDER BY ref_date DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectFlatCount" resultType="int">
+        SELECT COUNT(*)
+        FROM shopping_mall_flat
+        <include refid="flatWhere"/>
+    </select>
+
+</mapper>

@@ -158,8 +158,9 @@ public class ReportDataService {
      * - dateBasis: FINAL(기본) / FIRST
      * - from/to: yyyy-mm-dd (필수)
      * - topN: 10(기본) / 20
+     * - dataSource: procurement(기본) / shopping_mall / all
      */
-    public Map<String, Object> getDemandAgencyMarket(String dateBasis, String from, String to, Integer topN) {
+    public Map<String, Object> getDemandAgencyMarket(String dateBasis, String from, String to, Integer topN, String dataSource) {
         if (from == null || from.isBlank()) {
             throw new IllegalArgumentException("from은 필수입니다 (yyyy-mm-dd)");
         }
@@ -186,18 +187,20 @@ public class ReportDataService {
         // topN 보정 (10/20만 허용)
         final int resolvedTopN = (topN != null && (topN == 10 || topN == 20)) ? topN : 10;
 
+        final String ds = normalizeDataSource(dataSource);
+
         List<Map<String, Object>> topSales;
         List<Map<String, Object>> topContractCount;
         List<Map<String, Object>> topAvgAmount;
 
         if ("FIRST".equals(basis)) {
-            topSales = procurementContractSummaryMapper.selectDemandAgencyTopSalesByFirstDate(fromDate.toString(), toDate.toString(), resolvedTopN);
-            topContractCount = procurementContractSummaryMapper.selectDemandAgencyTopContractCountByFirstDate(fromDate.toString(), toDate.toString(), resolvedTopN);
-            topAvgAmount = procurementContractSummaryMapper.selectDemandAgencyTopAvgAmountByFirstDate(fromDate.toString(), toDate.toString(), resolvedTopN);
+            topSales = procurementContractSummaryMapper.selectDemandAgencyTopSalesByFirstDate(fromDate.toString(), toDate.toString(), resolvedTopN, ds);
+            topContractCount = procurementContractSummaryMapper.selectDemandAgencyTopContractCountByFirstDate(fromDate.toString(), toDate.toString(), resolvedTopN, ds);
+            topAvgAmount = procurementContractSummaryMapper.selectDemandAgencyTopAvgAmountByFirstDate(fromDate.toString(), toDate.toString(), resolvedTopN, ds);
         } else {
-            topSales = procurementContractSummaryMapper.selectDemandAgencyTopSalesByFinalDate(fromDate.toString(), toDate.toString(), resolvedTopN);
-            topContractCount = procurementContractSummaryMapper.selectDemandAgencyTopContractCountByFinalDate(fromDate.toString(), toDate.toString(), resolvedTopN);
-            topAvgAmount = procurementContractSummaryMapper.selectDemandAgencyTopAvgAmountByFinalDate(fromDate.toString(), toDate.toString(), resolvedTopN);
+            topSales = procurementContractSummaryMapper.selectDemandAgencyTopSalesByFinalDate(fromDate.toString(), toDate.toString(), resolvedTopN, ds);
+            topContractCount = procurementContractSummaryMapper.selectDemandAgencyTopContractCountByFinalDate(fromDate.toString(), toDate.toString(), resolvedTopN, ds);
+            topAvgAmount = procurementContractSummaryMapper.selectDemandAgencyTopAvgAmountByFinalDate(fromDate.toString(), toDate.toString(), resolvedTopN, ds);
         }
 
         // rank(1..N) 부여
@@ -210,6 +213,7 @@ public class ReportDataService {
         condition.put("from", fromDate.toString());
         condition.put("to", toDate.toString());
         condition.put("topN", resolvedTopN);
+        condition.put("dataSource", ds);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("topSales", topSales);
@@ -225,7 +229,7 @@ public class ReportDataService {
      * - first_contract_date로 기간 필터
      * - final_contract_amount 기준 집계
      */
-    public Map<String, Object> getRegionMarket(String from, String to) {
+    public Map<String, Object> getRegionMarket(String from, String to, String dataSource) {
         if (from == null || from.isBlank()) {
             throw new IllegalArgumentException("from은 필수입니다 (yyyy-mm-dd)");
         }
@@ -242,18 +246,35 @@ public class ReportDataService {
             throw new IllegalArgumentException("from/to 날짜 형식이 올바르지 않습니다 (yyyy-mm-dd)");
         }
 
-        List<Map<String, Object>> rows = procurementContractSummaryMapper.selectRegionMarketByFirstDate(from, to);
+        final String ds = normalizeDataSource(dataSource);
+        List<Map<String, Object>> rows = procurementContractSummaryMapper.selectRegionMarketByFirstDate(from, to, ds);
         addRank(rows);
 
         Map<String, Object> condition = new LinkedHashMap<>();
         condition.put("from", from);
         condition.put("to", to);
+        condition.put("dataSource", ds);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("regions", rows);
         data.put("condition", condition);
 
         return wrap(data);
+    }
+
+    /** procurement(기본) | shopping_mall | all */
+    private static String normalizeDataSource(String dataSource) {
+        if (dataSource == null || dataSource.isBlank()) {
+            return "procurement";
+        }
+        String s = dataSource.trim().toLowerCase();
+        if ("shopping_mall".equals(s) || "shoppingmall".equals(s)) {
+            return "shopping_mall";
+        }
+        if ("all".equals(s)) {
+            return "all";
+        }
+        return "procurement";
     }
 
     private void addRank(List<Map<String, Object>> rows) {
