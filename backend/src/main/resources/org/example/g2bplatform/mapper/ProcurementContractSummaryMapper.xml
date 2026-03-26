@@ -51,6 +51,38 @@
                 ORDER BY salesAmount DESC
                 LIMIT #{topN}
             </when>
+            <when test="dataSource == 'service'">
+                SELECT
+                    demand_agency AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM service_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency IS NOT NULL
+                  AND demand_agency &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY demand_agency
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'construction'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM construction_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </when>
             <otherwise>
                 SELECT
                     demand_agency_name AS demandAgencyName,
@@ -105,6 +137,38 @@
                       AND first_ref_date &lt;= #{to}
                 ) combined
                 WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
+                GROUP BY demand_agency_name
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'service'">
+                SELECT
+                    demand_agency AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM service_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency IS NOT NULL
+                  AND demand_agency &lt;&gt; ''
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
+                GROUP BY demand_agency
+                ORDER BY salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'construction'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM construction_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
                 GROUP BY demand_agency_name
                 ORDER BY salesAmount DESC
                 LIMIT #{topN}
@@ -167,6 +231,38 @@
                 ORDER BY contractCount DESC, salesAmount DESC
                 LIMIT #{topN}
             </when>
+            <when test="dataSource == 'service'">
+                SELECT
+                    demand_agency AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM service_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency IS NOT NULL
+                  AND demand_agency &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY demand_agency
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'construction'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM construction_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
             <otherwise>
                 SELECT
                     demand_agency_name AS demandAgencyName,
@@ -221,6 +317,38 @@
                       AND first_ref_date &lt;= #{to}
                 ) combined
                 WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
+                GROUP BY demand_agency_name
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'service'">
+                SELECT
+                    demand_agency AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM service_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency IS NOT NULL
+                  AND demand_agency &lt;&gt; ''
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
+                GROUP BY demand_agency
+                ORDER BY contractCount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'construction'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM construction_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
                 GROUP BY demand_agency_name
                 ORDER BY contractCount DESC, salesAmount DESC
                 LIMIT #{topN}
@@ -283,6 +411,38 @@
                 ORDER BY avgAmount DESC, salesAmount DESC
                 LIMIT #{topN}
             </when>
+            <when test="dataSource == 'service'">
+                SELECT
+                    demand_agency AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM service_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency IS NOT NULL
+                  AND demand_agency &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY demand_agency
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'construction'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM construction_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY demand_agency_name
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
             <otherwise>
                 SELECT
                     demand_agency_name AS demandAgencyName,
@@ -337,6 +497,38 @@
                       AND first_ref_date &lt;= #{to}
                 ) combined
                 WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
+                GROUP BY demand_agency_name
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'service'">
+                SELECT
+                    demand_agency AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM service_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency IS NOT NULL
+                  AND demand_agency &lt;&gt; ''
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
+                GROUP BY demand_agency
+                ORDER BY avgAmount DESC, salesAmount DESC
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'construction'">
+                SELECT
+                    demand_agency_name AS demandAgencyName,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM construction_contract_grouped
+                WHERE is_active = 'Y'
+                  AND demand_agency_name IS NOT NULL
+                  AND demand_agency_name &lt;&gt; ''
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
                 GROUP BY demand_agency_name
                 ORDER BY avgAmount DESC, salesAmount DESC
                 LIMIT #{topN}
@@ -604,6 +796,32 @@
                       AND first_ref_date &lt;= #{to}
                 ) combined
                 GROUP BY SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(region), ''), '(미지정)'), ' ', 1)
+                ORDER BY salesAmount DESC
+            </when>
+            <when test="dataSource == 'service'">
+                SELECT
+                    SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1) AS region,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM service_contract_grouped
+                WHERE is_active = 'Y'
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
+                GROUP BY SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1)
+                ORDER BY salesAmount DESC
+            </when>
+            <when test="dataSource == 'construction'">
+                SELECT
+                    SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1) AS region,
+                    IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+                    COUNT(*) AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0) AS avgAmount
+                FROM construction_contract_grouped
+                WHERE is_active = 'Y'
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
+                GROUP BY SUBSTRING_INDEX(COALESCE(NULLIF(TRIM(demand_agency_region), ''), '(미지정)'), ' ', 1)
                 ORDER BY salesAmount DESC
             </when>
             <otherwise>

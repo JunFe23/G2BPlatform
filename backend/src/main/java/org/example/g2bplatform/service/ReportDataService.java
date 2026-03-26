@@ -263,6 +263,7 @@ public class ReportDataService {
     }
 
     /** procurement(기본) | shopping_mall | all */
+    /** procurement(기본) | shopping_mall | all | service | construction */
     private static String normalizeDataSource(String dataSource) {
         if (dataSource == null || dataSource.isBlank()) {
             return "procurement";
@@ -273,6 +274,12 @@ public class ReportDataService {
         }
         if ("all".equals(s)) {
             return "all";
+        }
+        if ("service".equals(s)) {
+            return "service";
+        }
+        if ("construction".equals(s)) {
+            return "construction";
         }
         return "procurement";
     }
