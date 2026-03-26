@@ -49,45 +49,6 @@
         </div>
       </section>
 
-      <section class="data-source-bar" aria-label="대시보드 데이터 소스">
-        <span class="filter-label">데이터</span>
-        <div class="data-source-segment" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            class="segment-btn"
-            :class="{ active: dataSource === 'all' }"
-            :aria-selected="dataSource === 'all'"
-            @click="dataSource = 'all'"
-          >
-            전체
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="segment-btn"
-            :class="{ active: dataSource === 'procurement' }"
-            :aria-selected="dataSource === 'procurement'"
-            @click="dataSource = 'procurement'"
-          >
-            물품
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="segment-btn"
-            :class="{ active: dataSource === 'shopping_mall' }"
-            :aria-selected="dataSource === 'shopping_mall'"
-            @click="dataSource = 'shopping_mall'"
-          >
-            쇼핑몰
-          </button>
-        </div>
-        <p class="data-source-hint">
-          물품: 계약금액 합계 · 쇼핑몰: 공급금액 합계(납품요구 단위) · 전체: 두 소스 합산
-        </p>
-      </section>
-
       <section class="tab-bar">
         <button
           v-for="tab in tabs"
@@ -194,7 +155,19 @@
       </section>
 
       <section v-if="activeTab === '수요기관별'" class="section">
-        <h2 class="section-title">수요기관별 물품 조달시장 분석</h2>
+        <div class="section-title-row">
+          <h2 class="section-title">수요기관별 물품 조달시장 분석</h2>
+          <div class="data-source-bar inline" aria-label="데이터 소스">
+            <span class="filter-label">데이터</span>
+            <div class="data-source-segment" role="tablist">
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'all' }" @click="dataSource = 'all'">물품+3자단가</button>
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'procurement' }" @click="dataSource = 'procurement'">물품</button>
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'shopping_mall' }" @click="dataSource = 'shopping_mall'">3자단가</button>
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'service' }" @click="dataSource = 'service'">용역</button>
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'construction' }" @click="dataSource = 'construction'">공사</button>
+            </div>
+          </div>
+        </div>
 
         <div v-if="agencyLoading" class="loading-banner loading-banner-prominent">
           <div class="loading-spinner loading-spinner-large"></div>
@@ -338,7 +311,19 @@
       </section>
 
       <section v-if="activeTab === '지역별'" class="section">
-        <h2 class="section-title">지역별 조달시장 분석</h2>
+        <div class="section-title-row">
+          <h2 class="section-title">지역별 조달시장 분석</h2>
+          <div class="data-source-bar inline" aria-label="데이터 소스">
+            <span class="filter-label">데이터</span>
+            <div class="data-source-segment" role="tablist">
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'all' }" @click="dataSource = 'all'">물품+3자단가</button>
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'procurement' }" @click="dataSource = 'procurement'">물품</button>
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'shopping_mall' }" @click="dataSource = 'shopping_mall'">3자단가</button>
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'service' }" @click="dataSource = 'service'">용역</button>
+              <button type="button" class="segment-btn" :class="{ active: dataSource === 'construction' }" @click="dataSource = 'construction'">공사</button>
+            </div>
+          </div>
+        </div>
 
         <div class="region-category-bar">
           <button
@@ -1917,6 +1902,19 @@ watch(dataSource, () => {
   background: #3558d4;
 }
 
+.section-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 4px;
+}
+
+.section-title-row .section-title {
+  margin: 0;
+  flex-shrink: 0;
+}
+
 .data-source-bar {
   display: flex;
   flex-wrap: wrap;
@@ -1926,7 +1924,19 @@ watch(dataSource, () => {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 12px 16px;
-  margin-top: -8px;
+}
+
+.data-source-bar.inline {
+  background: transparent;
+  border: none;
+  padding: 0;
+  gap: 8px 12px;
+}
+
+.data-source-hint-inline {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
 }
 
 .data-source-segment {
