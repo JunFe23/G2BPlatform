@@ -6,6 +6,7 @@ import GoodsView from '../views/GoodsView.vue'
 import ServicesView from '../views/ServicesView.vue'
 import ConstructionsView from '../views/ConstructionsView.vue'
 import TopContractsView from '../views/TopContractsView.vue'
+import TopContractsReportView from '../views/TopContractsReportView.vue'
 import ShoppingMallView from '../views/ShoppingMallView.vue'
 import TargetProjectsView from '../views/TargetProjectsView.vue'
 import WorkInProgressView from '../views/WorkInProgressView.vue'
@@ -133,6 +134,12 @@ const router = createRouter({
       path: '/top-contracts',
       name: 'top-contracts',
       component: TopContractsView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/top-contracts-report',
+      name: 'top-contracts-report',
+      component: TopContractsReportView,
       meta: { requiresAuth: true },
     },
     {

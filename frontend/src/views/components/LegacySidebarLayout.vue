@@ -73,9 +73,17 @@
             <span class="menu-label">3자단가</span>
           </li>
         </ul>
-        <li class="menu-item" @click="$router.push('/top-contracts')">
+        <li class="menu-item" id="toggle-top-contracts" @click="toggleTopContractsSubmenu">
           <span class="menu-label">탑인더스트리 & 탑정보통신 수주현황DB</span>
         </li>
+        <ul v-show="isTopContractsSubmenuOpen" class="submenu" style="padding-left: 20px">
+          <li class="menu-item" @click="$router.push('/top-contracts')">
+            <span class="menu-label">API 데이터</span>
+          </li>
+          <li class="menu-item" @click="$router.push('/top-contracts-report')">
+            <span class="menu-label">보고서 데이터</span>
+          </li>
+        </ul>
         <li class="menu-item" @click="$router.push('/target-projects')">
           <span class="menu-label">수주대상 사업탐색</span>
         </li>
@@ -157,6 +165,8 @@ const isSidebarExpanded = ref(false)
 const isSubmenuOpen = ref(false)
 const isReportSubmenuOpen = ref(false)
 const isAdminSubmenuOpen = ref(false)
+const isTopContractsSubmenuOpen = ref(false)
+
 const toggleSubmenu = () => {
   isSubmenuOpen.value = !isSubmenuOpen.value
 }
@@ -167,6 +177,10 @@ const toggleReportSubmenu = () => {
 
 const toggleAdminSubmenu = () => {
   isAdminSubmenuOpen.value = !isAdminSubmenuOpen.value
+}
+
+const toggleTopContractsSubmenu = () => {
+  isTopContractsSubmenuOpen.value = !isTopContractsSubmenuOpen.value
 }
 </script>
 
@@ -196,6 +210,8 @@ const toggleAdminSubmenu = () => {
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar.expanded {
@@ -233,6 +249,34 @@ const toggleAdminSubmenu = () => {
   overflow: hidden;
   white-space: nowrap;
   border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.sidebar > ul {
+  flex: 1 1 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 12px;
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+.sidebar > ul::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar > ul::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar > ul::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.sidebar > ul::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .sidebar-header.collapsed span {
