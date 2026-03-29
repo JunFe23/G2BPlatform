@@ -1,9 +1,15 @@
 <template>
   <LegacySidebarLayout>
-    <h1 class="construction">관련업계 전체시장 DB - 3자단가</h1>
+    <h1 class="construction">API 데이터 - 3자단가</h1>
+
+    <!-- 개발 중 배너 -->
+    <div class="wip-banner">
+      <span class="wip-icon">🚧</span>
+      <span>3자단가(종합쇼핑몰 제3자단가계약) API 데이터 화면은 현재 개발 중입니다.</span>
+    </div>
 
     <!-- 검색 필드 -->
-    <div class="search-container">
+    <div class="search-container" style="pointer-events: none; opacity: 0.45;">
       <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
       <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색" />
       <input type="text" v-model="filters.prdctClsfcNo" placeholder="품명내용 검색" />
@@ -273,12 +279,29 @@ watch(
     fetchData(true)
   },
 )
-onMounted(() => {
-  fetchData()
-})
+// 개발 중 - API 연동 보류
+// onMounted(() => { fetchData() })
 </script>
 
 <style scoped>
+.wip-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.wip-icon {
+  font-size: 18px;
+}
+
 .search-container {
   margin-bottom: 20px;
   display: flex;
