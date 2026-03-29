@@ -52,12 +52,15 @@
           <li class="menu-item" @click="$router.push('/report-constructions')">
             <span class="menu-label">공사</span>
           </li>
+          <li class="menu-item" @click="$router.push('/top-contracts-report')">
+            <span class="menu-label">탑인더스트리 & 탑정보통신 수주현황</span>
+          </li>
           <li class="menu-item" @click="$router.push('/report-dashboard')">
             <span class="menu-label">대시보드</span>
           </li>
         </ul>
         <li class="menu-item" id="toggle-related-market-db" @click="toggleSubmenu">
-          <span class="menu-label">관련업계 전체시장 DB</span>
+          <span class="menu-label">API 데이터</span>
         </li>
         <ul v-show="isSubmenuOpen" class="submenu" style="padding-left: 20px">
           <li class="menu-item" @click="$router.push('/goods')">
@@ -72,16 +75,8 @@
           <li class="menu-item" @click="$router.push('/shopping-mall')">
             <span class="menu-label">3자단가</span>
           </li>
-        </ul>
-        <li class="menu-item" id="toggle-top-contracts" @click="toggleTopContractsSubmenu">
-          <span class="menu-label">탑인더스트리 & 탑정보통신 수주현황DB</span>
-        </li>
-        <ul v-show="isTopContractsSubmenuOpen" class="submenu" style="padding-left: 20px">
           <li class="menu-item" @click="$router.push('/top-contracts')">
-            <span class="menu-label">API 데이터</span>
-          </li>
-          <li class="menu-item" @click="$router.push('/top-contracts-report')">
-            <span class="menu-label">보고서 데이터</span>
+            <span class="menu-label">탑인더스트리 & 탑정보통신 수주현황</span>
           </li>
         </ul>
         <li class="menu-item" @click="$router.push('/target-projects')">
@@ -165,8 +160,6 @@ const isSidebarExpanded = ref(false)
 const isSubmenuOpen = ref(false)
 const isReportSubmenuOpen = ref(false)
 const isAdminSubmenuOpen = ref(false)
-const isTopContractsSubmenuOpen = ref(false)
-
 const toggleSubmenu = () => {
   isSubmenuOpen.value = !isSubmenuOpen.value
 }
@@ -177,10 +170,6 @@ const toggleReportSubmenu = () => {
 
 const toggleAdminSubmenu = () => {
   isAdminSubmenuOpen.value = !isAdminSubmenuOpen.value
-}
-
-const toggleTopContractsSubmenu = () => {
-  isTopContractsSubmenuOpen.value = !isTopContractsSubmenuOpen.value
 }
 </script>
 
