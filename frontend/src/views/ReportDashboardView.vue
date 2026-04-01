@@ -462,7 +462,6 @@
                       <th>물품+3자단가</th>
                       <th>용역</th>
                       <th>공사</th>
-                      <th>민수</th>
                       <th>전체매출</th>
                       <th>계약건수</th>
                     </tr>
@@ -474,7 +473,6 @@
                       <td>{{ row.goods }}</td>
                       <td>{{ row.service }}</td>
                       <td>{{ row.construction }}</td>
-                      <td>{{ row.private }}</td>
                       <td>{{ row.total }}</td>
                       <td>{{ row.count }}</td>
                     </tr>
@@ -665,7 +663,9 @@
       <section v-if="activeTab === '민수관리'" class="section">
         <h2 class="section-title">민수 계약 관리</h2>
         <div class="private-header">
-          <span>조달시장이 아닌 민수 계약 관리 (물품·공사·용역)</span>
+          <span>
+            조달 데이터에 없는 계약을 수기로 등록합니다. 분류(물품·공사·용역·쇼핑몰)를 선택하면 해당 영역 집계에 포함되며, 별도의 「민수」 구분으로 표시되지 않습니다.
+          </span>
           <button type="button" class="add-button" @click="openPrivateModal">
             <span class="plus">＋</span>
             민수 계약 추가
@@ -730,11 +730,12 @@
                   <option value="물품">물품</option>
                   <option value="공사">공사</option>
                   <option value="용역">용역</option>
+                  <option value="쇼핑몰">쇼핑몰(3자단가)</option>
                 </select>
               </div>
               <div class="form-row">
                 <label>제품명 / 계약명 <span class="required">*</span></label>
-                <input v-model="privateForm.product" type="text" required placeholder="예: 사무기기 일괄납품" class="form-input" />
+                <input v-model="privateForm.product" type="text" required placeholder="계약명 또는 품목" class="form-input" />
               </div>
               <div class="form-row">
                 <label>고객사 / 수요기관 <span class="required">*</span></label>
@@ -874,27 +875,12 @@ const contractCards = ref([
       { label: '2차년도', date: '2025-09-01', amount: '15.0억원' },
     ],
   },
-  {
-    id: 4,
-    title: '사무기기 일괄납품',
-    category: '민수',
-    categoryClass: 'badge-purple',
-    org: '현대중공업 | 울산',
-    firstContract: '2024-11-10',
-    total: '6.0억원',
-    years: 2,
-    tintClass: 'tint-purple',
-    yearsBreakdown: [
-      { label: '1차년도', date: '2024-11-10', amount: '3.0억원' },
-      { label: '2차년도', date: '2025-11-10', amount: '3.0억원' },
-    ],
-  },
 ])
 
 const summaryStats = ref([
-  { label: '전체 매출액', value: '144.4억', colorClass: 'blue' },
-  { label: '전체 계약건수', value: '29건', colorClass: 'green' },
-  { label: '평균 계약금액', value: '5.0억', colorClass: 'orange' },
+  { label: '전체 매출액', value: '136.6억', colorClass: 'blue' },
+  { label: '전체 계약건수', value: '22건', colorClass: 'green' },
+  { label: '평균 계약금액', value: '6.2억', colorClass: 'orange' },
   { label: '우수제품 비율', value: '98.5%', colorClass: 'purple' },
 ])
 
@@ -902,21 +888,18 @@ const revenueBars = ref([
   { label: '물품+3자단가', height: '70%' },
   { label: '용역', height: '25%' },
   { label: '공사', height: '80%' },
-  { label: '민수', height: '15%' },
 ])
 
 const countBars = ref([
   { label: '물품+3자단가', height: '70%' },
   { label: '용역', height: '90%' },
   { label: '공사', height: '75%' },
-  { label: '민수', height: '78%' },
 ])
 
 const detailItems = ref([
   { label: '물품+3자단가', count: 7, amount: '55.0억', color: '#3498db' },
   { label: '용역', count: 8, amount: '17.1억', color: '#2ecc71' },
   { label: '공사', count: 7, amount: '64.5억', color: '#f39c12' },
-  { label: '민수', count: 7, amount: '8.0억', color: '#e74c3c' },
 ])
 
 const agencyTopSales = ref([
@@ -1133,14 +1116,13 @@ const fetchRegionMarket = async () => {
       }
     })
 
-    // 상세 현황 테이블 (물품만 있으므로 용역/공사/민수는 '-')
+    // 상세 현황 테이블 (현재 API는 단일 소스 집계이므로 용역/공사는 '-')
     regionDetailRows.value = regions.map((r, idx) => ({
       rank: toNumber(r?.rank) || idx + 1,
       region: r?.region ?? '-',
       goods: formatKrwCompact(r?.salesAmount),
       service: '-',
       construction: '-',
-      private: '-',
       total: formatKrwCompact(r?.salesAmount),
       count: `${toNumber(r?.contractCount)}건`,
     }))
@@ -1186,7 +1168,6 @@ const showRegionGoodsData = computed(
 const regionLegend = ref([
   { label: '공사', color: '#f39c12' },
   { label: '물품+3자단가', color: '#3f7cf1' },
-  { label: '민수', color: '#e74c3c' },
   { label: '용역', color: '#2ecc71' },
 ])
 
@@ -1195,25 +1176,20 @@ const regionStackedBars = ref([
     name: '서울',
     segments: [
       { label: '물품+3자단가', height: '75%', color: '#3f7cf1' },
-      { label: '용역', height: '6%', color: '#2ecc71' },
-      { label: '민수', height: '4%', color: '#e74c3c' },
+      { label: '용역', height: '10%', color: '#2ecc71' },
       { label: '공사', height: '10%', color: '#f39c12' },
     ],
   },
   {
     name: '충북',
-    segments: [
-      { label: '공사', height: '60%', color: '#f39c12' },
-      { label: '민수', height: '4%', color: '#e74c3c' },
-    ],
+    segments: [{ label: '공사', height: '64%', color: '#f39c12' }],
   },
   {
     name: '경기',
     segments: [
       { label: '물품+3자단가', height: '6%', color: '#3f7cf1' },
-      { label: '용역', height: '20%', color: '#2ecc71' },
-      { label: '민수', height: '8%', color: '#e74c3c' },
-      { label: '공사', height: '12%', color: '#f39c12' },
+      { label: '용역', height: '24%', color: '#2ecc71' },
+      { label: '공사', height: '16%', color: '#f39c12' },
     ],
   },
   {
@@ -1222,7 +1198,7 @@ const regionStackedBars = ref([
   },
   {
     name: '울산',
-    segments: [{ label: '민수', height: '15%', color: '#e74c3c' }],
+    segments: [{ label: '물품+3자단가', height: '15%', color: '#3f7cf1' }],
   },
   {
     name: '강원',
@@ -1485,28 +1461,26 @@ const privateRows = ref([
   {
     id: 6,
     type: '물품',
-    product: '사무기기 일괄납품',
+    product: '산업용 소모품 일괄 납품',
     client: '현대중공업',
     region: '울산',
     amount: '300,000,000원',
     qty: '500',
     date: '2024-11-10',
     year: '1차년도',
-    highlight: true,
-    linked: true,
+    highlight: false,
   },
   {
     id: 7,
     type: '물품',
-    product: '사무기기 일괄납품',
+    product: '산업용 소모품 일괄 납품',
     client: '현대중공업',
     region: '울산',
     amount: '300,000,000원',
     qty: '500',
     date: '2025-11-10',
     year: '2차년도',
-    highlight: true,
-    linked: true,
+    highlight: false,
   },
 ])
 
@@ -1526,6 +1500,7 @@ let privateNextId = 8
 function typePillClass(type) {
   if (type === '공사') return 'type-pill-construction'
   if (type === '용역') return 'type-pill-service'
+  if (type === '쇼핑몰') return 'type-pill-shopping'
   return 'type-pill-goods'
 }
 
@@ -3007,6 +2982,7 @@ watch(dataSource, () => {
 .type-pill-goods { background: #e3f2fd; color: #1565c0; }
 .type-pill-construction { background: #e8f5e9; color: #2e7d32; }
 .type-pill-service { background: #f3e5f5; color: #6a1b9a; }
+.type-pill-shopping { background: #fff3e0; color: #e65100; }
 
 .no-data-cell {
   text-align: center;
