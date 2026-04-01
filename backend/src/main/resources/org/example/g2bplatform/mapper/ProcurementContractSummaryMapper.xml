@@ -34,19 +34,22 @@
                        COUNT(*) AS contractCount,
                        SUM(amount) / COUNT(*) AS avgAmount
                 FROM (
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(final_contract_amount, 0) AS amount
                     FROM procurement_contract_summary
-                    WHERE final_contract_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND final_contract_date &gt;= #{from}
                       AND final_contract_date &lt;= #{to}
                     UNION ALL
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(total_supply_amount, 0) AS amount
                     FROM shopping_mall_summary
-                    WHERE final_ref_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND final_ref_date &gt;= #{from}
                       AND final_ref_date &lt;= #{to}
                 ) combined
-                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
                 GROUP BY demand_agency_name
                 ORDER BY salesAmount DESC
                 LIMIT #{topN}
@@ -124,19 +127,22 @@
                        COUNT(*) AS contractCount,
                        SUM(amount) / COUNT(*) AS avgAmount
                 FROM (
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(final_contract_amount, 0) AS amount
                     FROM procurement_contract_summary
-                    WHERE first_contract_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND first_contract_date &gt;= #{from}
                       AND first_contract_date &lt;= #{to}
                     UNION ALL
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(total_supply_amount, 0) AS amount
                     FROM shopping_mall_summary
-                    WHERE first_ref_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND first_ref_date &gt;= #{from}
                       AND first_ref_date &lt;= #{to}
                 ) combined
-                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
                 GROUP BY demand_agency_name
                 ORDER BY salesAmount DESC
                 LIMIT #{topN}
@@ -214,19 +220,22 @@
                        COUNT(*) AS contractCount,
                        SUM(amount) / COUNT(*) AS avgAmount
                 FROM (
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(final_contract_amount, 0) AS amount
                     FROM procurement_contract_summary
-                    WHERE final_contract_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND final_contract_date &gt;= #{from}
                       AND final_contract_date &lt;= #{to}
                     UNION ALL
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(total_supply_amount, 0) AS amount
                     FROM shopping_mall_summary
-                    WHERE final_ref_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND final_ref_date &gt;= #{from}
                       AND final_ref_date &lt;= #{to}
                 ) combined
-                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
                 GROUP BY demand_agency_name
                 ORDER BY contractCount DESC, salesAmount DESC
                 LIMIT #{topN}
@@ -304,19 +313,22 @@
                        COUNT(*) AS contractCount,
                        SUM(amount) / COUNT(*) AS avgAmount
                 FROM (
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(final_contract_amount, 0) AS amount
                     FROM procurement_contract_summary
-                    WHERE first_contract_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND first_contract_date &gt;= #{from}
                       AND first_contract_date &lt;= #{to}
                     UNION ALL
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(total_supply_amount, 0) AS amount
                     FROM shopping_mall_summary
-                    WHERE first_ref_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND first_ref_date &gt;= #{from}
                       AND first_ref_date &lt;= #{to}
                 ) combined
-                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
                 GROUP BY demand_agency_name
                 ORDER BY contractCount DESC, salesAmount DESC
                 LIMIT #{topN}
@@ -394,19 +406,22 @@
                        COUNT(*) AS contractCount,
                        SUM(amount) / COUNT(*) AS avgAmount
                 FROM (
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(final_contract_amount, 0) AS amount
                     FROM procurement_contract_summary
-                    WHERE final_contract_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND final_contract_date &gt;= #{from}
                       AND final_contract_date &lt;= #{to}
                     UNION ALL
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(total_supply_amount, 0) AS amount
                     FROM shopping_mall_summary
-                    WHERE final_ref_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND final_ref_date &gt;= #{from}
                       AND final_ref_date &lt;= #{to}
                 ) combined
-                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
                 GROUP BY demand_agency_name
                 ORDER BY avgAmount DESC, salesAmount DESC
                 LIMIT #{topN}
@@ -484,19 +499,22 @@
                        COUNT(*) AS contractCount,
                        SUM(amount) / COUNT(*) AS avgAmount
                 FROM (
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(final_contract_amount, 0) AS amount
                     FROM procurement_contract_summary
-                    WHERE first_contract_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND first_contract_date &gt;= #{from}
                       AND first_contract_date &lt;= #{to}
                     UNION ALL
-                    SELECT demand_agency_name,
+                    SELECT CONVERT(demand_agency_name USING utf8mb4) AS demand_agency_name,
                            IFNULL(total_supply_amount, 0) AS amount
                     FROM shopping_mall_summary
-                    WHERE first_ref_date &gt;= #{from}
+                    WHERE demand_agency_name IS NOT NULL
+                      AND demand_agency_name &lt;&gt; ''
+                      AND first_ref_date &gt;= #{from}
                       AND first_ref_date &lt;= #{to}
                 ) combined
-                WHERE demand_agency_name IS NOT NULL AND demand_agency_name &lt;&gt; ''
                 GROUP BY demand_agency_name
                 ORDER BY avgAmount DESC, salesAmount DESC
                 LIMIT #{topN}
@@ -783,13 +801,13 @@
                     COUNT(*) AS contractCount,
                     SUM(amount) / COUNT(*) AS avgAmount
                 FROM (
-                    SELECT demand_agency_region AS region,
+                    SELECT CONVERT(demand_agency_region USING utf8mb4) AS region,
                            IFNULL(final_contract_amount, 0) AS amount
                     FROM procurement_contract_summary
                     WHERE first_contract_date &gt;= #{from}
                       AND first_contract_date &lt;= #{to}
                     UNION ALL
-                    SELECT demand_agency_region AS region,
+                    SELECT CONVERT(demand_agency_region USING utf8mb4) AS region,
                            IFNULL(total_supply_amount, 0) AS amount
                     FROM shopping_mall_summary
                     WHERE first_ref_date &gt;= #{from}
