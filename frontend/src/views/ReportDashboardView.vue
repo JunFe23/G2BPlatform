@@ -485,11 +485,27 @@
       </section>
 
       <section v-if="activeTab === '순위분석'" class="section">
-        <div class="rank-header">
-          <h2>영역별 / 시기별 순위 분석</h2>
-          <div class="rank-filters">
-            <button class="filter-pill">물품+3자단가</button>
-            <button class="filter-pill">전체 기간</button>
+        <div class="rank-analysis-head">
+          <h2 class="rank-section-title">영역별 / 시기별 순위 분석</h2>
+          <div class="rank-filter-rows">
+            <div class="rank-filter-row">
+              <span class="filter-label">데이터</span>
+              <div class="data-source-segment" role="tablist">
+                <button type="button" class="segment-btn" :class="{ active: dataSource === 'all' }" @click="dataSource = 'all'">물품+3자단가</button>
+                <button type="button" class="segment-btn" :class="{ active: dataSource === 'procurement' }" @click="dataSource = 'procurement'">물품</button>
+                <button type="button" class="segment-btn" :class="{ active: dataSource === 'shopping_mall' }" @click="dataSource = 'shopping_mall'">3자단가</button>
+                <button type="button" class="segment-btn" :class="{ active: dataSource === 'service' }" @click="dataSource = 'service'">용역</button>
+                <button type="button" class="segment-btn" :class="{ active: dataSource === 'construction' }" @click="dataSource = 'construction'">공사</button>
+              </div>
+            </div>
+            <div class="rank-filter-row">
+              <span class="filter-label">기간 기준</span>
+              <div class="data-source-segment" role="tablist">
+                <button type="button" class="segment-btn" :class="{ active: rankDateBasis === 'FINAL' }" @click="rankDateBasis = 'FINAL'">최종계약일</button>
+                <button type="button" class="segment-btn" :class="{ active: rankDateBasis === 'FIRST' }" @click="rankDateBasis = 'FIRST'">최초계약일</button>
+              </div>
+            </div>
+            <p class="rank-period-hint">조회 구간은 페이지 상단 <strong>기간</strong> 설정(연도·기간 지정)을 따릅니다.</p>
           </div>
         </div>
 
@@ -781,8 +797,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 
 const activeTab = ref('시장현황')
 
-/** 수요기관별·지역별 집계 데이터 소스: procurement | shopping_mall | all */
+/** 수요기관별·지역별·순위분석 데이터 소스: all | procurement | shopping_mall | service | construction */
 const dataSource = ref('procurement')
+
+/** 순위분석(추후 API): 수요기관별과 동일 FINAL=최종계약일 / FIRST=최초계약일 */
+const rankDateBasis = ref('FINAL')
 
 // 대시보드 공통 기간 필터 (모든 탭 데이터에 반영)
 const dashboardFilterMode = ref('year') // 'year' | 'range'
@@ -2651,31 +2670,42 @@ watch(dataSource, () => {
   font-weight: 600;
 }
 
-.rank-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+.rank-analysis-head {
   margin-bottom: 16px;
 }
 
-.rank-header h2 {
-  margin: 0;
+.rank-section-title {
+  margin: 0 0 12px;
   font-size: 16px;
-}
-
-.rank-filters {
-  display: flex;
-  gap: 10px;
-}
-
-.filter-pill {
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid #e0e0e0;
-  background: #f7f7f9;
+  font-weight: 600;
   color: #2c3e50;
+}
+
+.rank-filter-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rank-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.rank-filter-row .filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  min-width: 4.5em;
+}
+
+.rank-period-hint {
+  margin: 0;
   font-size: 12px;
+  color: #64748b;
+  line-height: 1.45;
 }
 
 .rank-tabs {
