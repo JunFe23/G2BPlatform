@@ -688,6 +688,8 @@
           </button>
         </div>
 
+        <p class="private-api-note">등록·수정·삭제는 백엔드 API와 테이블 설계 반영 후 연결됩니다.</p>
+
         <div class="table-wrapper">
           <table class="detail-table private-table">
             <thead>
@@ -705,13 +707,14 @@
             </thead>
             <tbody>
               <tr v-if="privateRows.length === 0">
-                <td colspan="9" class="no-data-cell">등록된 민수 계약이 없습니다. ‘민수 계약 추가’로 등록하세요.</td>
+                <td colspan="9" class="no-data-cell">
+                  등록된 계약이 없습니다. 백엔드 API 연동 후 이 목록에 표시됩니다.
+                </td>
               </tr>
               <tr v-for="row in privateRows" :key="row.id" :class="{ highlight: row.highlight }">
                 <td><span class="type-pill" :class="typePillClass(row.type)">{{ row.type || '물품' }}</span></td>
                 <td>
                   <span class="row-title">{{ row.product }}</span>
-                  <span v-if="row.linked" class="link-pill">↩</span>
                 </td>
                 <td>{{ row.client }}</td>
                 <td>{{ row.region }}</td>
@@ -721,8 +724,8 @@
                 <td class="year-cell">{{ row.year }}</td>
                 <td>
                   <div class="action-buttons">
-                    <button type="button" class="icon-btn">✎</button>
-                    <button type="button" class="icon-btn danger">🗑</button>
+                    <button type="button" class="icon-btn" disabled title="API 연동 후 사용">✎</button>
+                    <button type="button" class="icon-btn danger" disabled title="API 연동 후 사용">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -739,7 +742,7 @@
               <h3>민수 계약 추가</h3>
               <button type="button" class="modal-close" aria-label="닫기" @click="closePrivateModal">×</button>
             </div>
-            <form class="private-modal-body" @submit.prevent="submitPrivateContract">
+            <form class="private-modal-body" @submit.prevent>
               <div class="form-row">
                 <label>유형 <span class="required">*</span></label>
                 <select v-model="privateForm.type" required class="form-input">
@@ -779,7 +782,7 @@
               </div>
               <div class="private-modal-footer">
                 <button type="button" class="btn-cancel" @click="closePrivateModal">취소</button>
-                <button type="submit" class="btn-submit">추가</button>
+                <button type="button" class="btn-submit" disabled title="API 연동 후 사용">저장 (준비 중)</button>
               </div>
             </form>
           </div>
@@ -1416,92 +1419,8 @@ const excellentDetailRows = ref([
   },
 ])
 
-const privateRows = ref([
-  {
-    id: 1,
-    type: '물품',
-    product: '사무용 의자',
-    client: '삼성전자',
-    region: '경기',
-    amount: '30,000,000원',
-    qty: '300',
-    date: '2025-01-25',
-    year: '-',
-    highlight: false,
-  },
-  {
-    id: 2,
-    type: '물품',
-    product: '책상',
-    client: 'LG전자',
-    region: '서울',
-    amount: '25,000,000원',
-    qty: '150',
-    date: '2025-02-10',
-    year: '-',
-    highlight: false,
-  },
-  {
-    id: 3,
-    type: '물품',
-    product: 'LED 조명',
-    client: '현대자동차',
-    region: '울산',
-    amount: '20,000,000원',
-    qty: '400',
-    date: '2025-03-05',
-    year: '-',
-    highlight: false,
-  },
-  {
-    id: 4,
-    type: '물품',
-    product: '노트북',
-    client: 'SK하이닉스',
-    region: '경기',
-    amount: '80,000,000원',
-    qty: '60',
-    date: '2025-04-15',
-    year: '-',
-    highlight: false,
-  },
-  {
-    id: 5,
-    type: '용역',
-    product: '프린터',
-    client: '포스코',
-    region: '경북',
-    amount: '40,000,000원',
-    qty: '80',
-    date: '2025-05-20',
-    year: '-',
-    highlight: false,
-  },
-  {
-    id: 6,
-    type: '물품',
-    product: '산업용 소모품 일괄 납품',
-    client: '현대중공업',
-    region: '울산',
-    amount: '300,000,000원',
-    qty: '500',
-    date: '2024-11-10',
-    year: '1차년도',
-    highlight: false,
-  },
-  {
-    id: 7,
-    type: '물품',
-    product: '산업용 소모품 일괄 납품',
-    client: '현대중공업',
-    region: '울산',
-    amount: '300,000,000원',
-    qty: '500',
-    date: '2025-11-10',
-    year: '2차년도',
-    highlight: false,
-  },
-])
+/** 민수 계약 목록 — API 연동 후 채움 */
+const privateRows = ref([])
 
 const showPrivateModal = ref(false)
 const privateForm = ref({
@@ -1514,8 +1433,6 @@ const privateForm = ref({
   date: '',
   year: '',
 })
-let privateNextId = 8
-
 function typePillClass(type) {
   if (type === '공사') return 'type-pill-construction'
   if (type === '용역') return 'type-pill-service'
@@ -1539,24 +1456,6 @@ function openPrivateModal() {
 
 function closePrivateModal() {
   showPrivateModal.value = false
-}
-
-function submitPrivateContract() {
-  const a = privateForm.value.amount.trim()
-  const amountDisplay = a ? (a.replace(/,/g, '').match(/\d+/) ? Number(a.replace(/,/g, '')).toLocaleString() + '원' : a) : ''
-  privateRows.value.push({
-    id: ++privateNextId,
-    type: privateForm.value.type,
-    product: privateForm.value.product.trim() || '-',
-    client: privateForm.value.client.trim() || '-',
-    region: privateForm.value.region.trim() || '-',
-    amount: amountDisplay || '-',
-    qty: privateForm.value.qty.trim() || '-',
-    date: privateForm.value.date || '-',
-    year: privateForm.value.year.trim() || '-',
-    highlight: false,
-  })
-  closePrivateModal()
 }
 
 const loadDashboardData = async () => {
@@ -2955,6 +2854,13 @@ watch(dataSource, () => {
   font-size: 14px;
 }
 
+.private-api-note {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
 .private-table th,
 .private-table td {
   text-align: center;
@@ -3000,6 +2906,11 @@ watch(dataSource, () => {
 .icon-btn.danger {
   color: #e74c3c;
   border-color: #f3c9c9;
+}
+
+.icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .type-pill {
@@ -3121,6 +3032,10 @@ watch(dataSource, () => {
 }
 .private-modal-footer .btn-submit:hover {
   background: #1f2937;
+}
+.private-modal-footer .btn-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 tr.highlight {
