@@ -854,7 +854,7 @@ const contractCards = ref([
   {
     id: 1,
     title: '컴퓨터 장비 일괄구매',
-    category: '물품+3자단가',
+    category: '물품',
     categoryClass: 'badge-blue',
     org: '행정안전부 | 서울',
     firstContract: '2020-03-15',
