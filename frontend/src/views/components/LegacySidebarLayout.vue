@@ -55,6 +55,9 @@
           <li class="menu-item" @click="$router.push('/top-contracts-report')">
             <span class="menu-label">탑인더스트리 & 탑정보통신 수주현황</span>
           </li>
+          <li class="menu-item" @click="$router.push('/report-target-projects')">
+            <span class="menu-label">수주대상 사업탐색</span>
+          </li>
           <li class="menu-item" @click="$router.push('/report-dashboard')">
             <span class="menu-label">대시보드</span>
           </li>
@@ -78,10 +81,10 @@
           <li class="menu-item" @click="$router.push('/top-contracts')">
             <span class="menu-label">탑인더스트리 & 탑정보통신 수주현황</span>
           </li>
+          <li class="menu-item" @click="$router.push('/target-projects')">
+            <span class="menu-label">수주대상 사업탐색</span>
+          </li>
         </ul>
-        <li class="menu-item" @click="$router.push('/target-projects')">
-          <span class="menu-label">수주대상 사업탐색</span>
-        </li>
         <template v-if="authStore.isLoggedIn">
           <template v-if="authStore.isAdmin">
             <li class="menu-divider"></li>

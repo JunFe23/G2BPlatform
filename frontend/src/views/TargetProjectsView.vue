@@ -1,6 +1,11 @@
 <template>
   <LegacySidebarLayout>
-    <h1 class="servicesSelected">수주대상 사업탐색</h1>
+    <h1 class="servicesSelected">{{ pageTitle }}</h1>
+
+    <div v-if="isReportMode" class="wip-banner">
+      <span class="wip-icon">🚧</span>
+      <span>보고서 데이터 API 연동 전입니다. 화면만 동일하게 제공됩니다.</span>
+    </div>
 
     <!-- 검색 필드 -->
     <div class="search-container">
@@ -28,15 +33,17 @@
         <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
       </template>
 
-      <button @click="handleSearch" class="search-btn">검색</button>
+      <button @click="handleSearch" class="search-btn" :disabled="isReportMode">검색</button>
 
-      <button @click="handleDownloadExcel" class="excel-btn">엑셀 다운로드</button>
+      <button @click="handleDownloadExcel" class="excel-btn" :disabled="isReportMode">
+        엑셀 다운로드
+      </button>
 
       <div v-if="isLoading" class="loading-spinner-container">
         <div class="loading-spinner"></div>
       </div>
 
-      <button @click="openModal" class="modal-btn">수주대상 탐색하기</button>
+      <button @click="openModal" class="modal-btn" :disabled="isReportMode">수주대상 탐색하기</button>
     </div>
 
     <!-- 데이터 테이블 -->
@@ -88,7 +95,9 @@
               <td>{{ item.thtmScmpltDate }}</td>
               <td>{{ item.ttalScmpltDate }}</td>
               <td>
-                <button class="unselect-btn" @click="unselectItem(item)">선택 해제</button>
+                <button class="unselect-btn" :disabled="isReportMode" @click="unselectItem(item)">
+                  선택 해제
+                </button>
               </td>
             </tr>
           </tbody>
@@ -185,8 +194,15 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
+
+const route = useRoute()
+const isReportMode = computed(() => route.meta.targetProjectsSource === 'report')
+const pageTitle = computed(() =>
+  isReportMode.value ? '수주대상 사업탐색 (보고서 데이터)' : '수주대상 사업탐색',
+)
 
 const PAGE_SIZE = 100
 const CATEGORY = 'servicesSelected'
@@ -274,6 +290,11 @@ const pageNumbers = computed(() => {
 })
 
 const fetchData = async (resetPage = false) => {
+  if (isReportMode.value) {
+    items.value = []
+    recordsFiltered.value = 0
+    return
+  }
   if (resetPage) currentPage.value = 1
   isLoading.value = true
   try {
@@ -289,6 +310,7 @@ const fetchData = async (resetPage = false) => {
 }
 
 const goPage = (page) => {
+  if (isReportMode.value) return
   const total = Math.max(1, Math.ceil(recordsFiltered.value / PAGE_SIZE))
   if (page < 1 || page > total) return
   currentPage.value = page
@@ -296,10 +318,15 @@ const goPage = (page) => {
 }
 
 const handleSearch = () => {
+  if (isReportMode.value) return
   fetchData(true)
 }
 
 const handleDownloadExcel = async () => {
+  if (isReportMode.value) {
+    alert('보고서 데이터 API 연동 후 이용할 수 있습니다.')
+    return
+  }
   try {
     const res = await axios.post('/api/data/excel', buildExcelRequest(), { responseType: 'blob' })
     const url = URL.createObjectURL(new Blob([res.data]))
@@ -315,6 +342,7 @@ const handleDownloadExcel = async () => {
 }
 
 const unselectItem = async (item) => {
+  if (isReportMode.value) return
   if (!confirm('정말 선택을 취소하시겠습니까?')) return
   try {
     await axios.post('/api/unselect', {
@@ -332,6 +360,7 @@ const unselectItem = async (item) => {
 }
 
 const openModal = () => {
+  if (isReportMode.value) return
   isModalOpen.value = true
   resetModal()
   fetchModalData()
@@ -349,6 +378,7 @@ const resetModal = () => {
 }
 
 const fetchModalData = async () => {
+  if (isReportMode.value) return
   if (isModalLoading.value || modalAllLoaded.value) return
   isModalLoading.value = true
   try {
@@ -410,14 +440,29 @@ const formatNumber = (num) =>
 const rowKey = (item) => item.untyCntrctNo || item.id || Math.random()
 
 watch(modalSearch, () => {
+  if (isReportMode.value) return
   modalOffset.value = 0
   modalAllLoaded.value = false
   modalItems.value = []
   fetchModalData()
 })
 
+watch(
+  () => route.fullPath,
+  () => {
+    if (isReportMode.value) {
+      items.value = []
+      recordsFiltered.value = 0
+      isLoading.value = false
+      if (isModalOpen.value) closeModal()
+    } else {
+      fetchData(true)
+    }
+  },
+)
+
 onMounted(() => {
-  fetchData()
+  if (!isReportMode.value) fetchData()
 })
 </script>
 
@@ -446,6 +491,32 @@ input[type='month'] {
   border: none;
   cursor: pointer;
   border-radius: 4px;
+}
+
+.search-btn:disabled,
+.excel-btn:disabled,
+.modal-btn:disabled,
+.unselect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wip-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.wip-icon {
+  font-size: 18px;
 }
 
 .excel-btn {

@@ -155,6 +155,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/report-target-projects',
+      name: 'report-target-projects',
+      component: TargetProjectsView,
+      meta: { requiresAuth: true, targetProjectsSource: 'report' },
+    },
+    {
       path: '/work-in-progress',
       name: 'work-in-progress',
       component: WorkInProgressView,
