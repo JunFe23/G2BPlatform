@@ -27,8 +27,27 @@
           <option value="N">N</option>
         </select>
         <button type="button" class="search-btn" @click="handleSearch">검색</button>
+        <button
+          type="button"
+          class="excel-btn"
+          :disabled="isLoadingExcel"
+          @click="handleDownloadExcel"
+        >
+          {{ isLoadingExcel ? '다운로드 중...' : '엑셀 다운로드' }}
+        </button>
         <div v-if="isLoading" class="loading-spinner-container">
           <div class="loading-spinner"></div>
+        </div>
+      </div>
+
+      <div v-if="isLoadingExcel" class="excel-download-overlay">
+        <div class="excel-download-progress">
+          <div class="excel-spinner"></div>
+          <p class="excel-progress-title">엑셀 생성 중</p>
+          <p class="excel-progress-desc">
+            데이터가 많을 경우 시간이 걸릴 수 있습니다. 조건을 좁히면 더 빠릅니다.
+          </p>
+          <p class="excel-progress-hint">창을 닫지 마세요.</p>
         </div>
       </div>
     </div>
@@ -109,10 +128,11 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
-const API = '/api/shopping-mall/flat'
+const API_BASE = '/api/report/shopping-mall'
 const PAGE_SIZE = 50
 
 const isLoading = ref(false)
+const isLoadingExcel = ref(false)
 const items = ref([])
 const totalCount = ref(0)
 const currentPage = ref(1)
@@ -150,6 +170,25 @@ function buildParams() {
   return p
 }
 
+function buildExcelQueryParams() {
+  const params = new URLSearchParams()
+  const q = {
+    dateFrom: filters.dateFrom || undefined,
+    dateTo: filters.dateTo || undefined,
+    demandAgencyName: filters.demandAgencyName || undefined,
+    demandAgencyRegion: filters.demandAgencyRegion || undefined,
+    itemCategoryNo: filters.itemCategoryNo || undefined,
+    detailItemNo: filters.detailItemNo || undefined,
+    vendorBizRegNo: filters.vendorBizRegNo || undefined,
+    isMas: filters.isMas || undefined,
+    isExcellentProduct: filters.isExcellentProduct || undefined,
+  }
+  Object.entries(q).forEach(([k, v]) => {
+    if (v !== undefined && v !== '') params.append(k, v)
+  })
+  return params
+}
+
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / PAGE_SIZE)))
 const startDisplay = computed(() =>
   totalCount.value === 0 ? 0 : (currentPage.value - 1) * PAGE_SIZE + 1,
@@ -169,7 +208,7 @@ const fetchData = async (resetPage = false) => {
   if (resetPage) currentPage.value = 1
   isLoading.value = true
   try {
-    const { data } = await axios.get(API, { params: buildParams() })
+    const { data } = await axios.get(API_BASE, { params: buildParams() })
     items.value = Array.isArray(data.content) ? data.content : []
     totalCount.value = typeof data.totalCount === 'number' ? data.totalCount : items.value.length
   } catch (e) {
@@ -189,6 +228,33 @@ const goPage = (page) => {
 }
 
 const handleSearch = () => fetchData(true)
+
+const handleDownloadExcel = async () => {
+  isLoadingExcel.value = true
+  try {
+    const qs = buildExcelQueryParams().toString()
+    const url = qs ? `${API_BASE}/excel?${qs}` : `${API_BASE}/excel`
+    const { data } = await axios.get(url, {
+      responseType: 'blob',
+      timeout: 1800000,
+    })
+    const blobUrl = URL.createObjectURL(new Blob([data]))
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = `report_shopping_mall_${Date.now()}.xlsx`
+    a.click()
+    URL.revokeObjectURL(blobUrl)
+  } catch (e) {
+    console.error('엑셀 다운로드 실패', e)
+    alert(
+      e?.code === 'ECONNABORTED'
+        ? '요청 시간이 초과되었습니다. 조건을 줄이거나 다시 시도해 주세요.'
+        : '엑셀 다운로드에 실패했습니다.',
+    )
+  } finally {
+    isLoadingExcel.value = false
+  }
+}
 
 const formatNumber = (num) => {
   if (num == null || num === '') return ''
@@ -261,6 +327,72 @@ select {
   cursor: pointer;
   border-radius: 8px;
   font-weight: 500;
+}
+
+.excel-btn {
+  padding: 10px 18px;
+  background: linear-gradient(180deg, #1e8449 0%, #27ae60 100%);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.excel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.excel-download-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.excel-download-progress {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 32px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+
+.excel-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #27ae60;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.excel-progress-title {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.excel-progress-desc,
+.excel-progress-hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.excel-progress-hint {
+  margin-top: 12px;
+  font-weight: 500;
+  color: #334155;
 }
 .loading-spinner-container {
   margin-left: 10px;

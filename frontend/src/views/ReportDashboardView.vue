@@ -63,43 +63,6 @@
       </section>
 
       <section v-if="activeTab === '시장현황'" class="section">
-        <h2 class="section-title">
-          <span class="section-icon">📈</span>
-          연차계약 목록
-        </h2>
-        <div class="contract-list">
-          <article
-            v-for="item in contractCards"
-            :key="item.id"
-            class="contract-card"
-            :class="item.tintClass"
-          >
-            <div class="card-header">
-              <div>
-                <div class="card-title">
-                  <strong>{{ item.title }}</strong>
-                  <span class="category-pill" :class="item.categoryClass">{{ item.category }}</span>
-                </div>
-                <div class="card-subtitle">{{ item.org }}</div>
-                <div class="card-meta">최초계약: {{ item.firstContract }}</div>
-              </div>
-              <div class="card-total">
-                <div class="total-amount">전체: {{ item.total }}</div>
-                <div class="total-year">{{ item.years }}개년</div>
-              </div>
-            </div>
-            <div class="year-rows">
-              <div v-for="year in item.yearsBreakdown" :key="year.label" class="year-row">
-                <span class="year-pill">{{ year.label }}</span>
-                <span class="year-date">{{ year.date }}</span>
-                <span class="year-amount">{{ year.amount }}</span>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section v-if="activeTab === '시장현황'" class="section">
         <h2 class="section-title">전체 조달시장 현황</h2>
         <div class="summary-cards">
           <div v-for="stat in summaryStats" :key="stat.label" class="summary-card">
@@ -850,55 +813,6 @@ const tabs = [
   { label: '민수관리', icon: '🗂️' },
 ]
 
-const contractCards = ref([
-  {
-    id: 1,
-    title: '컴퓨터 장비 일괄구매',
-    category: '물품',
-    categoryClass: 'badge-blue',
-    org: '행정안전부 | 서울',
-    firstContract: '2020-03-15',
-    total: '50.0억원',
-    years: 2,
-    tintClass: 'tint-blue',
-    yearsBreakdown: [
-      { label: '1차년도', date: '2020-03-15', amount: '25.0억원' },
-      { label: '2차년도', date: '2021-03-15', amount: '25.0억원' },
-    ],
-  },
-  {
-    id: 2,
-    title: '시설물 유지관리 용역',
-    category: '용역',
-    categoryClass: 'badge-dark',
-    org: '국토교통부 | 경기',
-    firstContract: '2023-06-01',
-    total: '12.0억원',
-    years: 3,
-    tintClass: 'tint-gray',
-    yearsBreakdown: [
-      { label: '1차년도', date: '2023-06-01', amount: '4.0억원' },
-      { label: '2차년도', date: '2024-06-01', amount: '4.0억원' },
-      { label: '3차년도', date: '2025-06-01', amount: '4.0억원' },
-    ],
-  },
-  {
-    id: 3,
-    title: '광역도로 건설',
-    category: '공사',
-    categoryClass: 'badge-green',
-    org: '국토교통부 | 충북',
-    firstContract: '2024-09-01',
-    total: '30.0억원',
-    years: 2,
-    tintClass: 'tint-blue',
-    yearsBreakdown: [
-      { label: '1차년도', date: '2024-09-01', amount: '15.0억원' },
-      { label: '2차년도', date: '2025-09-01', amount: '15.0억원' },
-    ],
-  },
-])
-
 const summaryStats = ref([
   { label: '전체 매출액', value: '136.6억', colorClass: 'blue' },
   { label: '전체 계약건수', value: '22건', colorClass: 'green' },
@@ -1459,10 +1373,7 @@ function closePrivateModal() {
 }
 
 const loadDashboardData = async () => {
-  // TODO: Replace with API calls when endpoints are ready.
-  // Example:
-  // const response = await axios.get('/api/dashboard');
-  // contractCards.value = response.data.contractCards;
+  // TODO: 시장현황 요약/차트용 /api/report/market 등 연동
 }
 
 // TODO (report data integration)
@@ -1953,112 +1864,6 @@ watch(dataSource, () => {
   gap: 8px;
   margin: 0 0 16px;
   font-size: 16px;
-  color: #2c3e50;
-}
-
-.contract-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.contract-card {
-  border-radius: 14px;
-  border: 1px solid #dfe7f2;
-  padding: 16px;
-  background: #f7fbff;
-}
-
-.contract-card.tint-gray {
-  background: #f7f7f9;
-}
-
-.contract-card.tint-purple {
-  background: #f8f1ff;
-  border-color: #e5d7ff;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid #dfe7f2;
-  padding-bottom: 12px;
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.card-subtitle,
-.card-meta {
-  color: #6b7a99;
-  margin-top: 6px;
-}
-
-.category-pill {
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  color: white;
-}
-
-.badge-blue {
-  background: #2f6fff;
-}
-
-.badge-dark {
-  background: #222222;
-}
-
-.badge-green {
-  background: #2ecc71;
-}
-
-.badge-purple {
-  background: #8e44ad;
-}
-
-.card-total {
-  text-align: right;
-  color: #2f4aa5;
-}
-
-.total-amount {
-  font-weight: 700;
-}
-
-.year-rows {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.year-row {
-  display: grid;
-  grid-template-columns: 90px 1fr auto;
-  align-items: center;
-  gap: 12px;
-  background: white;
-  border-radius: 10px;
-  padding: 10px 12px;
-  border: 1px solid #edf1f8;
-}
-
-.year-pill {
-  background: #e6eefb;
-  color: #3f6ff0;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  text-align: center;
-}
-
-.year-amount {
-  font-weight: 600;
   color: #2c3e50;
 }
 
@@ -3130,13 +2935,6 @@ tr.highlight {
   }
   .tab-button {
     flex: 1 1 120px;
-  }
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .card-total {
-    text-align: left;
   }
 }
 </style>

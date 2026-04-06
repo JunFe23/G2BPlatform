@@ -9,10 +9,12 @@ import org.apache.poi.ss.usermodel.DataFormat;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.example.g2bplatform.DTO.ShoppingMallFlatDto;
 import org.example.g2bplatform.service.ReportConstructionService;
 import org.example.g2bplatform.service.ReportDataService;
 import org.example.g2bplatform.service.ReportProcurementService;
 import org.example.g2bplatform.service.ReportServiceContractService;
+import org.example.g2bplatform.service.ShoppingMallService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +30,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,15 +47,18 @@ public class ReportDataController {
     private final ReportConstructionService reportConstructionService;
     private final ReportProcurementService reportProcurementService;
     private final ReportServiceContractService reportServiceContractService;
+    private final ShoppingMallService shoppingMallService;
 
     public ReportDataController(ReportDataService reportDataService,
                                 ReportConstructionService reportConstructionService,
                                 ReportProcurementService reportProcurementService,
-                                ReportServiceContractService reportServiceContractService) {
+                                ReportServiceContractService reportServiceContractService,
+                                ShoppingMallService shoppingMallService) {
         this.reportDataService = reportDataService;
         this.reportConstructionService = reportConstructionService;
         this.reportProcurementService = reportProcurementService;
         this.reportServiceContractService = reportServiceContractService;
+        this.shoppingMallService = shoppingMallService;
     }
 
     /**
@@ -155,6 +161,150 @@ public class ReportDataController {
             err.put("success", false);
             err.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(err);
+        }
+    }
+
+    // ================================================================
+    // 보고서 쇼핑몰 (shopping_mall_flat)
+    // ================================================================
+
+    @Operation(summary = "보고서 쇼핑몰 납품 실적 목록", description = "shopping_mall_flat 기준 (보고서 데이터 전용 경로)")
+    @GetMapping("/shopping-mall")
+    public ResponseEntity<Map<String, Object>> getReportShoppingMallFlat(
+            @Parameter(description = "기간 시작 (ref_date >=), yyyy-MM-dd") @RequestParam(required = false) String dateFrom,
+            @Parameter(description = "기간 종료 (ref_date <=), yyyy-MM-dd") @RequestParam(required = false) String dateTo,
+            @Parameter(description = "업체사업자등록번호") @RequestParam(required = false) String vendorBizRegNo,
+            @Parameter(description = "수요기관명 (부분일치)") @RequestParam(required = false) String demandAgencyName,
+            @Parameter(description = "수요기관지역 (부분일치)") @RequestParam(required = false) String demandAgencyRegion,
+            @Parameter(description = "물품분류번호") @RequestParam(required = false) String itemCategoryNo,
+            @Parameter(description = "세부품명번호") @RequestParam(required = false) String detailItemNo,
+            @Parameter(description = "MAS여부 Y/N") @RequestParam(required = false) String isMas,
+            @Parameter(description = "우수제품여부 Y/N") @RequestParam(required = false) String isExcellentProduct,
+            @Parameter(description = "페이지 (1부터)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "50") int size
+    ) {
+        Map<String, Object> data = shoppingMallService.getFlatList(
+                dateFrom, dateTo, vendorBizRegNo,
+                demandAgencyName, demandAgencyRegion,
+                itemCategoryNo, detailItemNo,
+                isMas, isExcellentProduct,
+                page, size);
+        Map<String, Object> res = new HashMap<>();
+        res.put("success", true);
+        res.putAll(data);
+        return ResponseEntity.ok(res);
+    }
+
+    @Operation(summary = "보고서 쇼핑몰 납품 실적 엑셀 다운로드", description = "현재 검색 조건 전체 행 (배치 조회)")
+    @GetMapping("/shopping-mall/excel")
+    public ResponseEntity<Resource> getReportShoppingMallExcel(
+            @Parameter(description = "기간 시작") @RequestParam(required = false) String dateFrom,
+            @Parameter(description = "기간 종료") @RequestParam(required = false) String dateTo,
+            @Parameter(description = "업체사업자등록번호") @RequestParam(required = false) String vendorBizRegNo,
+            @Parameter(description = "수요기관명") @RequestParam(required = false) String demandAgencyName,
+            @Parameter(description = "수요기관지역") @RequestParam(required = false) String demandAgencyRegion,
+            @Parameter(description = "물품분류번호") @RequestParam(required = false) String itemCategoryNo,
+            @Parameter(description = "세부품명번호") @RequestParam(required = false) String detailItemNo,
+            @Parameter(description = "MAS Y/N") @RequestParam(required = false) String isMas,
+            @Parameter(description = "우수제품 Y/N") @RequestParam(required = false) String isExcellentProduct
+    ) throws IOException {
+        final String[] headerNames = new String[]{
+                "납품요구결재일", "수요기관명", "수요기관지역", "계약명(요청명)", "물품분류명", "세부품명", "물품식별명",
+                "단가", "수량", "공급금액", "MAS", "우수제품", "직접구매", "업체명", "납품장소명"
+        };
+        Path tempFile = Files.createTempFile("report_shopping_mall_", ".xlsx");
+        try {
+            try (SXSSFWorkbook workbook = new SXSSFWorkbook(500); OutputStream out = Files.newOutputStream(tempFile)) {
+                Sheet sheet = workbook.createSheet("쇼핑몰납품실적");
+                DataFormat dataFormat = workbook.createDataFormat();
+                CellStyle numStyle = workbook.createCellStyle();
+                numStyle.setDataFormat(dataFormat.getFormat("#,##0"));
+
+                Row headerRow = sheet.createRow(0);
+                for (int i = 0; i < headerNames.length; i++) {
+                    Cell cell = headerRow.createCell(i);
+                    cell.setCellValue(headerNames[i]);
+                }
+
+                final int[] rowNumRef = {1};
+                shoppingMallService.forEachFlatBatch(
+                        dateFrom, dateTo, vendorBizRegNo,
+                        demandAgencyName, demandAgencyRegion,
+                        itemCategoryNo, detailItemNo,
+                        isMas, isExcellentProduct,
+                        2000,
+                        batch -> {
+                            for (ShoppingMallFlatDto dto : batch) {
+                                Row excelRow = sheet.createRow(rowNumRef[0]++);
+                                int c = 0;
+                                setDateCell(excelRow.createCell(c++), dto.getRefDate());
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getDemandAgencyName()));
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getDemandAgencyRegion()));
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getContractTitle()));
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getItemCategoryName()));
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getDetailItemName()));
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getItemIdentifierName()));
+                                setLongCell(excelRow.createCell(c++), dto.getUnitPrice(), numStyle);
+                                setLongCell(excelRow.createCell(c++), dto.getQuantity(), numStyle);
+                                setLongCell(excelRow.createCell(c++), dto.getSupplyAmount(), numStyle);
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getIsMas()));
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getIsExcellentProduct()));
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getIsDirectPurchaseTarget()));
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getVendorName()));
+                                excelRow.createCell(c++).setCellValue(nullToEmpty(dto.getDeliveryPlaceName()));
+                            }
+                        });
+                workbook.write(out);
+                workbook.dispose();
+            }
+
+            long fileSize = Files.size(tempFile);
+            String filename = "report_shopping_mall_" + System.currentTimeMillis() + ".xlsx";
+            InputStream in = Files.newInputStream(tempFile);
+            InputStream deletingStream = new FilterInputStream(in) {
+                @Override
+                public void close() throws IOException {
+                    try {
+                        super.close();
+                    } finally {
+                        Files.deleteIfExists(tempFile);
+                    }
+                }
+            };
+            return ResponseEntity.ok()
+                    .contentLength(fileSize)
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + URLEncoder.encode(filename, StandardCharsets.UTF_8) + "\""
+                                    + "; filename*=UTF-8''" + URLEncoder.encode(filename, StandardCharsets.UTF_8))
+                    .body(new InputStreamResource(deletingStream));
+        } catch (IOException e) {
+            Files.deleteIfExists(tempFile);
+            throw e;
+        } catch (Exception e) {
+            Files.deleteIfExists(tempFile);
+            throw new IOException(e);
+        }
+    }
+
+    private static String nullToEmpty(String s) {
+        return s != null ? s : "";
+    }
+
+    private static void setDateCell(Cell cell, LocalDate d) {
+        if (d != null) {
+            cell.setCellValue(d.toString());
+        } else {
+            cell.setCellValue("");
+        }
+    }
+
+    private static void setLongCell(Cell cell, Long value, CellStyle numStyle) {
+        if (value != null) {
+            cell.setCellValue(value);
+            cell.setCellStyle(numStyle);
+        } else {
+            cell.setCellValue("");
         }
     }
 

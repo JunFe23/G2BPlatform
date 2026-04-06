@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 @Service
 public class ShoppingMallService {
@@ -52,5 +53,39 @@ public class ShoppingMallService {
         body.put("page", p);
         body.put("size", s);
         return body;
+    }
+
+    /**
+     * 동일 필터로 shopping_mall_flat 전체를 배치 단위로 순회 (엑셀 스트리밍 등).
+     *
+     * @param batchSize 권장 500~5000
+     */
+    public void forEachFlatBatch(
+            String dateFrom, String dateTo,
+            String vendorBizRegNo,
+            String demandAgencyName, String demandAgencyRegion,
+            String itemCategoryNo, String detailItemNo,
+            String isMas, String isExcellentProduct,
+            int batchSize,
+            Consumer<List<ShoppingMallFlatDto>> batchConsumer
+    ) {
+        int batch = Math.max(100, Math.min(batchSize, 5000));
+        int offset = 0;
+        while (true) {
+            List<ShoppingMallFlatDto> chunk = shoppingMallMapper.selectFlatList(
+                    dateFrom, dateTo, vendorBizRegNo,
+                    demandAgencyName, demandAgencyRegion,
+                    itemCategoryNo, detailItemNo,
+                    isMas, isExcellentProduct,
+                    offset, batch);
+            if (chunk == null || chunk.isEmpty()) {
+                break;
+            }
+            batchConsumer.accept(chunk);
+            if (chunk.size() < batch) {
+                break;
+            }
+            offset += batch;
+        }
     }
 }
