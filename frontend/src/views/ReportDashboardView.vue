@@ -764,7 +764,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 const activeTab = ref('시장현황')
 
 /** 수요기관별·지역별·순위분석 데이터 소스: all | procurement | shopping_mall | service | construction */
-const dataSource = ref('procurement')
+const dataSource = ref('all')
 
 /** 순위분석(추후 API): 수요기관별과 동일 FINAL=최종계약일 / FIRST=최초계약일 */
 const rankDateBasis = ref('FINAL')
