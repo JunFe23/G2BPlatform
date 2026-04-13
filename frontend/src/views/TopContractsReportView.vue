@@ -121,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
@@ -294,6 +294,10 @@ function formatNumber(val) {
   const num = Number(val)
   return isNaN(num) ? val : num.toLocaleString('ko-KR')
 }
+
+onMounted(() => {
+  handleSearch()
+})
 </script>
 
 <style scoped>
