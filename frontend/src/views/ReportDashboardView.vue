@@ -62,6 +62,41 @@
         </button>
       </section>
 
+      <!-- 탭별 조건 필터 (탭 선택에 따라 동적으로 표시) -->
+      <section
+        v-if="activeTab === '시장현황' || activeTab === '수요기관별' || activeTab === '지역별'"
+        class="condition-filter-bar"
+      >
+        <span class="filter-label">데이터</span>
+
+        <!-- 시장현황: 다중선택 체크박스 -->
+        <template v-if="activeTab === '시장현황'">
+          <div class="check-group">
+            <label
+              v-for="src in marketDataSourceOptions"
+              :key="src.value"
+              class="check-item"
+            >
+              <input type="checkbox" v-model="marketDataSources" :value="src.value" />
+              <span class="check-dot" :style="{ background: src.color }"></span>
+              <span>{{ src.label }}</span>
+            </label>
+          </div>
+          <span class="condition-hint">복수 선택 시 합산 조회</span>
+        </template>
+
+        <!-- 수요기관별 / 지역별: 단일선택 세그먼트 버튼 -->
+        <template v-else>
+          <div class="data-source-segment" role="tablist">
+            <button type="button" class="segment-btn" :class="{ active: dataSource === 'all' }" @click="dataSource = 'all'">물품+3자단가</button>
+            <button type="button" class="segment-btn" :class="{ active: dataSource === 'procurement' }" @click="dataSource = 'procurement'">물품</button>
+            <button type="button" class="segment-btn" :class="{ active: dataSource === 'shopping_mall' }" @click="dataSource = 'shopping_mall'">3자단가</button>
+            <button type="button" class="segment-btn" :class="{ active: dataSource === 'service' }" @click="dataSource = 'service'">용역</button>
+            <button type="button" class="segment-btn" :class="{ active: dataSource === 'construction' }" @click="dataSource = 'construction'">공사</button>
+          </div>
+        </template>
+      </section>
+
       <section v-if="activeTab === '시장현황'" class="section">
         <h2 class="section-title">전체 조달시장 현황</h2>
         <div class="summary-cards">
@@ -120,16 +155,6 @@
       <section v-if="activeTab === '수요기관별'" class="section">
         <div class="section-title-row">
           <h2 class="section-title">수요기관별 물품 조달시장 분석</h2>
-          <div class="data-source-bar inline" aria-label="데이터 소스">
-            <span class="filter-label">데이터</span>
-            <div class="data-source-segment" role="tablist">
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'all' }" @click="dataSource = 'all'">물품+3자단가</button>
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'procurement' }" @click="dataSource = 'procurement'">물품</button>
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'shopping_mall' }" @click="dataSource = 'shopping_mall'">3자단가</button>
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'service' }" @click="dataSource = 'service'">용역</button>
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'construction' }" @click="dataSource = 'construction'">공사</button>
-            </div>
-          </div>
         </div>
 
         <div v-if="agencyLoading" class="loading-banner loading-banner-prominent">
@@ -276,16 +301,6 @@
       <section v-if="activeTab === '지역별'" class="section">
         <div class="section-title-row">
           <h2 class="section-title">지역별 조달시장 분석</h2>
-          <div class="data-source-bar inline" aria-label="데이터 소스">
-            <span class="filter-label">데이터</span>
-            <div class="data-source-segment" role="tablist">
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'all' }" @click="dataSource = 'all'">물품+3자단가</button>
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'procurement' }" @click="dataSource = 'procurement'">물품</button>
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'shopping_mall' }" @click="dataSource = 'shopping_mall'">3자단가</button>
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'service' }" @click="dataSource = 'service'">용역</button>
-              <button type="button" class="segment-btn" :class="{ active: dataSource === 'construction' }" @click="dataSource = 'construction'">공사</button>
-            </div>
-          </div>
         </div>
 
         <div class="region-category-bar">
@@ -765,6 +780,15 @@ const activeTab = ref('시장현황')
 
 /** 수요기관별·지역별·순위분석 데이터 소스: all | procurement | shopping_mall | service | construction */
 const dataSource = ref('all')
+
+/** 시장현황 탭: 다중선택 데이터 소스 체크박스 */
+const marketDataSourceOptions = [
+  { value: 'procurement', label: '물품', color: '#3b82f6' },
+  { value: 'shopping_mall', label: '3자단가', color: '#8b5cf6' },
+  { value: 'service', label: '용역', color: '#10b981' },
+  { value: 'construction', label: '공사', color: '#f59e0b' },
+]
+const marketDataSources = ref(['procurement', 'shopping_mall', 'service', 'construction'])
 
 /** 순위분석(추후 API): 수요기관별과 동일 FINAL=최종계약일 / FIRST=최초계약일 */
 const rankDateBasis = ref('FINAL')
@@ -1417,6 +1441,11 @@ watch(dataSource, () => {
   fetchDemandAgencyMarket()
   fetchRegionMarket()
 })
+
+// 시장현황 다중 선택 변경 시 재조회 (API 연동 후 loadMarketData() 호출로 교체)
+watch(marketDataSources, () => {
+  // TODO: 시장현황 API 연동 후 loadMarketData() 호출
+})
 </script>
 
 <style scoped>
@@ -1637,6 +1666,55 @@ watch(dataSource, () => {
   border: 1px solid #d6e5ff;
   border-radius: 12px;
   padding: 12px 16px;
+}
+
+.condition-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 16px;
+}
+
+.check-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  user-select: none;
+}
+
+.check-item input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #3f6ff0;
+  margin: 0;
+}
+
+.check-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.condition-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: 4px;
 }
 
 .filter-row {
