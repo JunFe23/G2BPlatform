@@ -62,13 +62,25 @@ public class ReportDataController {
     }
 
     /**
-     * 시장현황 탭에서 사용하는 요약/차트/연차계약 데이터를 반환합니다.
+     * 시장현황 탭: 체크된 소스(물품/3자단가/용역/공사)의 기간별 집계 데이터를 반환합니다.
      */
-    @Operation(summary = "시장현황 데이터", description = "대시보드 시장현황 탭 데이터")
+    @Operation(summary = "시장현황 데이터", description = "체크된 소스(물품/3자단가/용역/공사)의 기간별 집계")
     @GetMapping("/market")
-    public ResponseEntity<Map<String, Object>> getMarketOverview() {
-        // 시장현황(연차계약/전체 지표/차트) 탭에 필요한 집계 데이터를 반환
-        return ResponseEntity.ok(reportDataService.getMarketOverview());
+    public ResponseEntity<Map<String, Object>> getMarketOverview(
+            @Parameter(description = "기간 시작 (yyyy-MM-dd)") @RequestParam String from,
+            @Parameter(description = "기간 종료 (yyyy-MM-dd)")  @RequestParam String to,
+            @Parameter(description = "소스 목록 (쉼표 구분: procurement,shopping_mall,service,construction)")
+            @RequestParam(required = false, defaultValue = "procurement,shopping_mall,service,construction")
+            String sources
+    ) {
+        try {
+            return ResponseEntity.ok(reportDataService.getMarketOverview(from, to, sources));
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        }
     }
 
     /**

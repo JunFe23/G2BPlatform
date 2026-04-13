@@ -99,57 +99,96 @@
 
       <section v-if="activeTab === '시장현황'" class="section">
         <h2 class="section-title">전체 조달시장 현황</h2>
-        <div class="summary-cards">
-          <div v-for="stat in summaryStats" :key="stat.label" class="summary-card">
-            <p class="summary-label">{{ stat.label }}</p>
-            <p class="summary-value" :class="stat.colorClass">{{ stat.value }}</p>
-          </div>
+
+        <!-- 로딩 -->
+        <div v-if="marketLoading" class="loading-banner loading-banner-prominent">
+          <div class="loading-spinner loading-spinner-large"></div>
+          <p class="loading-text">로딩 중</p>
+          <p class="loading-sub">시장현황 데이터를 불러오고 있습니다.</p>
         </div>
 
-        <div class="chart-grid">
-          <div class="chart-card">
-            <h3>영역별 매출액 현황</h3>
-            <div class="bar-chart">
-              <div v-for="bar in revenueBars" :key="bar.label" class="bar-column">
-                <div class="bar" :style="{ height: bar.height }"></div>
-                <span>{{ bar.label }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="chart-card">
-            <h3>영역별 계약건수</h3>
-            <div class="bar-chart green">
-              <div v-for="bar in countBars" :key="bar.label" class="bar-column">
-                <div class="bar" :style="{ height: bar.height }"></div>
-                <span>{{ bar.label }}</span>
-              </div>
+        <!-- 에러 -->
+        <div v-else-if="marketError" class="info-banner">
+          <div class="banner-left">
+            <div class="info-icon">!</div>
+            <div class="banner-text">
+              <strong>데이터 조회 실패</strong>
+              <p>{{ marketError }}</p>
             </div>
           </div>
         </div>
 
-        <div class="chart-grid">
-          <div class="chart-card">
-            <h3>물품+3자단가: 우수제품 vs 일반제품</h3>
-            <div class="donut-wrap">
-              <div class="pie"></div>
-              <div class="pie-label left">우수제품: 54.1억</div>
-              <div class="pie-label right">일반제품: 8000만</div>
+        <!-- 정상 데이터 -->
+        <template v-else>
+          <div class="summary-cards">
+            <div v-for="stat in summaryStats" :key="stat.label" class="summary-card">
+              <p class="summary-label">{{ stat.label }}</p>
+              <p class="summary-value" :class="stat.colorClass">{{ stat.value }}</p>
             </div>
           </div>
-          <div class="chart-card">
-            <h3>영역별 상세 현황</h3>
-            <div class="detail-list">
-              <div v-for="detail in detailItems" :key="detail.label" class="detail-item">
-                <span class="dot" :style="{ backgroundColor: detail.color }"></span>
-                <div class="detail-text">
-                  <strong>{{ detail.label }}</strong>
-                  <span>계약 {{ detail.count }}건</span>
+
+          <div class="chart-grid">
+            <div class="chart-card">
+              <h3>영역별 매출액 현황</h3>
+              <div v-if="revenueBars.length" class="bar-chart">
+                <div v-for="bar in revenueBars" :key="bar.label" class="bar-column">
+                  <span class="bar-value">{{ bar.valueLabel }}</span>
+                  <div class="bar" :style="{ height: bar.height }"></div>
+                  <span class="bar-label-text">{{ bar.label }}</span>
                 </div>
-                <span class="detail-amount">{{ detail.amount }}</span>
               </div>
+              <p v-else class="chart-empty">데이터 없음</p>
+            </div>
+            <div class="chart-card">
+              <h3>영역별 계약건수</h3>
+              <div v-if="countBars.length" class="bar-chart green">
+                <div v-for="bar in countBars" :key="bar.label" class="bar-column">
+                  <span class="bar-value">{{ bar.valueLabel }}</span>
+                  <div class="bar" :style="{ height: bar.height }"></div>
+                  <span class="bar-label-text">{{ bar.label }}</span>
+                </div>
+              </div>
+              <p v-else class="chart-empty">데이터 없음</p>
             </div>
           </div>
-        </div>
+
+          <div class="chart-grid">
+            <div class="chart-card">
+              <h3>물품+3자단가: 우수제품 vs 일반제품</h3>
+              <div class="donut-wrap">
+                <div class="pie" :style="{ background: pieGradient }"></div>
+                <div class="pie-legend">
+                  <div class="pie-legend-item">
+                    <span class="pie-legend-dot" style="background:#3f7cf1"></span>
+                    <span class="pie-legend-name">우수제품</span>
+                    <span class="pie-legend-pct">{{ excellentPct }}</span>
+                    <span class="pie-legend-amt">{{ formatKrwCompact(excellentAmount) }}</span>
+                  </div>
+                  <div class="pie-legend-item">
+                    <span class="pie-legend-dot" style="background:#e74c3c"></span>
+                    <span class="pie-legend-name">일반제품</span>
+                    <span class="pie-legend-pct">{{ generalPct }}</span>
+                    <span class="pie-legend-amt">{{ formatKrwCompact(generalAmount) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="chart-card">
+              <h3>영역별 상세 현황</h3>
+              <div v-if="detailItems.length" class="detail-list">
+                <div v-for="detail in detailItems" :key="detail.label" class="detail-item">
+                  <span class="dot" :style="{ backgroundColor: detail.color }"></span>
+                  <div class="detail-text">
+                    <strong>{{ detail.label }}</strong>
+                    <span>계약 {{ formatCountThousand(detail.count) }}건</span>
+                  </div>
+                  <span class="detail-amount">{{ detail.amount }}</span>
+                </div>
+              </div>
+              <p v-else class="chart-empty">데이터 없음</p>
+            </div>
+          </div>
+        </template>
       </section>
 
       <section v-if="activeTab === '수요기관별'" class="section">
@@ -790,6 +829,33 @@ const marketDataSourceOptions = [
 ]
 const marketDataSources = ref(['procurement', 'shopping_mall', 'service', 'construction'])
 
+/** 시장현황 로딩/에러 상태 */
+const marketLoading = ref(false)
+const marketError   = ref('')
+const marketLoaded  = ref(false)
+
+/** 우수제품 / 일반제품 금액 (도넛 카드 텍스트) */
+const excellentAmount = ref(0)
+const generalAmount   = ref(0)
+
+/** 우수제품 vs 일반제품 파이 비율 */
+const excellentPct = computed(() => {
+  const total = excellentAmount.value + generalAmount.value
+  if (total <= 0) return '-'
+  return ((excellentAmount.value / total) * 100).toFixed(1) + '%'
+})
+const generalPct = computed(() => {
+  const total = excellentAmount.value + generalAmount.value
+  if (total <= 0) return '-'
+  return ((generalAmount.value / total) * 100).toFixed(1) + '%'
+})
+const pieGradient = computed(() => {
+  const total = excellentAmount.value + generalAmount.value
+  if (total <= 0) return 'conic-gradient(#94a3b8 0 100%)'
+  const excelStop = ((excellentAmount.value / total) * 100).toFixed(1)
+  return `conic-gradient(#3f7cf1 0 ${excelStop}%, #e74c3c ${excelStop}% 100%)`
+})
+
 /** 순위분석(추후 API): 수요기관별과 동일 FINAL=최종계약일 / FIRST=최초계약일 */
 const rankDateBasis = ref('FINAL')
 
@@ -818,14 +884,12 @@ const dashboardPeriod = computed(() => {
 
 /** 필터 적용: 캐시 무효화 후 현재 탭 데이터 재조회 */
 function applyDashboardFilter() {
+  marketLoaded.value = false
   agencyLoaded.value = false
   regionLoaded.value = false
-  if (activeTab.value === '수요기관별') {
-    fetchDemandAgencyMarket()
-  }
-  if (activeTab.value === '지역별') {
-    fetchRegionMarket()
-  }
+  if (activeTab.value === '시장현황')   loadMarketData()
+  if (activeTab.value === '수요기관별') fetchDemandAgencyMarket()
+  if (activeTab.value === '지역별')     fetchRegionMarket()
 }
 
 const tabs = [
@@ -838,7 +902,7 @@ const tabs = [
 ]
 
 const summaryStats = ref([
-  { label: '전체 매출액', value: '136.6억', colorClass: 'blue' },
+  { label: '전체 계약액', value: '136.6억', colorClass: 'blue' },
   { label: '전체 계약건수', value: '22건', colorClass: 'green' },
   { label: '평균 계약금액', value: '6.2억', colorClass: 'orange' },
   { label: '우수제품 비율', value: '98.5%', colorClass: 'purple' },
@@ -921,6 +985,19 @@ const formatKrwCompact = (amount) => {
   if (abs >= EOK) return `${sign}${(abs / EOK).toFixed(1)}억`
   if (abs >= MAN) return `${sign}${Math.round(abs / MAN)}만`
   return `${sign}${Math.round(abs)}원`
+}
+
+// 천단위 쉼표 금액 표기: 1,234,567,890원
+const formatKrwThousand = (amount) => {
+  const n = toNumber(amount)
+  if (n === 0) return '0원'
+  return n.toLocaleString('ko-KR') + '원'
+}
+
+// 천단위 쉼표 건수 표기: 12,345
+const formatCountThousand = (count) => {
+  const n = toNumber(count)
+  return n.toLocaleString('ko-KR')
 }
 
 const pct = (value, max) => {
@@ -1396,16 +1473,105 @@ function closePrivateModal() {
   showPrivateModal.value = false
 }
 
-const loadDashboardData = async () => {
-  // TODO: 시장현황 요약/차트용 /api/report/market 등 연동
+/** API 응답 → 화면 데이터 변환 */
+const applyMarketData = (apiData) => {
+  const ps = apiData.perSource || {}
+
+  const getSales = (key) => toNumber(ps[key]?.salesAmount)
+  const getCount = (key) => toNumber(ps[key]?.contractCount)
+
+  const goodsAmt = getSales('procurement')
+  const mallAmt  = getSales('shopping_mall')
+  const svcAmt   = getSales('service')
+  const consAmt  = getSales('construction')
+  const goodsCnt = getCount('procurement')
+  const mallCnt  = getCount('shopping_mall')
+  const svcCnt   = getCount('service')
+  const consCnt  = getCount('construction')
+
+  const totalAmt = goodsAmt + mallAmt + svcAmt + consAmt
+  const totalCnt = goodsCnt + mallCnt + svcCnt + consCnt
+  const avgAmt   = totalCnt > 0 ? Math.round(totalAmt / totalCnt) : 0
+
+  const excelAmt     = toNumber(ps['procurement']?.excellentAmount) + toNumber(ps['shopping_mall']?.excellentAmount)
+  const genAmt       = toNumber(ps['procurement']?.generalAmount)   + toNumber(ps['shopping_mall']?.generalAmount)
+  const goodsMallAmt = goodsAmt + mallAmt
+  const excelRatio   = goodsMallAmt > 0 ? ((excelAmt / goodsMallAmt) * 100).toFixed(1) + '%' : '-'
+
+  // 요약 카드: 전체 계약액은 천단위 쉼표 표기
+  summaryStats.value = [
+    { label: '전체 계약액',   value: formatKrwThousand(totalAmt), colorClass: 'blue' },
+    { label: '전체 계약건수', value: `${totalCnt.toLocaleString()}건`, colorClass: 'green' },
+    { label: '평균 계약금액', value: formatKrwCompact(avgAmt),   colorClass: 'orange' },
+    { label: '우수제품 비율', value: excelRatio,                 colorClass: 'purple' },
+  ]
+
+  const hasProcurement  = !!ps['procurement']
+  const hasShoppingMall = !!ps['shopping_mall']
+
+  const barEntries = []
+  if (hasProcurement || hasShoppingMall) {
+    const label = hasProcurement && hasShoppingMall ? '물품+3자단가' : hasProcurement ? '물품' : '3자단가'
+    barEntries.push({ label, sales: goodsAmt + mallAmt, count: goodsCnt + mallCnt })
+  }
+  if (ps['service'])      barEntries.push({ label: '용역', sales: svcAmt,  count: svcCnt })
+  if (ps['construction']) barEntries.push({ label: '공사', sales: consAmt, count: consCnt })
+
+  const maxSales = Math.max(...barEntries.map((b) => b.sales), 1)
+  const maxCount = Math.max(...barEntries.map((b) => b.count), 1)
+  const CHART_PX = 150 // 바 차트 최대 높이(px) — CSS .bar-chart height와 연동
+
+  // 바 높이를 px로 계산 (% 방식은 플렉스 컨텍스트에서 렌더링 안됨)
+  revenueBars.value = barEntries.map((b) => ({
+    label:      b.label,
+    height:     maxSales > 0 ? `${Math.max(4, Math.round((b.sales / maxSales) * CHART_PX))}px` : '4px',
+    valueLabel: formatKrwThousand(b.sales),
+  }))
+  countBars.value = barEntries.map((b) => ({
+    label:      b.label,
+    height:     maxCount > 0 ? `${Math.max(4, Math.round((b.count / maxCount) * CHART_PX))}px` : '4px',
+    valueLabel: `${b.count.toLocaleString()}건`,
+  }))
+
+  excellentAmount.value = excelAmt
+  generalAmount.value   = genAmt
+
+  // 상세 현황: 금액 천단위 쉼표 표기
+  const details = []
+  if (hasProcurement || hasShoppingMall) {
+    const label = hasProcurement && hasShoppingMall ? '물품+3자단가' : hasProcurement ? '물품' : '3자단가'
+    details.push({ label, count: goodsCnt + mallCnt, amount: formatKrwThousand(goodsAmt + mallAmt), color: '#3498db' })
+  }
+  if (ps['service'])      details.push({ label: '용역', count: svcCnt,  amount: formatKrwThousand(svcAmt),  color: '#2ecc71' })
+  if (ps['construction']) details.push({ label: '공사', count: consCnt, amount: formatKrwThousand(consAmt), color: '#f39c12' })
+  detailItems.value = details
 }
 
-// TODO (report data integration)
-// 1) /api/report/* endpoint별 응답 스키마 확정 및 매핑
-// 2) 탭 전환 시 필요한 데이터만 로딩 (캐시/재사용 전략 포함)
-// 3) 로딩/에러/빈 데이터 상태 UI 추가
-// 4) 차트 데이터 비율/축 값 계산 로직 분리 (util 또는 composable)
-// 5) 필터(기간/카테고리) 입력값을 API 파라미터로 연동
+/** 시장현황 API 호출 */
+const loadMarketData = async () => {
+  const { from, to } = dashboardPeriod.value
+  const sourcesParam = marketDataSources.value.join(',')
+  marketLoading.value = true
+  marketError.value   = ''
+  try {
+    const { data } = await axios.get('/api/report/market', {
+      params: { from, to, sources: sourcesParam },
+    })
+    if (!data || data.success !== true || !data.data) {
+      throw new Error('API 응답 형식이 올바르지 않습니다.')
+    }
+    applyMarketData(data.data)
+    marketLoaded.value = true
+  } catch (e) {
+    marketError.value = e?.response?.data?.message || e?.message || '시장현황 데이터 조회 실패'
+  } finally {
+    marketLoading.value = false
+  }
+}
+
+const loadDashboardData = async () => {
+  await loadMarketData()
+}
 
 onMounted(() => {
   loadDashboardData()
@@ -1415,24 +1581,19 @@ onMounted(() => {
 })
 
 watch(activeTab, (tab) => {
-  if (tab === '수요기관별' && !agencyLoaded.value && !agencyLoading.value) {
-    fetchDemandAgencyMarket()
-  }
-  if (tab === '지역별' && !regionLoaded.value && !regionLoading.value) {
-    fetchRegionMarket()
-  }
+  if (tab === '시장현황'   && !marketLoaded.value  && !marketLoading.value)  loadMarketData()
+  if (tab === '수요기관별' && !agencyLoaded.value  && !agencyLoading.value)  fetchDemandAgencyMarket()
+  if (tab === '지역별'     && !regionLoaded.value  && !regionLoading.value)  fetchRegionMarket()
 })
 
 // 기간 필터가 바뀌면 캐시 무효화 + 현재 탭이면 즉시 재조회
 watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
+  marketLoaded.value = false
   agencyLoaded.value = false
   regionLoaded.value = false
-  if (activeTab.value === '수요기관별' && !agencyLoading.value) {
-    fetchDemandAgencyMarket()
-  }
-  if (activeTab.value === '지역별' && !regionLoading.value) {
-    fetchRegionMarket()
-  }
+  if (activeTab.value === '시장현황')                              loadMarketData()
+  if (activeTab.value === '수요기관별' && !agencyLoading.value)  fetchDemandAgencyMarket()
+  if (activeTab.value === '지역별'     && !regionLoading.value)  fetchRegionMarket()
 })
 
 watch(dataSource, () => {
@@ -1442,9 +1603,10 @@ watch(dataSource, () => {
   fetchRegionMarket()
 })
 
-// 시장현황 다중 선택 변경 시 재조회 (API 연동 후 loadMarketData() 호출로 교체)
+// 시장현황 체크박스 변경 시 재조회
 watch(marketDataSources, () => {
-  // TODO: 시장현황 API 연동 후 loadMarketData() 호출
+  marketLoaded.value = false
+  loadMarketData()
 })
 </script>
 
@@ -2016,21 +2178,45 @@ watch(marketDataSources, () => {
   display: flex;
   gap: 12px;
   align-items: flex-end;
-  height: 180px;
+  height: 200px; /* 값 레이블 포함 높이 */
+  padding-bottom: 4px;
 }
 
 .bar-column {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end; /* 바를 아래로 정렬 */
+  gap: 4px;
   flex: 1;
+  min-width: 0;
+}
+
+.bar-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .bar {
   width: 100%;
   background: #3f7cf1;
-  border-radius: 8px 8px 0 0;
+  border-radius: 6px 6px 0 0;
+  min-height: 4px;
+  transition: height 0.4s ease;
+}
+
+.bar-label-text {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .bar-chart.green .bar {
@@ -2043,6 +2229,13 @@ watch(marketDataSources, () => {
 
 .bar-chart.purple .bar {
   background: #8e5cf6;
+}
+
+.chart-empty {
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+  padding: 40px 0;
 }
 
 /* 수요기관별 계약건수/평균단가: Y축 + 스크롤 영역, 카드 안에서만 스크롤 */
@@ -2925,31 +3118,22 @@ tr.highlight {
   background: #eef5ff;
 }
 .donut-wrap {
-  position: relative;
-  height: 180px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 20px;
+  padding: 8px 0;
+  flex-wrap: wrap;
 }
 
 .pie {
-  width: 140px;
-  height: 140px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
-  background: conic-gradient(
-    #3f7cf1 0 40%,
-    #2ecc71 40% 61%,
-    #f39c12 61% 76%,
-    #e74c3c 76% 84%,
-    #9b59b6 84% 89%,
-    #1abc9c 89% 93%,
-    #34495e 93% 96%,
-    #7f8c8d 96% 98%,
-    #16a085 98% 99%,
-    #8e44ad 99% 100%
-  );
+  flex-shrink: 0;
+  transition: background 0.4s ease;
 }
 
+/* 레거시 pie-label (다른 탭용) */
 .pie-label {
   position: absolute;
   font-size: 12px;
@@ -2962,6 +3146,50 @@ tr.highlight {
 
 .pie-label.right {
   right: 10px;
+}
+
+/* 시장현황 파이 레전드 */
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.pie-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pie-legend-name {
+  flex: 1;
+  color: #374151;
+  font-weight: 500;
+}
+
+.pie-legend-pct {
+  color: #6b7280;
+  font-size: 12px;
+  min-width: 44px;
+  text-align: right;
+}
+
+.pie-legend-amt {
+  color: #1e3a5f;
+  font-weight: 600;
+  font-size: 12px;
+  min-width: 60px;
+  text-align: right;
 }
 
 .detail-list {
