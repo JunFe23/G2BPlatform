@@ -856,4 +856,67 @@
             </otherwise>
         </choose>
     </select>
+
+    <!-- ========================================================= -->
+    <!-- 시장현황 탭: 소스별 집계 쿼리                              -->
+    <!-- ========================================================= -->
+
+    <!-- 물품 집계 (procurement_contract_summary) -->
+    <select id="selectMarketSourceProcurement" resultType="map">
+        SELECT
+            IFNULL(SUM(final_contract_amount), 0) AS salesAmount,
+            COUNT(*)                               AS contractCount
+        FROM procurement_contract_summary
+        WHERE final_contract_date &gt;= #{from}
+          AND final_contract_date &lt;= #{to}
+    </select>
+
+    <!-- 물품 우수제품/일반제품 집계 (procurement_contract_flat) -->
+    <select id="selectMarketExcellentProcurement" resultType="map">
+        SELECT
+            is_excellent_product                   AS excellentFlag,
+            IFNULL(SUM(contract_amount), 0)        AS amount
+        FROM procurement_contract_flat
+        WHERE is_active = 'Y'
+          AND contract_date &gt;= #{from}
+          AND contract_date &lt;= #{to}
+        GROUP BY is_excellent_product
+    </select>
+
+    <!-- 3자단가 집계 (shopping_mall_summary) -->
+    <select id="selectMarketSourceShoppingMall" resultType="map">
+        SELECT
+            IFNULL(SUM(total_supply_amount), 0)                                            AS salesAmount,
+            IFNULL(SUM(delivery_count), 0)                                                 AS contractCount,
+            IFNULL(SUM(CASE WHEN is_excellent_product = 'Y'
+                            THEN total_supply_amount ELSE 0 END), 0)                       AS excellentAmount,
+            IFNULL(SUM(CASE WHEN is_excellent_product != 'Y' OR is_excellent_product IS NULL
+                            THEN total_supply_amount ELSE 0 END), 0)                       AS generalAmount
+        FROM shopping_mall_summary
+        WHERE final_ref_date &gt;= #{from}
+          AND final_ref_date &lt;= #{to}
+    </select>
+
+    <!-- 용역 집계 (service_contract_grouped) -->
+    <select id="selectMarketSourceService" resultType="map">
+        SELECT
+            IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+            COUNT(*)                                   AS contractCount
+        FROM service_contract_grouped
+        WHERE is_active = 'Y'
+          AND final_contract_date &gt;= #{from}
+          AND final_contract_date &lt;= #{to}
+    </select>
+
+    <!-- 공사 집계 (construction_contract_grouped) -->
+    <select id="selectMarketSourceConstruction" resultType="map">
+        SELECT
+            IFNULL(SUM(final_contract_amount_sum), 0) AS salesAmount,
+            COUNT(*)                                   AS contractCount
+        FROM construction_contract_grouped
+        WHERE is_active = 'Y'
+          AND final_contract_date &gt;= #{from}
+          AND final_contract_date &lt;= #{to}
+    </select>
+
 </mapper>

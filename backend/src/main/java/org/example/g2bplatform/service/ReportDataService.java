@@ -6,9 +6,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ReportDataService {
@@ -20,16 +23,91 @@ public class ReportDataService {
     }
 
     /**
-     * 시장현황 탭용 데이터를 구성해 반환합니다.
+     * 시장현황 탭 집계.
+     *
+     * @param from    yyyy-MM-dd (필수)
+     * @param to      yyyy-MM-dd (필수)
+     * @param sources 쉼표 구분 소스 목록 (procurement, shopping_mall, service, construction)
      */
-    public Map<String, Object> getMarketOverview() {
+    public Map<String, Object> getMarketOverview(String from, String to, String sources) {
+        if (from == null || from.isBlank()) throw new IllegalArgumentException("from은 필수입니다 (yyyy-MM-dd)");
+        if (to == null || to.isBlank())     throw new IllegalArgumentException("to는 필수입니다 (yyyy-MM-dd)");
+        try {
+            LocalDate f = LocalDate.parse(from.trim());
+            LocalDate t = LocalDate.parse(to.trim());
+            if (f.isAfter(t)) throw new IllegalArgumentException("from은 to보다 클 수 없습니다");
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("날짜 형식 오류 (yyyy-MM-dd)");
+        }
+
+        final String fromNorm = from.trim();
+        final String toNorm   = to.trim();
+
+        Set<String> validSources = Set.of("procurement", "shopping_mall", "service", "construction");
+        Set<String> sourceSet = new HashSet<>();
+        if (sources != null && !sources.isBlank()) {
+            for (String s : sources.split(",")) {
+                String trimmed = s.trim().toLowerCase();
+                if (validSources.contains(trimmed)) {
+                    sourceSet.add(trimmed);
+                }
+            }
+        }
+        if (sourceSet.isEmpty()) {
+            sourceSet = new HashSet<>(validSources);
+        }
+
+        Map<String, Object> perSource = new LinkedHashMap<>();
+
+        if (sourceSet.contains("procurement")) {
+            Map<String, Object> row = procurementContractSummaryMapper.selectMarketSourceProcurement(fromNorm, toNorm);
+            List<Map<String, Object>> excellent = procurementContractSummaryMapper.selectMarketExcellentProcurement(fromNorm, toNorm);
+            long excellentAmt = 0L, generalAmt = 0L;
+            for (Map<String, Object> r : excellent) {
+                String flag = String.valueOf(r.getOrDefault("excellentFlag", ""));
+                long amt = toLong(r.get("amount"));
+                if ("Y".equalsIgnoreCase(flag)) excellentAmt += amt;
+                else generalAmt += amt;
+            }
+            if (row != null) {
+                row.put("excellentAmount", excellentAmt);
+                row.put("generalAmount", generalAmt);
+            }
+            perSource.put("procurement", row);
+        }
+
+        if (sourceSet.contains("shopping_mall")) {
+            perSource.put("shopping_mall", procurementContractSummaryMapper.selectMarketSourceShoppingMall(fromNorm, toNorm));
+        }
+
+        if (sourceSet.contains("service")) {
+            Map<String, Object> row = procurementContractSummaryMapper.selectMarketSourceService(fromNorm, toNorm);
+            if (row != null) { row.put("excellentAmount", 0L); row.put("generalAmount", 0L); }
+            perSource.put("service", row);
+        }
+
+        if (sourceSet.contains("construction")) {
+            Map<String, Object> row = procurementContractSummaryMapper.selectMarketSourceConstruction(fromNorm, toNorm);
+            if (row != null) { row.put("excellentAmount", 0L); row.put("generalAmount", 0L); }
+            perSource.put("construction", row);
+        }
+
+        List<String> resolvedSources = new ArrayList<>(sourceSet);
+        Map<String, Object> condition = new LinkedHashMap<>();
+        condition.put("from", fromNorm);
+        condition.put("to", toNorm);
+        condition.put("sources", resolvedSources);
+
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("contractCards", List.of());
-        data.put("summaryStats", List.of());
-        data.put("revenueBars", List.of());
-        data.put("countBars", List.of());
-        data.put("detailItems", List.of());
+        data.put("perSource", perSource);
+        data.put("condition", condition);
+
         return wrap(data);
+    }
+
+    private long toLong(Object v) {
+        if (v == null) return 0L;
+        try { return Long.parseLong(v.toString()); } catch (Exception e) { return 0L; }
     }
 
     /**

@@ -126,4 +126,36 @@ public interface ProcurementContractSummaryMapper {
             @Param("to") String to,
             @Param("dataSource") String dataSource
     );
+
+    // ===== 시장현황 탭: 소스별 집계 =====
+
+    /** 시장현황: 물품 집계 (procurement_contract_summary) */
+    Map<String, Object> selectMarketSourceProcurement(
+            @Param("from") String from,
+            @Param("to") String to
+    );
+
+    /** 시장현황: 물품 우수제품/일반제품 집계 (procurement_contract_flat) */
+    List<Map<String, Object>> selectMarketExcellentProcurement(
+            @Param("from") String from,
+            @Param("to") String to
+    );
+
+    /** 시장현황: 3자단가 집계 (shopping_mall_summary) */
+    Map<String, Object> selectMarketSourceShoppingMall(
+            @Param("from") String from,
+            @Param("to") String to
+    );
+
+    /** 시장현황: 용역 집계 (service_contract_grouped) */
+    Map<String, Object> selectMarketSourceService(
+            @Param("from") String from,
+            @Param("to") String to
+    );
+
+    /** 시장현황: 공사 집계 (construction_contract_grouped) */
+    Map<String, Object> selectMarketSourceConstruction(
+            @Param("from") String from,
+            @Param("to") String to
+    );
 }
