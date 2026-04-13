@@ -129,7 +129,7 @@
 
           <div class="chart-grid">
             <div class="chart-card">
-              <h3>영역별 매출액 현황</h3>
+              <h3>영역별 계약금액 현황</h3>
               <div v-if="revenueBars.length" class="bar-chart">
                 <div v-for="bar in revenueBars" :key="bar.label" class="bar-column">
                   <span class="bar-value">{{ bar.valueLabel }}</span>
@@ -317,7 +317,7 @@
                   <tr>
                     <th>순위</th>
                     <th>수요기관</th>
-                    <th>매출액</th>
+                    <th>계약금액</th>
                     <th>계약건수</th>
                     <th>평균단가</th>
                   </tr>
@@ -539,7 +539,7 @@
         </div>
 
         <div class="rank-card">
-          <div class="rank-card-title">매출액 TOP 10</div>
+        <div class="rank-card-title">계약금액 TOP 10</div>
           <ul class="rank-list">
             <li v-for="item in rankTopItems" :key="item.rank" class="rank-item">
               <span class="rank-badge" :class="item.badgeClass">{{ item.rank }}</span>
@@ -560,7 +560,7 @@
                 <tr>
                   <th>순위</th>
                   <th>제품/서비스명</th>
-                  <th>총 매출액</th>
+                  <th>총 계약금액</th>
                   <th>계약건수</th>
                   <th>평균 단가</th>
                 </tr>
@@ -962,7 +962,7 @@ const agencyDetailRows = ref([
 const agencyLoaded = ref(false)
 const agencyLoading = ref(false)
 const agencyError = ref('')
-// Top10 매출액 차트 상단 축 라벨 (데이터 max 기준 0%~100%)
+// Top10 계약금액 차트 상단 축 라벨 (데이터 max 기준 0%~100%)
 const agencyTopSalesAxisTicks = ref(['0원', '0원', '0원', '0원', '0원'])
 const agencyCountAxisTicks = ref(['0건', '0건', '0건', '0건', '0건'])
 const agencyAvgAxisTicks = ref(['0원', '0원', '0원', '0원', '0원'])
@@ -1029,7 +1029,7 @@ const fetchDemandAgencyMarket = async () => {
     const maxCount = topCount.reduce((m, r) => Math.max(m, toNumber(r?.contractCount)), 0)
     const maxAvg = topAvg.reduce((m, r) => Math.max(m, toNumber(r?.avgAmount)), 0)
 
-    // Top10 매출액 축 라벨: 0, 25%, 50%, 75%, 100% 구간에 맞는 금액 표기
+    // Top10 계약금액 축 라벨: 0, 25%, 50%, 75%, 100% 구간에 맞는 금액 표기
     agencyTopSalesAxisTicks.value = [0, 0.25, 0.5, 0.75, 1].map((r) =>
       formatKrwCompact(maxSales * r),
     )
@@ -1062,7 +1062,7 @@ const fetchDemandAgencyMarket = async () => {
       tooltip: formatKrwCompact(r?.avgAmount),
     }))
 
-    // 4) 수요기관 상세 현황 - Top Sales 기준 동일 N건으로 표시 (순위/수요기관/매출액/계약건수/평균단가)
+    // 4) 수요기관 상세 현황 - Top Sales 기준 동일 N건으로 표시 (순위/수요기관/계약금액/계약건수/평균단가)
     const baseRows = topSales.length ? topSales : topCount.length ? topCount : topAvg
     agencyDetailRows.value = baseRows.map((r, idx) => ({
       rank: toNumber(r?.rank) || idx + 1,
@@ -1253,8 +1253,8 @@ const regionStackedBars = ref([
 
 // regionPieLabels, regionCountBars, regionDetailRows are populated by fetchRegionMarket
 
-const activeRankTab = ref('매출액 순위')
-const rankTabs = ['매출액 순위', '계약건수 순위', '평균단가 순위']
+const activeRankTab = ref('계약금액 순위')
+const rankTabs = ['계약금액 순위', '계약건수 순위', '평균단가 순위']
 
 const rankTopItems = ref([
   { rank: 1, title: '컴퓨터 장비 일괄구매', count: 2, amount: '50.0억원', badgeClass: 'gold' },
