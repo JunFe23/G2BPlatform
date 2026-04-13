@@ -5,10 +5,11 @@
     <!-- 검색 필드 -->
     <div class="search-container">
       <select v-model="filters.type" class="type-select">
-        <option value="">선택</option>
+        <option value="">전체</option>
         <option value="물품">물품</option>
         <option value="용역">용역</option>
         <option value="공사">공사</option>
+        <option value="쇼핑몰">쇼핑몰</option>
       </select>
 
       <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
@@ -47,12 +48,6 @@
       <div v-if="isLoading" class="loading-spinner-container">
         <div class="loading-spinner"></div>
       </div>
-    </div>
-
-    <!-- WIP 배너 -->
-    <div class="wip-banner">
-      <span class="wip-icon">🚧</span>
-      <span>보고서 데이터 화면은 현재 개발 중입니다.</span>
     </div>
 
     <!-- 데이터 테이블 -->
@@ -99,7 +94,7 @@
               <td>{{ formatNumber(item.thtmCntrctAmt) }}</td>
               <td>{{ item.cntrctCnt }}</td>
               <td>
-                <input type="checkbox" :checked="item.checked" @change="toggleSave(item)" />
+                <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
               </td>
             </tr>
           </tbody>
@@ -127,14 +122,17 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
+const API_BASE = '/api/report/top-companies'
 const PAGE_SIZE = 100
 
-const isLoading = ref(false)
-const items = ref([])
+const isLoading      = ref(false)
+const isLoadingExcel = ref(false)
+const items          = ref([])
 const recordsFiltered = ref(0)
-const currentPage = ref(1)
+const currentPage    = ref(1)
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: currentYear - 2014 }, (_, i) => currentYear - i)
@@ -147,46 +145,154 @@ const filters = reactive({
   cntctCnclsMthdNm: '',
   firstCntrctDate: '',
   dateType: 'year',
-  year: String(currentYear),
+  year: '2025',
   month: '',
   rangeStart: '',
   rangeEnd: '',
   showSavedOnly: false,
 })
 
-const totalPages = computed(() => Math.ceil(recordsFiltered.value / PAGE_SIZE) || 1)
-const startDisplay = computed(() => (currentPage.value - 1) * PAGE_SIZE + 1)
-const endDisplay = computed(() => Math.min(currentPage.value * PAGE_SIZE, recordsFiltered.value))
-const pageNumbers = computed(() => {
+// 검색 실행 시점의 조건 스냅샷 — 페이지 이동 시 동일 조건 유지
+let appliedFilters = { ...filters }
+
+const totalPages   = computed(() => Math.ceil(recordsFiltered.value / PAGE_SIZE) || 1)
+const startDisplay = computed(() => recordsFiltered.value === 0 ? 0 : (currentPage.value - 1) * PAGE_SIZE + 1)
+const endDisplay   = computed(() => Math.min(currentPage.value * PAGE_SIZE, recordsFiltered.value))
+const pageNumbers  = computed(() => {
   const total = totalPages.value
-  const cur = currentPage.value
+  const cur   = currentPage.value
   const delta = 2
   const pages = []
   for (let i = Math.max(1, cur - delta); i <= Math.min(total, cur + delta); i++) pages.push(i)
   return pages
 })
 
-function formatNumber(val) {
-  if (val === null || val === undefined || val === '') return ''
-  const num = Number(val)
-  return isNaN(num) ? val : num.toLocaleString('ko-KR')
+function buildParams(page) {
+  const f = appliedFilters
+  const p = {
+    type:             f.type || '',
+    dminsttNm:        f.dminsttNm        || undefined,
+    dminsttNmDetail:  f.dminsttNmDetail  || undefined,
+    prdctClsfcNo:     f.prdctClsfcNo     || undefined,
+    cntctCnclsMthdNm: f.cntctCnclsMthdNm || undefined,
+    firstCntrctDate:  f.firstCntrctDate  || undefined,
+    showSavedOnly:    f.showSavedOnly,
+    start:            (page - 1) * PAGE_SIZE,
+    length:           PAGE_SIZE,
+  }
+  if (f.dateType === 'year'  && f.year)                        p.year = f.year
+  if (f.dateType === 'month' && f.month)                       p.month = f.month
+  if (f.dateType === 'range' && f.rangeStart && f.rangeEnd) {
+    p.rangeStart = f.rangeStart
+    p.rangeEnd   = f.rangeEnd
+  }
+  return p
+}
+
+async function fetchPage(page) {
+  isLoading.value = true
+  try {
+    const res = await axios.get(API_BASE, { params: buildParams(page) })
+    items.value           = res.data.data || []
+    recordsFiltered.value = res.data.recordsFiltered || 0
+    currentPage.value     = page
+  } catch (e) {
+    console.error('탑 수주현황 조회 오류', e)
+    items.value           = []
+    recordsFiltered.value = 0
+  } finally {
+    isLoading.value = false
+  }
 }
 
 function handleSearch() {
-  // 추후 API 연동
+  appliedFilters = { ...filters }
+  fetchPage(1)
 }
 
-function handleDownloadExcel() {
-  // 추후 API 연동
+async function handleDownloadExcel() {
+  isLoadingExcel.value = true
+  try {
+    const f = appliedFilters
+    const p = {
+      type:             f.type || '',
+      dminsttNm:        f.dminsttNm        || undefined,
+      dminsttNmDetail:  f.dminsttNmDetail  || undefined,
+      prdctClsfcNo:     f.prdctClsfcNo     || undefined,
+      cntctCnclsMthdNm: f.cntctCnclsMthdNm || undefined,
+      firstCntrctDate:  f.firstCntrctDate  || undefined,
+      showSavedOnly:    f.showSavedOnly,
+    }
+    if (f.dateType === 'year'  && f.year)                        p.year = f.year
+    if (f.dateType === 'month' && f.month)                       p.month = f.month
+    if (f.dateType === 'range' && f.rangeStart && f.rangeEnd) {
+      p.rangeStart = f.rangeStart
+      p.rangeEnd   = f.rangeEnd
+    }
+    const res = await axios.get(API_BASE + '/excel', { params: p, responseType: 'blob' })
+    const url  = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    const cd    = res.headers['content-disposition'] || ''
+    const match = cd.match(/filename\*=UTF-8''(.+)/)
+    link.download = match ? decodeURIComponent(match[1]) : 'top_companies.xlsx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error('엑셀 다운로드 오류', e)
+  } finally {
+    isLoadingExcel.value = false
+  }
 }
 
-function toggleSave(_item) {
-  // 추후 API 연동
+async function toggleSave(item) {
+  const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
+  try {
+    if (item.type === '물품') {
+      await axios.patch('/api/report/procurements/saved', {
+        grouped:    false,
+        contractNo: item.pk1,
+        itemSeq:    item.pk2,
+        saved:      nextSaved,
+      })
+    } else if (item.type === '공사') {
+      await axios.patch('/api/report/constructions/saved', {
+        grouped:    false,
+        contractNo: item.pk1,
+        saved:      nextSaved,
+      })
+    } else if (item.type === '용역') {
+      await axios.patch('/api/report/services/saved', {
+        grouped:                      false,
+        contractDeliveryIntegratedNo: item.pk1,
+        vendorBizRegNo:               item.pk2,
+        saved:                        nextSaved,
+      })
+    } else if (item.type === '쇼핑몰') {
+      await axios.patch('/api/report/shopping-mall/saved', {
+        deliveryContractNo:        item.pk1,
+        deliveryContractChangeSeq: Number(item.pk2),
+        deliveryItemSeq:           Number(item.pk3),
+        saved:                     nextSaved,
+      })
+    }
+    item.saved = nextSaved
+  } catch (e) {
+    console.error('저장 상태 변경 오류', e)
+  }
 }
 
 function goPage(page) {
   if (page < 1 || page > totalPages.value) return
-  currentPage.value = page
+  fetchPage(page)
+}
+
+function formatNumber(val) {
+  if (val === null || val === undefined || val === '') return ''
+  const num = Number(val)
+  return isNaN(num) ? val : num.toLocaleString('ko-KR')
 }
 </script>
 
@@ -277,23 +383,6 @@ function goPage(page) {
   to { transform: rotate(360deg); }
 }
 
-.wip-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: 10px;
-  padding: 14px 18px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: #92400e;
-  font-weight: 500;
-}
-
-.wip-icon {
-  font-size: 18px;
-}
 
 .table-container {
   background: #fff;

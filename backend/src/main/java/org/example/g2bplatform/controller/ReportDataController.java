@@ -15,6 +15,7 @@ import org.example.g2bplatform.service.ReportDataService;
 import org.example.g2bplatform.service.ReportProcurementService;
 import org.example.g2bplatform.service.ReportServiceContractService;
 import org.example.g2bplatform.service.ShoppingMallService;
+import org.example.g2bplatform.service.TopCompaniesReportService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -48,17 +49,20 @@ public class ReportDataController {
     private final ReportProcurementService reportProcurementService;
     private final ReportServiceContractService reportServiceContractService;
     private final ShoppingMallService shoppingMallService;
+    private final TopCompaniesReportService topCompaniesReportService;
 
     public ReportDataController(ReportDataService reportDataService,
                                 ReportConstructionService reportConstructionService,
                                 ReportProcurementService reportProcurementService,
                                 ReportServiceContractService reportServiceContractService,
-                                ShoppingMallService shoppingMallService) {
+                                ShoppingMallService shoppingMallService,
+                                TopCompaniesReportService topCompaniesReportService) {
         this.reportDataService = reportDataService;
         this.reportConstructionService = reportConstructionService;
         this.reportProcurementService = reportProcurementService;
         this.reportServiceContractService = reportServiceContractService;
         this.shoppingMallService = shoppingMallService;
+        this.topCompaniesReportService = topCompaniesReportService;
     }
 
     /**
@@ -318,6 +322,164 @@ public class ReportDataController {
         } else {
             cell.setCellValue("");
         }
+    }
+
+    // ================================================================
+    // 탑인더스트리 & 탑정보통신 수주현황 (top-companies)
+    // ================================================================
+
+    @Operation(summary = "탑 수주현황 목록", description = "탑인더스트리+탑정보통신 물품/공사/용역/쇼핑몰 통합 조회")
+    @GetMapping("/top-companies")
+    public ResponseEntity<Map<String, Object>> getTopCompanies(
+            @Parameter(description = "분류 (물품|공사|용역|쇼핑몰|빈값=전체)") @RequestParam(required = false, defaultValue = "") String type,
+            @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
+            @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
+            @Parameter(description = "품명내용") @RequestParam(required = false) String prdctClsfcNo,
+            @Parameter(description = "입찰계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
+            @Parameter(description = "최초계약일자 (YYYY-MM-DD)") @RequestParam(required = false) String firstCntrctDate,
+            @Parameter(description = "연도") @RequestParam(required = false) Integer year,
+            @Parameter(description = "월 (YYYY-MM)") @RequestParam(required = false) String month,
+            @Parameter(description = "기간 시작 (YYYY-MM)") @RequestParam(required = false) String rangeStart,
+            @Parameter(description = "기간 종료 (YYYY-MM)") @RequestParam(required = false) String rangeEnd,
+            @Parameter(description = "저장된 데이터만") @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly,
+            @Parameter(description = "시작 행") @RequestParam(defaultValue = "0") int start,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "100") int length
+    ) {
+        List<Map<String, Object>> list = topCompaniesReportService.getList(
+                type, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
+                firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly, start, length);
+        int filtered = topCompaniesReportService.getCount(
+                type, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
+                firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("data", list);
+        body.put("recordsFiltered", filtered);
+        return ResponseEntity.ok(body);
+    }
+
+    @Operation(summary = "탑 수주현황 엑셀 다운로드")
+    @GetMapping("/top-companies/excel")
+    public ResponseEntity<Resource> getTopCompaniesExcel(
+            @Parameter(description = "분류 (물품|공사|용역|쇼핑몰|빈값=전체)") @RequestParam(required = false, defaultValue = "") String type,
+            @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
+            @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
+            @Parameter(description = "품명내용") @RequestParam(required = false) String prdctClsfcNo,
+            @Parameter(description = "입찰계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
+            @Parameter(description = "최초계약일자 (YYYY-MM-DD)") @RequestParam(required = false) String firstCntrctDate,
+            @Parameter(description = "연도") @RequestParam(required = false) Integer year,
+            @Parameter(description = "월 (YYYY-MM)") @RequestParam(required = false) String month,
+            @Parameter(description = "기간 시작 (YYYY-MM)") @RequestParam(required = false) String rangeStart,
+            @Parameter(description = "기간 종료 (YYYY-MM)") @RequestParam(required = false) String rangeEnd,
+            @Parameter(description = "저장된 데이터만") @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly
+    ) throws IOException {
+        final String[] headerNames = new String[]{
+                "분류", "업체명", "계약건명", "수요기관명", "수요기관지역명",
+                "품명내용", "입찰계약방법", "입찰공고번호",
+                "최초계약일자", "최초계약금액", "최종계약일자", "최종계약금액", "계약변경차수", "저장"
+        };
+        final String[] keys = new String[]{
+                "type", "cmpNm", "cntrctNm", "dminsttNm", "dminsttNmDetail",
+                "prdctClsfcNo", "cntctCnclsMthdNm", "ntceNo",
+                "firstCntrctDate", "firstCntrctAmt", "cntrctDate", "thtmCntrctAmt", "cntrctCnt", "saved"
+        };
+        final Set<String> amountKeys = new HashSet<>(Arrays.asList("firstCntrctAmt", "thtmCntrctAmt"));
+
+        Path tempFile = Files.createTempFile("report_top_companies_", ".xlsx");
+        try {
+            try (SXSSFWorkbook workbook = new SXSSFWorkbook(500);
+                 OutputStream out = Files.newOutputStream(tempFile)) {
+                Sheet sheet = workbook.createSheet("탑수주현황");
+                DataFormat dataFormat = workbook.createDataFormat();
+                CellStyle numStyle = workbook.createCellStyle();
+                numStyle.setDataFormat(dataFormat.getFormat("#,##0"));
+
+                Row headerRow = sheet.createRow(0);
+                for (int i = 0; i < headerNames.length; i++) {
+                    headerRow.createCell(i).setCellValue(headerNames[i]);
+                }
+                final int[] rowNumRef = {1};
+                topCompaniesReportService.streamForExcel(
+                        type, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
+                        firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly,
+                        resultContext -> {
+                            Map<String, Object> row = resultContext.getResultObject();
+                            Row excelRow = sheet.createRow(rowNumRef[0]++);
+                            for (int colNum = 0; colNum < keys.length; colNum++) {
+                                Object value = row != null ? row.getOrDefault(keys[colNum], "") : "";
+                                Cell cell = excelRow.createCell(colNum);
+                                if (amountKeys.contains(keys[colNum]) && value != null && !value.toString().isEmpty()) {
+                                    try {
+                                        cell.setCellValue(Long.parseLong(value.toString()));
+                                        cell.setCellStyle(numStyle);
+                                    } catch (NumberFormatException e) {
+                                        cell.setCellValue(value.toString());
+                                    }
+                                } else {
+                                    cell.setCellValue(value != null ? String.valueOf(value) : "");
+                                }
+                            }
+                        });
+                workbook.write(out);
+                workbook.dispose();
+            }
+
+            long fileSize = Files.size(tempFile);
+            String filename = "top_companies_" + System.currentTimeMillis() + ".xlsx";
+            InputStream in = Files.newInputStream(tempFile);
+            InputStream deletingStream = new FilterInputStream(in) {
+                @Override public void close() throws IOException {
+                    try { super.close(); } finally { Files.deleteIfExists(tempFile); }
+                }
+            };
+            return ResponseEntity.ok()
+                    .contentLength(fileSize)
+                    .contentType(MediaType.parseMediaType(
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + URLEncoder.encode(filename, StandardCharsets.UTF_8) + "\""
+                            + "; filename*=UTF-8''" + URLEncoder.encode(filename, StandardCharsets.UTF_8))
+                    .body(new InputStreamResource(deletingStream));
+        } catch (IOException e) {
+            Files.deleteIfExists(tempFile);
+            throw e;
+        } catch (Exception e) {
+            Files.deleteIfExists(tempFile);
+            throw new IOException(e);
+        }
+    }
+
+    @Operation(summary = "쇼핑몰 saved 업데이트", description = "shopping_mall_flat saved 컬럼 갱신")
+    @PatchMapping("/shopping-mall/saved")
+    public ResponseEntity<Map<String, Object>> updateShoppingMallSaved(@RequestBody Map<String, Object> body) {
+        if (body == null) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", "요청 본문이 없습니다.");
+            return ResponseEntity.badRequest().body(err);
+        }
+        String deliveryContractNo = body.get("deliveryContractNo") != null
+                ? body.get("deliveryContractNo").toString() : null;
+        Object changeSeqObj = body.get("deliveryContractChangeSeq");
+        Object itemSeqObj   = body.get("deliveryItemSeq");
+        String saved = body.get("saved") != null
+                ? ("Y".equalsIgnoreCase(body.get("saved").toString()) ? "Y" : "N") : "N";
+
+        if (deliveryContractNo == null || changeSeqObj == null || itemSeqObj == null) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", "deliveryContractNo, deliveryContractChangeSeq, deliveryItemSeq 필요");
+            return ResponseEntity.badRequest().body(err);
+        }
+        int updated = topCompaniesReportService.updateShoppingMallSaved(
+                deliveryContractNo,
+                Long.parseLong(changeSeqObj.toString()),
+                Long.parseLong(itemSeqObj.toString()),
+                saved);
+        Map<String, Object> res = new HashMap<>();
+        res.put("success", updated > 0);
+        res.put("updated", updated);
+        return ResponseEntity.ok(res);
     }
 
     // ================================================================
