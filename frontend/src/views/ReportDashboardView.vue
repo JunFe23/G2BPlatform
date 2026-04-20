@@ -539,7 +539,7 @@
         </div>
 
         <div class="rank-card">
-        <div class="rank-card-title">계약금액 TOP 10</div>
+        <div class="rank-card-title">{{ rankTopTitle }} TOP 10</div>
           <ul class="rank-list">
             <li v-for="item in rankTopItems" :key="item.rank" class="rank-item">
               <span class="rank-badge" :class="item.badgeClass">{{ item.rank }}</span>
@@ -559,7 +559,7 @@
               <thead>
                 <tr>
                   <th>순위</th>
-                  <th>제품/서비스명</th>
+                  <th>업체명</th>
                   <th>총 계약금액</th>
                   <th>계약건수</th>
                   <th>평균 단가</th>
@@ -1256,44 +1256,68 @@ const regionStackedBars = ref([
 const activeRankTab = ref('계약금액 순위')
 const rankTabs = ['계약금액 순위', '계약건수 순위', '평균단가 순위']
 
-const rankTopItems = ref([
-  { rank: 1, title: '컴퓨터 장비 일괄구매', count: 2, amount: '50.0억원', badgeClass: 'gold' },
-  { rank: 2, title: '노트북', count: 1, amount: '2.0억원', badgeClass: 'silver' },
-  { rank: 3, title: '프린터', count: 1, amount: '1.2억원', badgeClass: 'bronze' },
-  { rank: 4, title: '책상', count: 1, amount: '8000만원', badgeClass: 'blue' },
-  { rank: 5, title: '사무용 의자', count: 1, amount: '5000만원', badgeClass: 'blue' },
-  { rank: 6, title: 'LED 조명', count: 1, amount: '4500만원', badgeClass: 'blue' },
+/**
+ * 순위분석(목업)
+ * - 기존: 제품/서비스명 기준
+ * - 변경: 업체별 기준 (곧 API 연동 시 업체별 실제 순위로 대체 예정)
+ */
+const mockCompanyRankRows = ref([
+  { companyName: '탑오피스', salesAmount: 5_000_000_000, contractCount: 12, avgAmount: 416_666_667 },
+  { companyName: '정보가구', salesAmount: 2_400_000_000, contractCount: 7, avgAmount: 342_857_143 },
+  { companyName: '테크솔루션', salesAmount: 1_650_000_000, contractCount: 3, avgAmount: 550_000_000 },
+  { companyName: '밝은조명', salesAmount: 980_000_000, contractCount: 4, avgAmount: 245_000_000 },
+  { companyName: '한국가구', salesAmount: 720_000_000, contractCount: 2, avgAmount: 360_000_000 },
+  { companyName: '스마트건설', salesAmount: 6_450_000_000, contractCount: 5, avgAmount: 1_290_000_000 },
+  { companyName: '그린서비스', salesAmount: 1_710_000_000, contractCount: 8, avgAmount: 213_750_000 },
+  { companyName: '에이펙스코리아', salesAmount: 1_250_000_000, contractCount: 6, avgAmount: 208_333_333 },
+  { companyName: '한빛산업', salesAmount: 860_000_000, contractCount: 3, avgAmount: 286_666_667 },
+  { companyName: '지오테크', salesAmount: 540_000_000, contractCount: 2, avgAmount: 270_000_000 },
 ])
 
-const rankSummaryRows = ref([
-  {
-    rank: 1,
-    name: '컴퓨터 장비 일괄구매',
-    sales: '50.0억원',
-    count: '2건',
-    avg: '25.0억원',
-    badgeClass: 'gold',
-  },
-  { rank: 2, name: '노트북', sales: '2.0억원', count: '1건', avg: '2.0억원', badgeClass: 'silver' },
-  { rank: 3, name: '프린터', sales: '1.2억원', count: '1건', avg: '1.2억원', badgeClass: 'bronze' },
-  { rank: 4, name: '책상', sales: '8000만원', count: '1건', avg: '8000만원', badgeClass: 'blue' },
-  {
-    rank: 5,
-    name: '사무용 의자',
-    sales: '5000만원',
-    count: '1건',
-    avg: '5000만원',
-    badgeClass: 'blue',
-  },
-  {
-    rank: 6,
-    name: 'LED 조명',
-    sales: '4500만원',
-    count: '1건',
-    avg: '4500만원',
-    badgeClass: 'blue',
-  },
-])
+const rankSortKey = computed(() => {
+  if (activeRankTab.value === '계약건수 순위') return 'contractCount'
+  if (activeRankTab.value === '평균단가 순위') return 'avgAmount'
+  return 'salesAmount'
+})
+
+const rankTopTitle = computed(() => {
+  if (activeRankTab.value === '계약건수 순위') return '계약건수'
+  if (activeRankTab.value === '평균단가 순위') return '평균단가'
+  return '계약금액'
+})
+
+const rankSummaryRows = computed(() => {
+  const rows = Array.isArray(mockCompanyRankRows.value) ? mockCompanyRankRows.value : []
+  const key = rankSortKey.value
+  const sorted = [...rows].sort((a, b) => toNumber(b?.[key]) - toNumber(a?.[key]))
+  return sorted.map((r, idx) => {
+    const rank = idx + 1
+    const badgeClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'blue'
+    return {
+      rank,
+      name: r?.companyName ?? '-',
+      sales: formatKrwCompact(r?.salesAmount),
+      count: `${toNumber(r?.contractCount)}건`,
+      avg: formatKrwCompact(r?.avgAmount),
+      badgeClass,
+    }
+  })
+})
+
+const rankTopItems = computed(() => {
+  return rankSummaryRows.value.slice(0, 10).map((r) => ({
+    rank: r.rank,
+    title: r.name,
+    count: String(toNumber(String(r.count).replace(/[^0-9]/g, '')) || 0),
+    amount:
+      rankSortKey.value === 'contractCount'
+        ? r.count
+        : rankSortKey.value === 'avgAmount'
+          ? r.avg
+          : r.sales,
+    badgeClass: r.badgeClass,
+  }))
+})
 
 const excellentByRegion = ref([
   { region: '서울', company: '탑오피스', count: 3 },
