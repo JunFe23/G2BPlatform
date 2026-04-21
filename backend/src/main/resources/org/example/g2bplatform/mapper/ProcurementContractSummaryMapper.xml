@@ -883,6 +883,269 @@
         GROUP BY is_excellent_product
     </select>
 
+    <!-- ========================================================= -->
+    <!-- 순위분석 탭: 업체별 TOP N                                   -->
+    <!-- - dataSource: procurement | shopping_mall | all            -->
+    <!--               service | construction                       -->
+    <!-- - rankType: AMOUNT | COUNT | AVG                           -->
+    <!-- - shopping_mall 분기는 vendor 컬럼이 있는 flat 테이블 사용   -->
+    <!-- - construction_contract_grouped 는 vendor_biz_reg_no 미존재 -->
+    <!-- ========================================================= -->
+
+    <select id="selectVendorRankByFinalDate" resultType="map">
+        <choose>
+            <when test="dataSource == 'shopping_mall'">
+                SELECT
+                    vendor_name          AS vendorName,
+                    vendor_biz_reg_no    AS vendorBizRegNo,
+                    IFNULL(SUM(supply_amount), 0)                                              AS salesAmount,
+                    COUNT(DISTINCT contract_no)                                                AS contractCount,
+                    IFNULL(SUM(supply_amount), 0) / NULLIF(COUNT(DISTINCT contract_no), 0)    AS avgAmount
+                FROM shopping_mall_flat
+                WHERE is_active = 'Y'
+                  AND vendor_name IS NOT NULL
+                  AND vendor_name &lt;&gt; ''
+                  AND ref_date &gt;= #{from}
+                  AND ref_date &lt;= #{to}
+                GROUP BY vendor_name, vendor_biz_reg_no
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'all'">
+                SELECT vendor_name        AS vendorName,
+                       vendor_biz_reg_no  AS vendorBizRegNo,
+                       SUM(amount)                                     AS salesAmount,
+                       COUNT(*)                                        AS contractCount,
+                       SUM(amount) / NULLIF(COUNT(*), 0)              AS avgAmount
+                FROM (
+                    SELECT CONVERT(vendor_name USING utf8mb4)    AS vendor_name,
+                           vendor_biz_reg_no,
+                           IFNULL(final_contract_amount, 0)      AS amount
+                    FROM procurement_contract_summary
+                    WHERE vendor_name IS NOT NULL
+                      AND vendor_name &lt;&gt; ''
+                      AND final_contract_date &gt;= #{from}
+                      AND final_contract_date &lt;= #{to}
+                    UNION ALL
+                    SELECT CONVERT(vendor_name USING utf8mb4)    AS vendor_name,
+                           vendor_biz_reg_no,
+                           IFNULL(supply_amount, 0)              AS amount
+                    FROM shopping_mall_flat
+                    WHERE is_active = 'Y'
+                      AND vendor_name IS NOT NULL
+                      AND vendor_name &lt;&gt; ''
+                      AND ref_date &gt;= #{from}
+                      AND ref_date &lt;= #{to}
+                ) combined
+                GROUP BY vendor_name, vendor_biz_reg_no
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'service'">
+                SELECT
+                    vendor_name          AS vendorName,
+                    vendor_biz_reg_no    AS vendorBizRegNo,
+                    IFNULL(SUM(final_contract_amount_sum), 0)                                          AS salesAmount,
+                    COUNT(*)                                                                           AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0)                   AS avgAmount
+                FROM service_contract_grouped
+                WHERE is_active = 'Y'
+                  AND vendor_name IS NOT NULL
+                  AND vendor_name &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY vendor_name, vendor_biz_reg_no
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'construction'">
+                SELECT
+                    vendor_name          AS vendorName,
+                    NULL                 AS vendorBizRegNo,
+                    IFNULL(SUM(final_contract_amount_sum), 0)                                          AS salesAmount,
+                    COUNT(*)                                                                           AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0)                   AS avgAmount
+                FROM construction_contract_grouped
+                WHERE is_active = 'Y'
+                  AND vendor_name IS NOT NULL
+                  AND vendor_name &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY vendor_name
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </when>
+            <otherwise>
+                SELECT
+                    vendor_name          AS vendorName,
+                    vendor_biz_reg_no    AS vendorBizRegNo,
+                    IFNULL(SUM(final_contract_amount), 0)                                              AS salesAmount,
+                    COUNT(*)                                                                           AS contractCount,
+                    IFNULL(SUM(final_contract_amount), 0) / NULLIF(COUNT(*), 0)                       AS avgAmount
+                FROM procurement_contract_summary
+                WHERE vendor_name IS NOT NULL
+                  AND vendor_name &lt;&gt; ''
+                  AND final_contract_date &gt;= #{from}
+                  AND final_contract_date &lt;= #{to}
+                GROUP BY vendor_name, vendor_biz_reg_no
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectVendorRankByFirstDate" resultType="map">
+        <choose>
+            <when test="dataSource == 'shopping_mall'">
+                SELECT
+                    vendor_name          AS vendorName,
+                    vendor_biz_reg_no    AS vendorBizRegNo,
+                    IFNULL(SUM(supply_amount), 0)                                              AS salesAmount,
+                    COUNT(DISTINCT contract_no)                                                AS contractCount,
+                    IFNULL(SUM(supply_amount), 0) / NULLIF(COUNT(DISTINCT contract_no), 0)    AS avgAmount
+                FROM shopping_mall_flat
+                WHERE is_active = 'Y'
+                  AND vendor_name IS NOT NULL
+                  AND vendor_name &lt;&gt; ''
+                  AND first_ref_date &gt;= #{from}
+                  AND first_ref_date &lt;= #{to}
+                GROUP BY vendor_name, vendor_biz_reg_no
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'all'">
+                SELECT vendor_name        AS vendorName,
+                       vendor_biz_reg_no  AS vendorBizRegNo,
+                       SUM(amount)                                     AS salesAmount,
+                       COUNT(*)                                        AS contractCount,
+                       SUM(amount) / NULLIF(COUNT(*), 0)              AS avgAmount
+                FROM (
+                    SELECT CONVERT(vendor_name USING utf8mb4)    AS vendor_name,
+                           vendor_biz_reg_no,
+                           IFNULL(final_contract_amount, 0)      AS amount
+                    FROM procurement_contract_summary
+                    WHERE vendor_name IS NOT NULL
+                      AND vendor_name &lt;&gt; ''
+                      AND first_contract_date &gt;= #{from}
+                      AND first_contract_date &lt;= #{to}
+                    UNION ALL
+                    SELECT CONVERT(vendor_name USING utf8mb4)    AS vendor_name,
+                           vendor_biz_reg_no,
+                           IFNULL(supply_amount, 0)              AS amount
+                    FROM shopping_mall_flat
+                    WHERE is_active = 'Y'
+                      AND vendor_name IS NOT NULL
+                      AND vendor_name &lt;&gt; ''
+                      AND first_ref_date &gt;= #{from}
+                      AND first_ref_date &lt;= #{to}
+                ) combined
+                GROUP BY vendor_name, vendor_biz_reg_no
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'service'">
+                SELECT
+                    vendor_name          AS vendorName,
+                    vendor_biz_reg_no    AS vendorBizRegNo,
+                    IFNULL(SUM(final_contract_amount_sum), 0)                                          AS salesAmount,
+                    COUNT(*)                                                                           AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0)                   AS avgAmount
+                FROM service_contract_grouped
+                WHERE is_active = 'Y'
+                  AND vendor_name IS NOT NULL
+                  AND vendor_name &lt;&gt; ''
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
+                GROUP BY vendor_name, vendor_biz_reg_no
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </when>
+            <when test="dataSource == 'construction'">
+                SELECT
+                    vendor_name          AS vendorName,
+                    NULL                 AS vendorBizRegNo,
+                    IFNULL(SUM(final_contract_amount_sum), 0)                                          AS salesAmount,
+                    COUNT(*)                                                                           AS contractCount,
+                    IFNULL(SUM(final_contract_amount_sum), 0) / NULLIF(COUNT(*), 0)                   AS avgAmount
+                FROM construction_contract_grouped
+                WHERE is_active = 'Y'
+                  AND vendor_name IS NOT NULL
+                  AND vendor_name &lt;&gt; ''
+                  AND initial_contract_date &gt;= #{from}
+                  AND initial_contract_date &lt;= #{to}
+                GROUP BY vendor_name
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </when>
+            <otherwise>
+                SELECT
+                    vendor_name          AS vendorName,
+                    vendor_biz_reg_no    AS vendorBizRegNo,
+                    IFNULL(SUM(final_contract_amount), 0)                                              AS salesAmount,
+                    COUNT(*)                                                                           AS contractCount,
+                    IFNULL(SUM(final_contract_amount), 0) / NULLIF(COUNT(*), 0)                       AS avgAmount
+                FROM procurement_contract_summary
+                WHERE vendor_name IS NOT NULL
+                  AND vendor_name &lt;&gt; ''
+                  AND first_contract_date &gt;= #{from}
+                  AND first_contract_date &lt;= #{to}
+                GROUP BY vendor_name, vendor_biz_reg_no
+                ORDER BY
+                <choose>
+                    <when test="rankType == 'COUNT'">contractCount DESC, salesAmount DESC</when>
+                    <when test="rankType == 'AVG'">avgAmount DESC, salesAmount DESC</when>
+                    <otherwise>salesAmount DESC</otherwise>
+                </choose>
+                LIMIT #{topN}
+            </otherwise>
+        </choose>
+    </select>
+
     <!-- 3자단가 집계 (shopping_mall_summary) -->
     <select id="selectMarketSourceShoppingMall" resultType="map">
         SELECT
