@@ -503,16 +503,26 @@
 
       <section v-if="activeTab === '순위분석'" class="section">
         <div class="rank-analysis-head">
-          <h2 class="rank-section-title">영역별 / 시기별 순위 분석</h2>
+          <div class="rank-head-top">
+            <h2 class="rank-section-title">영역별 / 시기별 순위 분석</h2>
+            <button
+              type="button"
+              class="excel-download-btn"
+              :disabled="rankLoading || rankExcelLoading"
+              @click="downloadRankExcel"
+            >
+              {{ rankExcelLoading ? '다운로드 중...' : '엑셀 다운로드' }}
+            </button>
+          </div>
           <div class="rank-filter-rows">
             <div class="rank-filter-row">
               <span class="filter-label">데이터</span>
               <div class="data-source-segment" role="tablist">
-                <button type="button" class="segment-btn" :class="{ active: dataSource === 'all' }" @click="dataSource = 'all'">물품+3자단가</button>
-                <button type="button" class="segment-btn" :class="{ active: dataSource === 'procurement' }" @click="dataSource = 'procurement'">물품</button>
-                <button type="button" class="segment-btn" :class="{ active: dataSource === 'shopping_mall' }" @click="dataSource = 'shopping_mall'">3자단가</button>
-                <button type="button" class="segment-btn" :class="{ active: dataSource === 'service' }" @click="dataSource = 'service'">용역</button>
-                <button type="button" class="segment-btn" :class="{ active: dataSource === 'construction' }" @click="dataSource = 'construction'">공사</button>
+                <button type="button" class="segment-btn" :class="{ active: rankDataSource === 'all' }" @click="rankDataSource = 'all'">물품+3자단가</button>
+                <button type="button" class="segment-btn" :class="{ active: rankDataSource === 'procurement' }" @click="rankDataSource = 'procurement'">물품</button>
+                <button type="button" class="segment-btn" :class="{ active: rankDataSource === 'shopping_mall' }" @click="rankDataSource = 'shopping_mall'">3자단가</button>
+                <button type="button" class="segment-btn" :class="{ active: rankDataSource === 'service' }" @click="rankDataSource = 'service'">용역</button>
+                <button type="button" class="segment-btn" :class="{ active: rankDataSource === 'construction' }" @click="rankDataSource = 'construction'">공사</button>
               </div>
             </div>
             <div class="rank-filter-row">
@@ -538,47 +548,59 @@
           </button>
         </div>
 
-        <div class="rank-card">
-        <div class="rank-card-title">{{ rankTopTitle }} TOP 10</div>
-          <ul class="rank-list">
-            <li v-for="item in rankTopItems" :key="item.rank" class="rank-item">
-              <span class="rank-badge" :class="item.badgeClass">{{ item.rank }}</span>
-              <div class="rank-info">
-                <strong>{{ item.title }}</strong>
-                <span>계약 {{ item.count }}건</span>
-              </div>
-              <span class="rank-amount">{{ item.amount }}</span>
-            </li>
-          </ul>
+        <div v-if="rankLoading" class="loading-banner loading-banner-prominent">
+          순위분석 데이터를 불러오는 중입니다...
         </div>
+        <div v-else-if="rankError" class="error-banner">{{ rankError }}</div>
 
-        <div class="table-card">
-          <h3>종합 순위표</h3>
-          <div class="table-wrapper">
-            <table class="detail-table">
-              <thead>
-                <tr>
-                  <th>순위</th>
-                  <th>업체명</th>
-                  <th>총 계약금액</th>
-                  <th>계약건수</th>
-                  <th>평균 단가</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in rankSummaryRows" :key="row.rank">
-                  <td>
-                    <span class="rank-badge small" :class="row.badgeClass">{{ row.rank }}</span>
-                  </td>
-                  <td>{{ row.name }}</td>
-                  <td>{{ row.sales }}</td>
-                  <td>{{ row.count }}</td>
-                  <td>{{ row.avg }}</td>
-                </tr>
-              </tbody>
-            </table>
+        <template v-else>
+          <div class="rank-card">
+            <div class="rank-card-title">{{ rankTopTitle }} TOP 10</div>
+            <ul class="rank-list">
+              <li v-for="item in rankTopItems" :key="item.rank" class="rank-item">
+                <span class="rank-badge" :class="item.badgeClass">{{ item.rank }}</span>
+                <div class="rank-info">
+                  <strong>{{ item.title }}</strong>
+                  <span>계약 {{ item.count }}건</span>
+                </div>
+                <span class="rank-amount">{{ item.amount }}</span>
+              </li>
+            </ul>
+            <div v-if="!rankLoading && rankLoaded && rankTopItems.length === 0" class="info-banner">
+              해당 조건의 순위 데이터가 없습니다.
+            </div>
           </div>
-        </div>
+
+          <div class="table-card">
+            <h3>종합 순위표</h3>
+            <div class="table-wrapper">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>순위</th>
+                    <th>업체명</th>
+                    <th>총 계약금액</th>
+                    <th>계약건수</th>
+                    <th>평균 단가</th>
+                    <th>금액 점유율</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in rankSummaryRows" :key="row.rank">
+                    <td>
+                      <span class="rank-badge small" :class="row.badgeClass">{{ row.rank }}</span>
+                    </td>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.sales }}</td>
+                    <td>{{ row.count }}</td>
+                    <td>{{ row.avg }}</td>
+                    <td>{{ row.shareRate }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </template>
       </section>
 
       <section v-if="activeTab === '우수제품'" class="section">
@@ -856,8 +878,11 @@ const pieGradient = computed(() => {
   return `conic-gradient(#3f7cf1 0 ${excelStop}%, #e74c3c ${excelStop}% 100%)`
 })
 
-/** 순위분석(추후 API): 수요기관별과 동일 FINAL=최종계약일 / FIRST=최초계약일 */
+/** 순위분석: 기간 기준 FINAL=최종계약일 / FIRST=최초계약일 */
 const rankDateBasis = ref('FINAL')
+
+/** 순위분석: 데이터 소스 (다른 탭 dataSource와 독립적으로 관리) */
+const rankDataSource = ref('all')
 
 // 대시보드 공통 기간 필터 (모든 탭 데이터에 반영)
 const dashboardFilterMode = ref('year') // 'year' | 'range'
@@ -887,9 +912,11 @@ function applyDashboardFilter() {
   marketLoaded.value = false
   agencyLoaded.value = false
   regionLoaded.value = false
+  rankLoaded.value   = false
   if (activeTab.value === '시장현황')   loadMarketData()
   if (activeTab.value === '수요기관별') fetchDemandAgencyMarket()
   if (activeTab.value === '지역별')     fetchRegionMarket()
+  if (activeTab.value === '순위분석')   fetchRankData()
 }
 
 const tabs = [
@@ -1256,23 +1283,77 @@ const regionStackedBars = ref([
 const activeRankTab = ref('계약금액 순위')
 const rankTabs = ['계약금액 순위', '계약건수 순위', '평균단가 순위']
 
-/**
- * 순위분석(목업)
- * - 기존: 제품/서비스명 기준
- * - 변경: 업체별 기준 (곧 API 연동 시 업체별 실제 순위로 대체 예정)
- */
-const mockCompanyRankRows = ref([
-  { companyName: '탑오피스', salesAmount: 5_000_000_000, contractCount: 12, avgAmount: 416_666_667 },
-  { companyName: '정보가구', salesAmount: 2_400_000_000, contractCount: 7, avgAmount: 342_857_143 },
-  { companyName: '테크솔루션', salesAmount: 1_650_000_000, contractCount: 3, avgAmount: 550_000_000 },
-  { companyName: '밝은조명', salesAmount: 980_000_000, contractCount: 4, avgAmount: 245_000_000 },
-  { companyName: '한국가구', salesAmount: 720_000_000, contractCount: 2, avgAmount: 360_000_000 },
-  { companyName: '스마트건설', salesAmount: 6_450_000_000, contractCount: 5, avgAmount: 1_290_000_000 },
-  { companyName: '그린서비스', salesAmount: 1_710_000_000, contractCount: 8, avgAmount: 213_750_000 },
-  { companyName: '에이펙스코리아', salesAmount: 1_250_000_000, contractCount: 6, avgAmount: 208_333_333 },
-  { companyName: '한빛산업', salesAmount: 860_000_000, contractCount: 3, avgAmount: 286_666_667 },
-  { companyName: '지오테크', salesAmount: 540_000_000, contractCount: 2, avgAmount: 270_000_000 },
-])
+/** 순위분석 API 상태 */
+const rankApiRows      = ref([])
+const rankLoading      = ref(false)
+const rankLoaded       = ref(false)
+const rankError        = ref('')
+const rankExcelLoading = ref(false)
+
+const rankTypeMap = {
+  '계약금액 순위': 'AMOUNT',
+  '계약건수 순위': 'COUNT',
+  '평균단가 순위': 'AVG',
+}
+
+const fetchRankData = async () => {
+  const { from, to } = dashboardPeriod.value
+  rankLoading.value = true
+  rankError.value   = ''
+  try {
+    const { data } = await axios.get('/api/report/rank', {
+      params: {
+        dateBasis:  rankDateBasis.value,
+        from,
+        to,
+        topN:       10,
+        dataSource: rankDataSource.value,
+        rankType:   rankTypeMap[activeRankTab.value] ?? 'AMOUNT',
+      },
+    })
+    if (!data || data.success !== true || !data.data) {
+      throw new Error('API 응답 형식이 올바르지 않습니다.')
+    }
+    rankApiRows.value = Array.isArray(data.data.topItems) ? data.data.topItems : []
+    rankLoaded.value  = true
+  } catch (e) {
+    rankError.value   = e?.response?.data?.message || e?.message || '순위분석 데이터 조회 실패'
+    rankApiRows.value = []
+  } finally {
+    rankLoading.value = false
+  }
+}
+
+const downloadRankExcel = async () => {
+  const { from, to } = dashboardPeriod.value
+  const params = new URLSearchParams({
+    dateBasis:  rankDateBasis.value,
+    from,
+    to,
+    dataSource: rankDataSource.value,
+    rankType:   rankTypeMap[activeRankTab.value] ?? 'AMOUNT',
+  })
+  rankExcelLoading.value = true
+  try {
+    const response = await axios.get(`/api/report/rank/excel?${params.toString()}`, {
+      responseType: 'blob',
+    })
+    const url      = URL.createObjectURL(new Blob([response.data]))
+    const link     = document.createElement('a')
+    const cd       = response.headers['content-disposition'] ?? ''
+    const match    = cd.match(/filename\*=UTF-8''(.+)/) || cd.match(/filename="?([^"]+)"?/)
+    link.href      = url
+    link.download  = match ? decodeURIComponent(match[1]) : `rank_${Date.now()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    alert('엑셀 다운로드에 실패했습니다.')
+  } finally {
+    rankExcelLoading.value = false
+  }
+}
 
 const rankSortKey = computed(() => {
   if (activeRankTab.value === '계약건수 순위') return 'contractCount'
@@ -1287,18 +1368,17 @@ const rankTopTitle = computed(() => {
 })
 
 const rankSummaryRows = computed(() => {
-  const rows = Array.isArray(mockCompanyRankRows.value) ? mockCompanyRankRows.value : []
-  const key = rankSortKey.value
-  const sorted = [...rows].sort((a, b) => toNumber(b?.[key]) - toNumber(a?.[key]))
-  return sorted.map((r, idx) => {
-    const rank = idx + 1
+  const rows = Array.isArray(rankApiRows.value) ? rankApiRows.value : []
+  return rows.map((r, idx) => {
+    const rank      = toNumber(r?.rank) || idx + 1
     const badgeClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'blue'
     return {
       rank,
-      name: r?.companyName ?? '-',
-      sales: formatKrwCompact(r?.salesAmount),
-      count: `${toNumber(r?.contractCount)}건`,
-      avg: formatKrwCompact(r?.avgAmount),
+      name:      r?.vendorName ?? '-',
+      sales:     formatKrwCompact(r?.salesAmount),
+      count:     `${toNumber(r?.contractCount)}건`,
+      avg:       formatKrwCompact(r?.avgAmount),
+      shareRate: r?.amountShareRate != null ? `${r.amountShareRate}%` : '-',
       badgeClass,
     }
   })
@@ -1306,7 +1386,7 @@ const rankSummaryRows = computed(() => {
 
 const rankTopItems = computed(() => {
   return rankSummaryRows.value.slice(0, 10).map((r) => ({
-    rank: r.rank,
+    rank:  r.rank,
     title: r.name,
     count: String(toNumber(String(r.count).replace(/[^0-9]/g, '')) || 0),
     amount:
@@ -1608,6 +1688,7 @@ watch(activeTab, (tab) => {
   if (tab === '시장현황'   && !marketLoaded.value  && !marketLoading.value)  loadMarketData()
   if (tab === '수요기관별' && !agencyLoaded.value  && !agencyLoading.value)  fetchDemandAgencyMarket()
   if (tab === '지역별'     && !regionLoaded.value  && !regionLoading.value)  fetchRegionMarket()
+  if (tab === '순위분석'   && !rankLoaded.value    && !rankLoading.value)    fetchRankData()
 })
 
 // 기간 필터가 바뀌면 캐시 무효화 + 현재 탭이면 즉시 재조회
@@ -1615,9 +1696,11 @@ watch([dashboardFilterMode, dashboardYear, dashboardFrom, dashboardTo], () => {
   marketLoaded.value = false
   agencyLoaded.value = false
   regionLoaded.value = false
+  rankLoaded.value   = false
   if (activeTab.value === '시장현황')                              loadMarketData()
   if (activeTab.value === '수요기관별' && !agencyLoading.value)  fetchDemandAgencyMarket()
   if (activeTab.value === '지역별'     && !regionLoading.value)  fetchRegionMarket()
+  if (activeTab.value === '순위분석'   && !rankLoading.value)    fetchRankData()
 })
 
 watch(dataSource, () => {
@@ -1625,6 +1708,29 @@ watch(dataSource, () => {
   regionLoaded.value = false
   fetchDemandAgencyMarket()
   fetchRegionMarket()
+  // 순위분석 탭은 rankDataSource 로 독립 관리하므로 여기서는 불필요
+})
+
+// 순위분석 탭 내부 필터 변경 시 재조회
+watch(rankDataSource, () => {
+  if (activeTab.value === '순위분석') {
+    rankLoaded.value = false
+    fetchRankData()
+  }
+})
+
+watch(rankDateBasis, () => {
+  if (activeTab.value === '순위분석') {
+    rankLoaded.value = false
+    fetchRankData()
+  }
+})
+
+watch(activeRankTab, () => {
+  if (activeTab.value === '순위분석') {
+    rankLoaded.value = false
+    fetchRankData()
+  }
 })
 
 // 시장현황 체크박스 변경 시 재조회
@@ -2673,11 +2779,41 @@ watch(marketDataSources, () => {
   margin-bottom: 16px;
 }
 
+.rank-head-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
 .rank-section-title {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: #2c3e50;
+}
+
+.excel-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: #217346;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.excel-download-btn:hover:not(:disabled) {
+  background: #185c36;
+}
+.excel-download-btn:disabled {
+  background: #8ab4a0;
+  cursor: not-allowed;
 }
 
 .rank-filter-rows {

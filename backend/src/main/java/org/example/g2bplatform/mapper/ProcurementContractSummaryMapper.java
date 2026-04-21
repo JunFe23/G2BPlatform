@@ -120,6 +120,26 @@ public interface ProcurementContractSummaryMapper {
             @Param("dataSource") String dataSource
     );
 
+    // ===== 순위분석 탭: 업체별 TOP N =====
+
+    /** 순위분석: 최종계약일 기준 업체별 집계 (rankType: AMOUNT|COUNT|AVG) */
+    List<Map<String, Object>> selectVendorRankByFinalDate(
+            @Param("from") String from,
+            @Param("to") String to,
+            @Param("topN") int topN,
+            @Param("dataSource") String dataSource,
+            @Param("rankType") String rankType
+    );
+
+    /** 순위분석: 최초계약일 기준 업체별 집계 (rankType: AMOUNT|COUNT|AVG) */
+    List<Map<String, Object>> selectVendorRankByFirstDate(
+            @Param("from") String from,
+            @Param("to") String to,
+            @Param("topN") int topN,
+            @Param("dataSource") String dataSource,
+            @Param("rankType") String rankType
+    );
+
     /** 지역별 물품 조달시장 분석: first_contract_date 기간 필터, final_contract_amount 집계 */
     List<Map<String, Object>> selectRegionMarketByFirstDate(
             @Param("from") String from,

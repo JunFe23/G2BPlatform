@@ -131,11 +131,134 @@ public class ReportDataController {
     /**
      * 순위분석 탭에서 사용하는 Top 리스트/종합 순위표 데이터를 반환합니다.
      */
-    @Operation(summary = "순위분석 데이터", description = "대시보드 순위분석 탭 데이터")
+    @Operation(summary = "순위분석 데이터", description = "업체별 계약금액/계약건수/평균단가 TOP N 순위")
     @GetMapping("/rank")
-    public ResponseEntity<Map<String, Object>> getRankOverview() {
-        // 순위분석(Top 리스트/종합 순위표) 탭 데이터를 반환
-        return ResponseEntity.ok(reportDataService.getRankOverview());
+    public ResponseEntity<Map<String, Object>> getRankOverview(
+            @Parameter(description = "기간 기준 (FINAL|FIRST)") @RequestParam(required = false, defaultValue = "FINAL") String dateBasis,
+            @Parameter(description = "기간 시작 (yyyy-MM-dd)") @RequestParam(required = false) String from,
+            @Parameter(description = "기간 종료 (yyyy-MM-dd)")  @RequestParam(required = false) String to,
+            @Parameter(description = "Top N (기본 10)") @RequestParam(required = false) Integer topN,
+            @Parameter(description = "데이터 소스: procurement | shopping_mall | all | service | construction") @RequestParam(required = false, defaultValue = "all") String dataSource,
+            @Parameter(description = "순위 기준: AMOUNT | COUNT | AVG") @RequestParam(required = false, defaultValue = "AMOUNT") String rankType
+    ) {
+        try {
+            return ResponseEntity.ok(reportDataService.getRankOverview(dateBasis, from, to, topN, dataSource, rankType));
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        }
+    }
+
+    /**
+     * 순위분석 전체 순위 엑셀 다운로드 (현재 필터 조건 기준, LIMIT 없음).
+     */
+    @Operation(summary = "순위분석 엑셀 다운로드", description = "현재 필터 조건의 업체별 전체 순위를 엑셀로 다운로드")
+    @GetMapping("/rank/excel")
+    public ResponseEntity<Resource> getRankExcel(
+            @Parameter(description = "기간 기준 (FINAL|FIRST)") @RequestParam(required = false, defaultValue = "FINAL") String dateBasis,
+            @Parameter(description = "기간 시작 (yyyy-MM-dd)") @RequestParam(required = false) String from,
+            @Parameter(description = "기간 종료 (yyyy-MM-dd)")  @RequestParam(required = false) String to,
+            @Parameter(description = "데이터 소스: procurement | shopping_mall | all | service | construction") @RequestParam(required = false, defaultValue = "all") String dataSource,
+            @Parameter(description = "순위 기준: AMOUNT | COUNT | AVG") @RequestParam(required = false, defaultValue = "AMOUNT") String rankType
+    ) throws IOException {
+        final String[] headerNames = {
+                "순위", "업체명", "사업자등록번호",
+                "총 계약금액(원)", "계약건수(건)", "평균 단가(원)",
+                "금액 점유율(%)", "건수 점유율(%)"
+        };
+
+        List<Map<String, Object>> rows = reportDataService.getRankForExcel(dateBasis, from, to, dataSource, rankType);
+
+        Path tempFile = Files.createTempFile("rank_", ".xlsx");
+        try {
+            try (SXSSFWorkbook workbook = new SXSSFWorkbook(500); OutputStream out = Files.newOutputStream(tempFile)) {
+                Sheet sheet = workbook.createSheet("순위분석");
+                DataFormat dataFormat = workbook.createDataFormat();
+                CellStyle numStyle = workbook.createCellStyle();
+                numStyle.setDataFormat(dataFormat.getFormat("#,##0"));
+                CellStyle pctStyle = workbook.createCellStyle();
+                pctStyle.setDataFormat(dataFormat.getFormat("0.0"));
+
+                Row headerRow = sheet.createRow(0);
+                for (int i = 0; i < headerNames.length; i++) {
+                    headerRow.createCell(i).setCellValue(headerNames[i]);
+                }
+
+                for (int r = 0; r < rows.size(); r++) {
+                    Map<String, Object> rowData = rows.get(r);
+                    Row excelRow = sheet.createRow(r + 1);
+                    int c = 0;
+
+                    Object rankVal = rowData.get("rank");
+                    Cell rankCell = excelRow.createCell(c++);
+                    rankCell.setCellValue(rankVal != null ? Long.parseLong(rankVal.toString()) : r + 1);
+                    rankCell.setCellStyle(numStyle);
+
+                    excelRow.createCell(c++).setCellValue(objToStr(rowData.get("vendorName")));
+                    excelRow.createCell(c++).setCellValue(objToStr(rowData.get("vendorBizRegNo")));
+
+                    Cell salesCell = excelRow.createCell(c++);
+                    salesCell.setCellValue(toLongObj(rowData.get("salesAmount")));
+                    salesCell.setCellStyle(numStyle);
+
+                    Cell countCell = excelRow.createCell(c++);
+                    countCell.setCellValue(toLongObj(rowData.get("contractCount")));
+                    countCell.setCellStyle(numStyle);
+
+                    Cell avgCell = excelRow.createCell(c++);
+                    avgCell.setCellValue(toDoubleObj(rowData.get("avgAmount")));
+                    avgCell.setCellStyle(numStyle);
+
+                    Cell amtShareCell = excelRow.createCell(c++);
+                    amtShareCell.setCellValue(toDoubleObj(rowData.get("amountShareRate")));
+                    amtShareCell.setCellStyle(pctStyle);
+
+                    Cell cntShareCell = excelRow.createCell(c);
+                    cntShareCell.setCellValue(toDoubleObj(rowData.get("countShareRate")));
+                    cntShareCell.setCellStyle(pctStyle);
+                }
+                workbook.write(out);
+                workbook.dispose();
+            }
+
+            long fileSize = Files.size(tempFile);
+            String filename = "rank_" + dataSource + "_" + System.currentTimeMillis() + ".xlsx";
+            InputStream in = Files.newInputStream(tempFile);
+            InputStream deletingStream = new FilterInputStream(in) {
+                @Override public void close() throws IOException {
+                    try { super.close(); } finally { Files.deleteIfExists(tempFile); }
+                }
+            };
+            return ResponseEntity.ok()
+                    .contentLength(fileSize)
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + URLEncoder.encode(filename, StandardCharsets.UTF_8) + "\""
+                            + "; filename*=UTF-8''" + URLEncoder.encode(filename, StandardCharsets.UTF_8))
+                    .body(new InputStreamResource(deletingStream));
+        } catch (IOException e) {
+            Files.deleteIfExists(tempFile);
+            throw e;
+        } catch (Exception e) {
+            Files.deleteIfExists(tempFile);
+            throw new IOException(e);
+        }
+    }
+
+    private static String objToStr(Object v) {
+        return v != null ? v.toString() : "";
+    }
+
+    private static long toLongObj(Object v) {
+        if (v == null) return 0L;
+        try { return Long.parseLong(v.toString().split("\\.")[0]); } catch (Exception e) { return 0L; }
+    }
+
+    private static double toDoubleObj(Object v) {
+        if (v == null) return 0.0;
+        try { return Double.parseDouble(v.toString()); } catch (Exception e) { return 0.0; }
     }
 
     /**

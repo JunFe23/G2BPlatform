@@ -137,12 +137,120 @@ public class ReportDataService {
     /**
      * 순위분석 탭용 데이터를 구성해 반환합니다.
      */
-    public Map<String, Object> getRankOverview() {
+    public Map<String, Object> getRankOverview(
+            String dateBasis, String from, String to,
+            Integer topN, String dataSource, String rankType) {
+
+        final String basis     = "FIRST".equalsIgnoreCase(dateBasis) ? "FIRST" : "FINAL";
+        final int resolvedTopN = (topN != null && topN > 0 && topN <= 100) ? topN : 10;
+        final String ds        = normalizeDataSource(dataSource);
+        final String rt        = normalizeRankType(rankType);
+        final String[] dates   = resolveFromTo(from, to);
+
+        List<Map<String, Object>> rows = queryVendorRankRows(basis, dates[0], dates[1], resolvedTopN, ds, rt);
+
+        List<Map<String, Object>> tabs = new ArrayList<>();
+        for (String[] t : new String[][]{
+                {"AMOUNT", "계약금액 순위"},
+                {"COUNT",  "계약건수 순위"},
+                {"AVG",    "평균단가 순위"}}) {
+            Map<String, Object> tab = new LinkedHashMap<>();
+            tab.put("key",    t[0]);
+            tab.put("label",  t[1]);
+            tab.put("active", t[0].equals(rt));
+            tabs.add(tab);
+        }
+
+        Map<String, Object> condition = new LinkedHashMap<>();
+        condition.put("dateBasis",  basis);
+        condition.put("from",       dates[0]);
+        condition.put("to",         dates[1]);
+        condition.put("topN",       resolvedTopN);
+        condition.put("dataSource", ds);
+        condition.put("rankType",   rt);
+
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("tabs", List.of());
-        data.put("topItems", List.of());
-        data.put("summaryRows", List.of());
+        data.put("tabs",        tabs);
+        data.put("topItems",    rows);
+        data.put("summaryRows", rows);
+        data.put("condition",   condition);
+
         return wrap(data);
+    }
+
+    /**
+     * 순위분석 엑셀 다운로드용 전체 rows를 반환합니다. (LIMIT 없음 – topN=10000)
+     */
+    public List<Map<String, Object>> getRankForExcel(
+            String dateBasis, String from, String to, String dataSource, String rankType) {
+
+        final String basis   = "FIRST".equalsIgnoreCase(dateBasis) ? "FIRST" : "FINAL";
+        final String ds      = normalizeDataSource(dataSource);
+        final String rt      = normalizeRankType(rankType);
+        final String[] dates = resolveFromTo(from, to);
+
+        return queryVendorRankRows(basis, dates[0], dates[1], 10_000, ds, rt);
+    }
+
+    /**
+     * 공통: DB 조회 + 순위/점유율 계산.
+     */
+    private List<Map<String, Object>> queryVendorRankRows(
+            String basis, String fromStr, String toStr, int topN, String ds, String rt) {
+
+        List<Map<String, Object>> rows;
+        if ("FIRST".equals(basis)) {
+            rows = procurementContractSummaryMapper.selectVendorRankByFirstDate(fromStr, toStr, topN, ds, rt);
+        } else {
+            rows = procurementContractSummaryMapper.selectVendorRankByFinalDate(fromStr, toStr, topN, ds, rt);
+        }
+        if (rows == null) rows = new ArrayList<>();
+
+        long totalSalesAmount   = 0L;
+        long totalContractCount = 0L;
+        for (Map<String, Object> row : rows) {
+            totalSalesAmount   += toLong(row.get("salesAmount"));
+            totalContractCount += toLong(row.get("contractCount"));
+        }
+
+        for (int i = 0; i < rows.size(); i++) {
+            Map<String, Object> row = rows.get(i);
+            row.put("rank", i + 1);
+            double amountShare = totalSalesAmount > 0
+                    ? Math.round(toLong(row.get("salesAmount")) * 1000.0 / totalSalesAmount) / 10.0
+                    : 0.0;
+            double countShare = totalContractCount > 0
+                    ? Math.round(toLong(row.get("contractCount")) * 1000.0 / totalContractCount) / 10.0
+                    : 0.0;
+            row.put("amountShareRate", amountShare);
+            row.put("countShareRate",  countShare);
+        }
+        return rows;
+    }
+
+    /** from/to 날짜 유효성 검사 후 [fromStr, toStr] 반환. null/blank 이면 당해년도 전체. */
+    private static String[] resolveFromTo(String from, String to) {
+        if (from == null || from.isBlank()) {
+            int year = LocalDate.now().getYear();
+            return new String[]{year + "-01-01", year + "-12-31"};
+        }
+        try {
+            LocalDate fromDate = LocalDate.parse(from.trim());
+            LocalDate toDate   = (to != null && !to.isBlank()) ? LocalDate.parse(to.trim()) : fromDate;
+            if (fromDate.isAfter(toDate)) throw new IllegalArgumentException("from은 to보다 클 수 없습니다");
+            return new String[]{fromDate.toString(), toDate.toString()};
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("날짜 형식 오류 (yyyy-MM-dd)");
+        }
+    }
+
+    private static String normalizeRankType(String rankType) {
+        if (rankType == null || rankType.isBlank()) return "AMOUNT";
+        switch (rankType.trim().toUpperCase()) {
+            case "COUNT": return "COUNT";
+            case "AVG":   return "AVG";
+            default:      return "AMOUNT";
+        }
     }
 
     /**
