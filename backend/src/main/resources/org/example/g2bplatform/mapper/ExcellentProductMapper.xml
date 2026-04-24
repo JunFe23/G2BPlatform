@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.g2bplatform.mapper.ExcellentProductMapper">
+
+    <!-- 탑그룹 사업자등록번호 (탑인더스트리: 1188117437, 탑정보통신주식회사: 1188119624) -->
+
+    <!-- 요약 집계 -->
+    <select id="selectExcellentSummary" resultType="map">
+        SELECT
+            (SELECT COUNT(*)
+             FROM excellent_product_cert
+             WHERE vendor_biz_reg_no IN ('1188117437', '1188119624')
+               AND is_active = 'Y')                                       AS ownProductCount,
+
+            (SELECT COUNT(DISTINCT vendor_biz_reg_no)
+             FROM excellent_product_cert
+             WHERE vendor_biz_reg_no NOT IN ('1188117437', '1188119624')
+               AND is_active = 'Y'
+               AND product_code IN (
+                   SELECT product_code
+                   FROM excellent_product_cert
+                   WHERE vendor_biz_reg_no IN ('1188117437', '1188119624')
+                     AND is_active = 'Y'))                                AS competitorCount,
+
+            (SELECT COUNT(*)
+             FROM excellent_product_cert
+             WHERE vendor_biz_reg_no IN ('1188117437', '1188119624')
+               AND is_active = 'Y'
+               AND expiry_date IS NOT NULL
+               AND expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 90 DAY))
+                                                                          AS expiringSoonCount
+    </select>
+
+    <!-- 탑그룹 우수제품 목록 -->
+    <select id="selectOwnProducts" resultType="map">
+        SELECT
+            product_code                              AS productCode,
+            product_name                              AS productName,
+            item_category_name                        AS itemCategoryName,
+            vendor_name                               AS vendorName,
+            vendor_biz_reg_no                         AS vendorBizRegNo,
+            vendor_region                             AS vendorRegion,
+            acquisition_date                          AS acquisitionDate,
+            expiry_date                               AS expiryDate,
+            CASE
+                WHEN expiry_date IS NULL                                         THEN 'unknown'
+                WHEN expiry_date &lt; CURDATE()                                  THEN 'expired'
+                WHEN expiry_date &lt;= DATE_ADD(CURDATE(), INTERVAL 90 DAY)     THEN 'expiring'
+                ELSE 'valid'
+            END                                       AS status
+        FROM excellent_product_cert
+        WHERE vendor_biz_reg_no IN ('1188117437', '1188119624')
+          AND is_active = 'Y'
+        ORDER BY expiry_date ASC, product_code
+    </select>
+
+    <!-- 동일 제품코드를 가진 경쟁사 목록 -->
+    <select id="selectCompetitorsByProduct" resultType="map">
+        SELECT
+            e.product_code                            AS productCode,
+            e.product_name                            AS productName,
+            e.item_category_name                      AS itemCategoryName,
+            e.vendor_name                             AS vendorName,
+            e.vendor_biz_reg_no                       AS vendorBizRegNo,
+            e.vendor_region                           AS vendorRegion,
+            e.acquisition_date                        AS acquisitionDate,
+            e.expiry_date                             AS expiryDate,
+            CASE
+                WHEN e.expiry_date IS NULL                                       THEN 'unknown'
+                WHEN e.expiry_date &lt; CURDATE()                                THEN 'expired'
+                WHEN e.expiry_date &lt;= DATE_ADD(CURDATE(), INTERVAL 90 DAY)   THEN 'expiring'
+                ELSE 'valid'
+            END                                       AS status
+        FROM excellent_product_cert e
+        WHERE e.is_active = 'Y'
+          AND e.vendor_biz_reg_no NOT IN ('1188117437', '1188119624')
+          AND e.product_code IN (
+              SELECT product_code
+              FROM excellent_product_cert
+              WHERE vendor_biz_reg_no IN ('1188117437', '1188119624')
+                AND is_active = 'Y')
+        ORDER BY e.product_code, e.vendor_region, e.vendor_name
+    </select>
+
+    <!-- 경쟁사 지역별 현황 집계 -->
+    <select id="selectCompetitorsByRegion" resultType="map">
+        SELECT
+            COALESCE(vendor_region, '지역 미상')      AS region,
+            COUNT(DISTINCT vendor_biz_reg_no)         AS vendorCount,
+            COUNT(DISTINCT product_code)              AS productCount,
+            GROUP_CONCAT(DISTINCT vendor_name
+                         ORDER BY vendor_name
+                         SEPARATOR ', ')              AS vendorNames
+        FROM excellent_product_cert
+        WHERE is_active = 'Y'
+          AND vendor_biz_reg_no NOT IN ('1188117437', '1188119624')
+          AND product_code IN (
+              SELECT product_code
+              FROM excellent_product_cert
+              WHERE vendor_biz_reg_no IN ('1188117437', '1188119624')
+                AND is_active = 'Y')
+        GROUP BY vendor_region
+        ORDER BY vendorCount DESC, region
+    </select>
+
+    <!-- 전체 우수제품 상세 목록 -->
+    <select id="selectAllExcellentDetail" resultType="map">
+        SELECT
+            product_code                              AS productCode,
+            product_name                              AS productName,
+            item_category_name                        AS itemCategoryName,
+            vendor_name                               AS vendorName,
+            vendor_biz_reg_no                         AS vendorBizRegNo,
+            vendor_region                             AS vendorRegion,
+            acquisition_date                          AS acquisitionDate,
+            expiry_date                               AS expiryDate,
+            CASE
+                WHEN vendor_biz_reg_no IN ('1188117437', '1188119624') THEN 'Y'
+                ELSE 'N'
+            END                                       AS isOwnCompany,
+            CASE
+                WHEN expiry_date IS NULL                                         THEN 'unknown'
+                WHEN expiry_date &lt; CURDATE()                                  THEN 'expired'
+                WHEN expiry_date &lt;= DATE_ADD(CURDATE(), INTERVAL 90 DAY)     THEN 'expiring'
+                ELSE 'valid'
+            END                                       AS status
+        FROM excellent_product_cert
+        WHERE is_active = 'Y'
+          AND product_code IN (
+              SELECT product_code
+              FROM excellent_product_cert
+              WHERE vendor_biz_reg_no IN ('1188117437', '1188119624')
+                AND is_active = 'Y')
+        ORDER BY
+            product_code,
+            CASE WHEN vendor_biz_reg_no IN ('1188117437', '1188119624') THEN 0 ELSE 1 END,
+            vendor_region,
+            vendor_name
+    </select>
+
+</mapper>

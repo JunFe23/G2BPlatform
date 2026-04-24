@@ -604,115 +604,146 @@
       </section>
 
       <section v-if="activeTab === '우수제품'" class="section">
-        <h2 class="section-title">우수제품 보유 현황</h2>
+        <h2 class="section-title">우수제품 현황 — 탑인더스트리 / 탑정보통신</h2>
 
-        <div class="summary-cards">
-          <div class="summary-card">
-            <p class="summary-label">전체 우수제품</p>
-            <p class="summary-value blue">9개</p>
-          </div>
-          <div class="summary-card">
-            <p class="summary-label">보유 업체</p>
-            <p class="summary-value green">5개사</p>
-          </div>
-          <div class="summary-card">
-            <p class="summary-label">동일제품 보유 경쟁사</p>
-            <p class="summary-value orange">3개사</p>
-          </div>
-        </div>
+        <!-- 로딩 / 에러 -->
+        <div v-if="excellentLoading" class="loading-box">데이터를 불러오는 중...</div>
+        <div v-else-if="excellentError" class="error-box">{{ excellentError }}</div>
 
-        <div class="chart-grid">
-          <div class="chart-card">
-            <h3>지역별 우수제품 보유 현황</h3>
-            <div class="info-list">
-              <div v-for="item in excellentByRegion" :key="item.region" class="info-item">
-                <div class="info-left">
-                  <span class="info-icon blue">📍</span>
-                  <div>
-                    <strong>{{ item.region }}</strong>
-                    <p>{{ item.company }}</p>
+        <template v-else>
+          <!-- 요약 카드 -->
+          <div class="summary-cards">
+            <div class="summary-card">
+              <p class="summary-label">탑그룹 보유 우수제품</p>
+              <p class="summary-value blue">{{ excellentSummary.ownProductCount ?? 0 }}개</p>
+            </div>
+            <div class="summary-card">
+              <p class="summary-label">동일제품 보유 경쟁사</p>
+              <p class="summary-value orange">{{ excellentSummary.competitorCount ?? 0 }}개사</p>
+            </div>
+            <div class="summary-card">
+              <p class="summary-label">만료임박 (90일 이내)</p>
+              <p class="summary-value red">{{ excellentSummary.expiringSoonCount ?? 0 }}개</p>
+            </div>
+          </div>
+
+          <!-- 탑그룹 우수제품 + 경쟁사 지역별 현황 -->
+          <div class="chart-grid">
+            <!-- 탑그룹 보유 우수제품 -->
+            <div class="chart-card">
+              <h3>탑그룹 보유 우수제품 목록</h3>
+              <div v-if="excellentOwnProducts.length === 0" class="no-data">등록된 우수제품이 없습니다.</div>
+              <div v-else class="info-list">
+                <div v-for="item in excellentOwnProducts" :key="item.productCode + item.vendorBizRegNo" class="info-item">
+                  <div class="info-left">
+                    <span class="info-icon blue">🏅</span>
+                    <div>
+                      <strong>{{ item.productName }}</strong>
+                      <p class="sub-text">{{ item.vendorName }} · {{ item.vendorRegion || '지역 미상' }}</p>
+                    </div>
+                  </div>
+                  <div class="pill-group">
+                    <span class="status-pill" :class="excellentStatusClass(item.status)">{{ excellentStatusLabel(item.status) }}</span>
+                    <span class="soft-pill small">만료 {{ item.expiryDate || '-' }}</span>
                   </div>
                 </div>
-                <span class="count-pill">{{ item.count }}개</span>
               </div>
             </div>
-          </div>
-          <div class="chart-card">
-            <h3>업체별 우수제품 보유 현황</h3>
-            <div class="info-list">
-              <div v-for="item in excellentByCompany" :key="item.company" class="info-item">
-                <div class="info-left">
-                  <span class="info-icon green">🏢</span>
-                  <div>
-                    <strong>{{ item.company }}</strong>
-                    <p>{{ item.items }}</p>
+
+            <!-- 경쟁사 지역별 현황 -->
+            <div class="chart-card">
+              <h3>동일제품 경쟁사 지역별 현황</h3>
+              <div v-if="excellentByRegion.length === 0" class="no-data">경쟁사 데이터가 없습니다.</div>
+              <div v-else class="info-list">
+                <div v-for="item in excellentByRegion" :key="item.region" class="info-item">
+                  <div class="info-left">
+                    <span class="info-icon orange">📍</span>
+                    <div>
+                      <strong>{{ item.region }}</strong>
+                      <p class="sub-text">{{ item.vendorNames }}</p>
+                    </div>
+                  </div>
+                  <div class="pill-group">
+                    <span class="count-pill">업체 {{ item.vendorCount }}개사</span>
+                    <span class="soft-pill">제품 {{ item.productCount }}종</span>
                   </div>
                 </div>
-                <div class="pill-group">
-                  <span class="soft-pill">{{ item.region }}</span>
-                  <span class="count-pill">{{ item.count }}개</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 동일제품 보유 경쟁사 상세 -->
+          <div class="table-card">
+            <h3>탑인더스트리 / 탑정보통신과 동일 우수제품 보유 경쟁사</h3>
+            <div v-if="excellentCompetitors.length === 0" class="no-data-inline">등록된 경쟁사 데이터가 없습니다.</div>
+            <div v-else class="alert-list">
+              <div
+                v-for="item in excellentCompetitors"
+                :key="item.productCode + item.vendorBizRegNo"
+                class="alert-card"
+                :class="excellentStatusClass(item.status)"
+              >
+                <div class="alert-header">
+                  <div class="alert-title">
+                    <span class="info-icon red">🏢</span>
+                    <strong>{{ item.vendorName }}</strong>
+                    <span class="soft-pill">{{ item.vendorRegion || '지역 미상' }}</span>
+                  </div>
+                  <span class="status-pill" :class="excellentStatusClass(item.status)">{{ excellentStatusLabel(item.status) }}</span>
+                </div>
+                <div class="alert-body">
+                  <div>제품: {{ item.productName }} <span class="code-tag">{{ item.productCode }}</span></div>
+                  <div>취득: {{ item.acquisitionDate || '-' }} · 만료: {{ item.expiryDate || '-' }}</div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="table-card">
-          <h3>탑오피스/정보가구와 동일 제품 보유 업체</h3>
-          <div class="alert-list">
-            <div
-              v-for="item in excellentAlerts"
-              :key="item.company"
-              class="alert-card"
-              :class="item.statusClass"
-            >
-              <div class="alert-header">
-                <div class="alert-title">
-                  <span class="info-icon red">🏢</span>
-                  <strong>{{ item.company }}</strong>
-                  <span class="soft-pill">{{ item.region }}</span>
-                </div>
-                <span class="status-pill" :class="item.statusClass">{{ item.status }}</span>
-              </div>
-              <div class="alert-body">
-                <div>제품: {{ item.product }}</div>
-                <div>취득: {{ item.start }} · 만료: {{ item.end }}</div>
-              </div>
+          <!-- 전체 상세 테이블 -->
+          <div class="table-card">
+            <div class="table-card-header">
+              <h3>전체 우수제품 상세 현황 (탑그룹 + 경쟁사)</h3>
+            </div>
+            <div v-if="excellentAllDetail.length === 0" class="no-data-inline">데이터가 없습니다.</div>
+            <div v-else class="table-wrapper">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>제품코드</th>
+                    <th>제품명</th>
+                    <th>업체명</th>
+                    <th>지역</th>
+                    <th>취득일자</th>
+                    <th>만료일</th>
+                    <th>구분</th>
+                    <th>상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="row in excellentAllDetail"
+                    :key="row.productCode + row.vendorBizRegNo"
+                    :class="{ 'own-company-row': row.isOwnCompany === 'Y' }"
+                  >
+                    <td><span class="code-tag">{{ row.productCode }}</span></td>
+                    <td>{{ row.productName }}</td>
+                    <td>{{ row.vendorName }}</td>
+                    <td>{{ row.vendorRegion || '-' }}</td>
+                    <td>{{ row.acquisitionDate || '-' }}</td>
+                    <td>{{ row.expiryDate || '-' }}</td>
+                    <td>
+                      <span v-if="row.isOwnCompany === 'Y'" class="own-pill">탑그룹</span>
+                      <span v-else class="competitor-pill">경쟁사</span>
+                    </td>
+                    <td>
+                      <span class="status-pill" :class="excellentStatusClass(row.status)">{{ excellentStatusLabel(row.status) }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
-
-        <div class="table-card">
-          <h3>전체 우수제품 상세 현황</h3>
-          <div class="table-wrapper">
-            <table class="detail-table">
-              <thead>
-                <tr>
-                  <th>제품코드</th>
-                  <th>제품명</th>
-                  <th>업체명</th>
-                  <th>지역</th>
-                  <th>취득일자</th>
-                  <th>유효기간</th>
-                  <th>상태</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in excellentDetailRows" :key="row.code + row.company">
-                  <td>{{ row.code }}</td>
-                  <td>{{ row.name }}</td>
-                  <td>{{ row.company }}</td>
-                  <td>{{ row.region }}</td>
-                  <td>{{ row.start }}</td>
-                  <td>{{ row.end }}</td>
-                  <td>
-                    <span class="status-pill" :class="row.statusClass">{{ row.status }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        </template>
       </section>
 
       <section v-if="activeTab === '민수관리'" class="section">
@@ -909,14 +940,16 @@ const dashboardPeriod = computed(() => {
 
 /** 필터 적용: 캐시 무효화 후 현재 탭 데이터 재조회 */
 function applyDashboardFilter() {
-  marketLoaded.value = false
-  agencyLoaded.value = false
-  regionLoaded.value = false
-  rankLoaded.value   = false
+  marketLoaded.value    = false
+  agencyLoaded.value    = false
+  regionLoaded.value    = false
+  rankLoaded.value      = false
+  excellentLoaded.value = false
   if (activeTab.value === '시장현황')   loadMarketData()
   if (activeTab.value === '수요기관별') fetchDemandAgencyMarket()
   if (activeTab.value === '지역별')     fetchRegionMarket()
   if (activeTab.value === '순위분석')   fetchRankData()
+  if (activeTab.value === '우수제품')   fetchExcellentData()
 }
 
 const tabs = [
@@ -1399,144 +1432,49 @@ const rankTopItems = computed(() => {
   }))
 })
 
-const excellentByRegion = ref([
-  { region: '서울', company: '탑오피스', count: 3 },
-  { region: '경기', company: '정보가구', count: 3 },
-  { region: '부산', company: '한국가구', count: 1 },
-  { region: '인천', company: '밝은조명', count: 1 },
-  { region: '대전', company: '테크솔루션', count: 1 },
-])
+// ── 우수제품 탭 ──────────────────────────────────────────
+const excellentLoading   = ref(false)
+const excellentLoaded    = ref(false)
+const excellentError     = ref('')
+const excellentSummary   = ref({})
+const excellentOwnProducts  = ref([])
+const excellentCompetitors  = ref([])
+const excellentByRegion     = ref([])
+const excellentAllDetail    = ref([])
 
-const excellentByCompany = ref([
-  { company: '탑오피스', items: '사무용 의자, 프린터, LED 조명', region: '서울', count: 3 },
-  { company: '정보가구', items: '사무용 의자, 프린터, 노트북', region: '경기', count: 3 },
-  { company: '한국가구', items: '사무용 의자', region: '부산', count: 1 },
-  { company: '밝은조명', items: 'LED 조명', region: '인천', count: 1 },
-  { company: '테크솔루션', items: '노트북', region: '대전', count: 1 },
-])
+function excellentStatusLabel(status) {
+  if (status === 'expired')  return '만료'
+  if (status === 'expiring') return '만료임박'
+  if (status === 'valid')    return '유효'
+  return '-'
+}
+function excellentStatusClass(status) {
+  if (status === 'expired')  return 'danger'
+  if (status === 'expiring') return 'warning'
+  if (status === 'valid')    return 'success'
+  return ''
+}
 
-const excellentAlerts = ref([
-  {
-    company: '한국가구',
-    region: '부산',
-    product: '사무용 의자 (P001)',
-    start: '2024-03-10',
-    end: '2026-03-09',
-    status: '만료임박',
-    statusClass: 'warning',
-  },
-  {
-    company: '밝은조명',
-    region: '인천',
-    product: 'LED 조명 (P004)',
-    start: '2024-07-22',
-    end: '2026-07-21',
-    status: '유효',
-    statusClass: 'success',
-  },
-  {
-    company: '테크솔루션',
-    region: '대전',
-    product: '노트북 (P005)',
-    start: '2024-09-10',
-    end: '2026-09-09',
-    status: '유효',
-    statusClass: 'success',
-  },
-])
+const fetchExcellentData = async () => {
+  if (excellentLoading.value) return
+  excellentLoading.value = true
+  excellentError.value   = ''
+  try {
+    const res = await axios.get('/api/report/excellent')
+    const d   = res.data?.data ?? {}
+    excellentSummary.value      = d.summary            ?? {}
+    excellentOwnProducts.value  = d.ownProducts        ?? []
+    excellentCompetitors.value  = d.competitorByProduct ?? []
+    excellentByRegion.value     = d.competitorByRegion  ?? []
+    excellentAllDetail.value    = d.allDetail           ?? []
+    excellentLoaded.value = true
+  } catch (e) {
+    excellentError.value = '우수제품 데이터를 불러오지 못했습니다.'
+  } finally {
+    excellentLoading.value = false
+  }
+}
 
-const excellentDetailRows = ref([
-  {
-    code: 'P001',
-    name: '사무용 의자',
-    company: '탑오피스',
-    region: '서울',
-    start: '2024-01-15',
-    end: '2026-01-14',
-    status: '만료',
-    statusClass: 'danger',
-  },
-  {
-    code: 'P001',
-    name: '사무용 의자',
-    company: '정보가구',
-    region: '경기',
-    start: '2024-02-20',
-    end: '2026-02-19',
-    status: '만료임박',
-    statusClass: 'warning',
-  },
-  {
-    code: 'P001',
-    name: '사무용 의자',
-    company: '한국가구',
-    region: '부산',
-    start: '2024-03-10',
-    end: '2026-03-09',
-    status: '만료임박',
-    statusClass: 'warning',
-  },
-  {
-    code: 'P002',
-    name: '프린터',
-    company: '탑오피스',
-    region: '서울',
-    start: '2024-04-05',
-    end: '2026-04-04',
-    status: '만료임박',
-    statusClass: 'warning',
-  },
-  {
-    code: 'P002',
-    name: '프린터',
-    company: '정보가구',
-    region: '경기',
-    start: '2024-05-12',
-    end: '2026-05-11',
-    status: '유효',
-    statusClass: 'success',
-  },
-  {
-    code: 'P004',
-    name: 'LED 조명',
-    company: '탑오피스',
-    region: '서울',
-    start: '2024-06-18',
-    end: '2026-06-17',
-    status: '유효',
-    statusClass: 'success',
-  },
-  {
-    code: 'P004',
-    name: 'LED 조명',
-    company: '밝은조명',
-    region: '인천',
-    start: '2024-07-22',
-    end: '2026-07-21',
-    status: '유효',
-    statusClass: 'success',
-  },
-  {
-    code: 'P005',
-    name: '노트북',
-    company: '정보가구',
-    region: '경기',
-    start: '2024-08-15',
-    end: '2026-08-14',
-    status: '유효',
-    statusClass: 'success',
-  },
-  {
-    code: 'P005',
-    name: '노트북',
-    company: '테크솔루션',
-    region: '대전',
-    start: '2024-09-10',
-    end: '2026-09-09',
-    status: '유효',
-    statusClass: 'success',
-  },
-])
 
 /** 민수 계약 목록 — API 연동 후 채움 */
 const privateRows = ref([])
@@ -1685,10 +1623,11 @@ onMounted(() => {
 })
 
 watch(activeTab, (tab) => {
-  if (tab === '시장현황'   && !marketLoaded.value  && !marketLoading.value)  loadMarketData()
-  if (tab === '수요기관별' && !agencyLoaded.value  && !agencyLoading.value)  fetchDemandAgencyMarket()
-  if (tab === '지역별'     && !regionLoaded.value  && !regionLoading.value)  fetchRegionMarket()
-  if (tab === '순위분석'   && !rankLoaded.value    && !rankLoading.value)    fetchRankData()
+  if (tab === '시장현황'   && !marketLoaded.value    && !marketLoading.value)    loadMarketData()
+  if (tab === '수요기관별' && !agencyLoaded.value    && !agencyLoading.value)    fetchDemandAgencyMarket()
+  if (tab === '지역별'     && !regionLoaded.value    && !regionLoading.value)    fetchRegionMarket()
+  if (tab === '순위분석'   && !rankLoaded.value      && !rankLoading.value)      fetchRankData()
+  if (tab === '우수제품'   && !excellentLoaded.value && !excellentLoading.value) fetchExcellentData()
 })
 
 // 기간 필터가 바뀌면 캐시 무효화 + 현재 탭이면 즉시 재조회
@@ -3402,5 +3341,65 @@ tr.highlight {
   .tab-button {
     flex: 1 1 120px;
   }
+}
+
+/* ── 우수제품 탭 전용 ───────────────────────── */
+.own-company-row {
+  background: #f0f7ff;
+}
+.own-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.competitor-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.code-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: monospace;
+  background: #f3f4f6;
+  color: #374151;
+  margin-left: 4px;
+}
+.no-data-inline {
+  padding: 20px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+.table-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.table-card-header h3 {
+  margin: 0;
+}
+.sub-text {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 2px 0 0;
+}
+.soft-pill.small {
+  font-size: 11px;
+  padding: 1px 7px;
+}
+.summary-value.red {
+  color: #dc2626;
 }
 </style>

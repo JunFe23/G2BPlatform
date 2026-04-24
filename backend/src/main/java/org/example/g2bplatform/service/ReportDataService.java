@@ -1,6 +1,7 @@
 package org.example.g2bplatform.service;
 
 import org.apache.ibatis.session.ResultHandler;
+import org.example.g2bplatform.mapper.ExcellentProductMapper;
 import org.example.g2bplatform.mapper.ProcurementContractSummaryMapper;
 import org.springframework.stereotype.Service;
 
@@ -17,9 +18,12 @@ import java.util.Set;
 public class ReportDataService {
 
     private final ProcurementContractSummaryMapper procurementContractSummaryMapper;
+    private final ExcellentProductMapper excellentProductMapper;
 
-    public ReportDataService(ProcurementContractSummaryMapper procurementContractSummaryMapper) {
+    public ReportDataService(ProcurementContractSummaryMapper procurementContractSummaryMapper,
+                             ExcellentProductMapper excellentProductMapper) {
         this.procurementContractSummaryMapper = procurementContractSummaryMapper;
+        this.excellentProductMapper = excellentProductMapper;
     }
 
     /**
@@ -255,14 +259,21 @@ public class ReportDataService {
 
     /**
      * 우수제품 탭용 데이터를 구성해 반환합니다.
+     * excellent_product_cert 테이블을 기반으로 탑그룹 제품 현황 및 경쟁사 분석 데이터를 반환합니다.
      */
     public Map<String, Object> getExcellentOverview() {
+        Map<String, Object> summary    = excellentProductMapper.selectExcellentSummary();
+        List<Map<String, Object>> ownProducts        = excellentProductMapper.selectOwnProducts();
+        List<Map<String, Object>> competitorByProduct = excellentProductMapper.selectCompetitorsByProduct();
+        List<Map<String, Object>> competitorByRegion  = excellentProductMapper.selectCompetitorsByRegion();
+        List<Map<String, Object>> allDetail           = excellentProductMapper.selectAllExcellentDetail();
+
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("summaryCards", List.of());
-        data.put("byRegion", List.of());
-        data.put("byCompany", List.of());
-        data.put("alerts", List.of());
-        data.put("detailRows", List.of());
+        data.put("summary",              summary != null ? summary : Map.of());
+        data.put("ownProducts",          ownProducts);
+        data.put("competitorByProduct",  competitorByProduct);
+        data.put("competitorByRegion",   competitorByRegion);
+        data.put("allDetail",            allDetail);
         return wrap(data);
     }
 
