@@ -12,6 +12,8 @@ services:
         environment:
             # 컨테이너 내부 마운트 경로 사용 (호스트 경로 아님)
             - GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/app/config/top-service-account.json
+            # /app/config/application.properties 를 Spring이 읽도록 지정
+            - SPRING_CONFIG_ADDITIONAL_LOCATION=/app/config/
 
     web:
         build:
