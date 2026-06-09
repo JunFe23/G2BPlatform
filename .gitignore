@@ -37,3 +37,7 @@ out/
 .vscode/
 *.hprof
 backend/sheet/*.json
+
+### G2B 로컬 파일 ###
+docs/sample_csv/
+*.docx
