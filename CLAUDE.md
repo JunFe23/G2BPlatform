@@ -32,8 +32,8 @@
 |-------|------|------|
 | Phase 1 | G2B-8 로컬 특정품목 CSV E2E 검증 | ✅ 완료 |
 | Phase 2 | 서버 배포 + Flyway V8~V10 검증 | ✅ 완료 |
-| Phase 3 | 서버 실제 CSV 대량 업로드·검증 (문서화) | 🔄 진행 중 |
-| Phase 4 | 업무별 구성원별 CSV 분석·설계 문서 | ⏳ 대기 (Phase 3 완료 후) |
+| Phase 3 | 서버 실제 CSV 대량 업로드·검증 (문서화) | ✅ 완료 |
+| Phase 4 | 업무별 구성원별 CSV 분석·설계 문서 | 🔄 진행 중 |
 | Phase 5 | Flyway V11 raw 테이블 | ⏳ 대기 |
 | Phase 6 | 백엔드 task-member-contract 업로드 API | ⏳ 대기 |
 | Phase 7 | 프론트 두 번째 탭 연동 | ⏳ 대기 |
