@@ -33,19 +33,17 @@
 | Phase 1 | G2B-8 로컬 특정품목 CSV E2E 검증 | ✅ 완료 |
 | Phase 2 | 서버 배포 + Flyway V8~V10 검증 | ✅ 완료 |
 | Phase 3 | 서버 실제 CSV 대량 업로드·검증 (문서화) | ✅ 완료 |
-| Phase 4 | 업무별 구성원별 CSV 분석·설계 문서 | 🔄 진행 중 |
-| Phase 5 | Flyway V11 raw 테이블 | ⏳ 대기 |
-| Phase 6 | 백엔드 task-member-contract 업로드 API | ⏳ 대기 |
-| Phase 7 | 프론트 두 번째 탭 연동 | ⏳ 대기 |
-| Phase 8 | 서버 반영·운영 적재 | ⏳ 대기 |
-
-> **Phase 3 끝나기 전에 Phase 4 시작 금지**
+| Phase 4 | 업무별 구성원별 CSV 분석·설계 문서 | ✅ 완료 |
+| Phase 5 | Flyway V11 raw 테이블 | ✅ 완료 |
+| Phase 6 | 백엔드 task-member-contract 업로드 API | ✅ 완료 |
+| Phase 7 | 프론트 두 번째 탭 연동 | ✅ 완료 |
+| Phase 8 | 서버 반영·운영 적재 | ✅ 완료 |
 
 ---
 
 ## 현재 브랜치
 
-- `feature/G2B-8-local-specific-item-e2e` — Phase 1~2 작업 브랜치 (push 완료)
+- `master` — G2B-11까지 머지 완료
 
 ---
 
