@@ -15,7 +15,7 @@
 
 **기술용역과 공사를 단일 테이블 `task_member_contract_raw`로 통합 적재한다.**
 
-- **결정 내용**: `contract_type` 컬럼(engineering | construction)으로 업종 구분. 날짜 컬럼은 `start_date`, `end_date`, `total_end_date`로 통합
+- **결정 내용**: `contract_type` 컬럼(service | construction)으로 업종 구분. 날짜 컬럼은 `start_date`, `end_date`, `total_end_date`로 통합
 - **적용 범위**: V11 Flyway 마이그레이션, 업로드 API `POST /api/admin/upload/task-member-contract`, 프론트 업로드 탭 단일화
 - **롤아웃**: 기존 `service_contract_raw`, `construction_contract_raw` DROP → `task_member_contract_raw` 신규 생성 → CSV 재적재
 

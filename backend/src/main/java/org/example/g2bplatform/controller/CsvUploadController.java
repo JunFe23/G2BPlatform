@@ -80,6 +80,7 @@ public class CsvUploadController {
     @GetMapping("/jobs/{jobId}")
     public ResponseEntity<CsvUploadJobDto> getJob(@PathVariable String jobId) {
         CsvUploadJobDto job = specificItemCsvJobService.getJob(jobId);
+        if (job == null) job = taskMemberContractCsvJobService.getJob(jobId);
         if (job == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(job);
     }

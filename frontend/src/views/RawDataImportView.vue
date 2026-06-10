@@ -116,22 +116,99 @@
         </div>
       </section>
 
-      <!-- 업무별 구성원별 계약내역 탭 (추후 구현) -->
+      <!-- 업무별 구성원별 계약내역 탭 -->
       <section v-if="activeTab === 'task'" class="section">
         <h2 class="section-title">업무별 구성원별 계약내역 CSV 적재</h2>
-        <div class="upload-zone">
-          <input type="file" accept=".csv,.xlsx" class="file-input" disabled />
+        <p class="tab-desc">
+          조달데이터허브 &gt; 업무별 구성원별 계약내역 CSV (UTF-16, 탭 구분).<br>
+          파일명에 <strong>공사</strong>가 포함되면 공사(construction), 그 외는 기술용역(engineering)으로 자동 분류됩니다.
+        </p>
+
+        <div
+          class="upload-zone"
+          :class="{ dragging: taskIsDragging }"
+          @dragover.prevent="taskIsDragging = true"
+          @dragleave.prevent="taskIsDragging = false"
+          @drop.prevent="onTaskDrop"
+        >
+          <input
+            ref="taskFileInputRef"
+            type="file"
+            accept=".csv,.tsv"
+            class="file-input"
+            @change="onTaskFileSelect"
+          />
           <div class="upload-placeholder">
             <span class="upload-icon">📄</span>
-            <p>CSV / Excel 파일을 선택하거나 여기에 끌어다 놓으세요.</p>
+            <p v-if="!taskSelectedFile">CSV 파일을 선택하거나 여기에 끌어다 놓으세요.</p>
+            <p v-else class="selected-name">{{ taskSelectedFile.name }} ({{ formatBytes(taskSelectedFile.size) }})</p>
           </div>
         </div>
-        <div class="notice-box">
-          <strong>구현 예정</strong>
-          <p>공사·용역 데이터 원천인 업무별 구성원별 계약내역 업로드 기능은 추후 구현 예정입니다.</p>
+
+        <!-- 결과 카드 -->
+        <div v-if="taskResult" class="result-card" :class="taskResult.errorMessage ? 'result-error' : 'result-ok'">
+          <template v-if="taskResult.errorMessage">
+            <p class="result-title">적재 실패</p>
+            <p class="result-msg">{{ taskResult.errorMessage }}</p>
+          </template>
+          <template v-else>
+            <p class="result-title">적재 완료</p>
+            <div class="result-grid">
+              <div class="result-item">
+                <span class="result-label">전체 행</span>
+                <span class="result-value">{{ taskResult.totalRows.toLocaleString() }}건</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">신규 적재</span>
+                <span class="result-value green">{{ taskResult.insertedCount.toLocaleString() }}건</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">중복 스킵</span>
+                <span class="result-value gray">{{ taskResult.skippedCount.toLocaleString() }}건</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">소요 시간</span>
+                <span class="result-value">{{ (taskResult.elapsedMs / 1000).toFixed(1) }}초</span>
+              </div>
+            </div>
+          </template>
         </div>
+
+        <!-- 진행률 표시 -->
+        <div v-if="taskUploading || taskActiveJobId" class="progress-card">
+          <div class="progress-head">
+            <span class="progress-title">{{ taskProgressPhaseLabel }}</span>
+            <span class="progress-pct">{{ taskProgressPct }}%</span>
+          </div>
+          <div class="progress-bar" :class="{ processing: taskProgressPhase === 'processing' }">
+            <div class="progress-fill" :style="{ width: taskProgressPct + '%' }"></div>
+          </div>
+          <p class="progress-hint">
+            <template v-if="taskProgressPhase === 'uploading'">
+              파일 업로드 중입니다. (브라우저 → 서버)
+              <span v-if="taskUploadEtaText"> · 남은시간 {{ taskUploadEtaText }}</span>
+            </template>
+            <template v-else-if="taskProgressPhase === 'processing'">
+              서버에서 CSV를 파싱하고 DB에 적재하는 중입니다.
+              <span v-if="taskServerEtaText"> · 남은시간 {{ taskServerEtaText }}</span>
+              <span v-if="taskJobMessage" class="job-msg"> · {{ taskJobMessage }}</span>
+            </template>
+            <template v-else>
+              진행 상태를 불러오는 중입니다.
+            </template>
+          </p>
+        </div>
+
         <div class="action-row">
-          <button type="button" class="btn-import" disabled>적재 시작 (구현 예정)</button>
+          <button
+            type="button"
+            class="btn-import"
+            :disabled="!taskSelectedFile || taskUploading"
+            @click="doTaskUpload"
+          >
+            <span v-if="taskUploading" class="spinner"></span>
+            {{ taskUploading ? '적재 중...' : '적재 시작' }}
+          </button>
         </div>
       </section>
     </div>
@@ -149,6 +226,8 @@ const tabs = [
 ]
 
 const activeTab   = ref('specific')
+
+// ── 특정품목 탭 상태 ──
 const selectedFile = ref(null)
 const fileInputRef = ref(null)
 const uploading   = ref(false)
@@ -164,16 +243,45 @@ const jobMessage = ref('')
 let uploadStartedAtMs = 0
 let lastProgressAtMs = 0
 let lastLoaded = 0
-let emaBps = 0 // exponential moving average bytes/sec
+let emaBps = 0
 let pollTimer = null
 let lastJobSampleAt = 0
 let lastJobProcessed = 0
-let jobRateEma = 0 // rows/sec
+let jobRateEma = 0
 
 const progressPhaseLabel = computed(() => {
   if (progressPhase.value === 'uploading') return '업로드 중'
   if (progressPhase.value === 'processing') return '적재 처리 중'
   if (activeJobId.value) return '적재 처리 중'
+  return ''
+})
+
+// ── 업무별 구성원별 계약내역 탭 상태 ──
+const taskSelectedFile = ref(null)
+const taskFileInputRef = ref(null)
+const taskUploading   = ref(false)
+const taskIsDragging  = ref(false)
+const taskResult      = ref(null)
+const taskProgressPct = ref(0)
+const taskProgressPhase = ref('idle')
+const taskUploadEtaText = ref('')
+const taskServerEtaText = ref('')
+const taskActiveJobId = ref(localStorage.getItem('taskContractJobId') || '')
+const taskJobMessage = ref('')
+
+let taskUploadStartedAtMs = 0
+let taskLastProgressAtMs = 0
+let taskLastLoaded = 0
+let taskEmaBps = 0
+let taskPollTimer = null
+let taskLastJobSampleAt = 0
+let taskLastJobProcessed = 0
+let taskJobRateEma = 0
+
+const taskProgressPhaseLabel = computed(() => {
+  if (taskProgressPhase.value === 'uploading') return '업로드 중'
+  if (taskProgressPhase.value === 'processing') return '적재 처리 중'
+  if (taskActiveJobId.value) return '적재 처리 중'
   return ''
 })
 
@@ -364,6 +472,186 @@ async function pollJob() {
   }
 }
 
+// ── 업무별 구성원별 계약내역 탭 핸들러 ──
+function onTaskFileSelect(event) {
+  const file = event.target.files?.[0]
+  if (file) setTaskFile(file)
+}
+
+function onTaskDrop(event) {
+  taskIsDragging.value = false
+  const file = event.dataTransfer.files?.[0]
+  if (file) setTaskFile(file)
+}
+
+function setTaskFile(file) {
+  taskSelectedFile.value = file
+  taskResult.value = null
+  taskProgressPct.value = 0
+  taskProgressPhase.value = 'idle'
+  taskUploadEtaText.value = ''
+  taskServerEtaText.value = ''
+  taskUploadStartedAtMs = 0
+  taskLastProgressAtMs = 0
+  taskLastLoaded = 0
+  taskEmaBps = 0
+}
+
+async function doTaskUpload() {
+  if (!taskSelectedFile.value || taskUploading.value) return
+
+  taskUploading.value = true
+  taskResult.value    = null
+  taskProgressPct.value = 0
+  taskProgressPhase.value = 'uploading'
+  taskUploadEtaText.value = ''
+  taskServerEtaText.value = ''
+  taskUploadStartedAtMs = Date.now()
+  taskLastProgressAtMs = taskUploadStartedAtMs
+  taskLastLoaded = 0
+  taskEmaBps = 0
+
+  const formData = new FormData()
+  formData.append('file', taskSelectedFile.value)
+
+  try {
+    const res = await axios.post('/api/admin/upload/task-member-contract', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 300_000,
+      onUploadProgress: (evt) => {
+        const total = evt.total ?? taskSelectedFile.value?.size ?? 0
+        if (!total) return
+
+        const now = Date.now()
+        const dt = Math.max(1, now - taskLastProgressAtMs)
+        const dLoaded = Math.max(0, evt.loaded - taskLastLoaded)
+        if (dLoaded > 0) {
+          if (dt >= 100) {
+            const bps = (dLoaded * 1000) / dt
+            taskEmaBps = taskEmaBps ? (taskEmaBps * 0.8 + bps * 0.2) : bps
+            taskLastProgressAtMs = now
+            taskLastLoaded = evt.loaded
+          }
+          const elapsed = Math.max(1, now - taskUploadStartedAtMs)
+          const avgBps = (evt.loaded * 1000) / elapsed
+          const effBps = taskEmaBps || avgBps
+          const remainingBytes = Math.max(0, total - evt.loaded)
+          if (effBps > 0 && remainingBytes > 0) {
+            taskUploadEtaText.value = formatEta(remainingBytes / effBps)
+          } else {
+            taskUploadEtaText.value = ''
+          }
+        }
+
+        if (evt.loaded >= total) {
+          taskProgressPhase.value = 'processing'
+          taskProgressPct.value = 100
+          taskUploadEtaText.value = ''
+          return
+        }
+
+        taskProgressPct.value = Math.round((evt.loaded / total) * 100)
+      },
+    })
+
+    const jobId = res.data?.jobId
+    if (jobId) {
+      taskActiveJobId.value = jobId
+      localStorage.setItem('taskContractJobId', jobId)
+      taskProgressPhase.value = 'processing'
+      taskProgressPct.value = 0
+      startTaskPolling()
+    } else {
+      taskResult.value = { errorMessage: 'jobId를 받지 못했습니다.' }
+    }
+  } catch (err) {
+    const msg = err.response?.data?.errorMessage
+      || err.response?.data?.message
+      || err.message
+      || '서버 오류가 발생했습니다.'
+    taskResult.value = { errorMessage: msg }
+  } finally {
+    taskUploading.value = false
+    if (!taskActiveJobId.value) taskProgressPhase.value = 'idle'
+  }
+}
+
+function startTaskPolling() {
+  if (!taskActiveJobId.value) return
+  stopTaskPolling()
+  taskLastJobSampleAt = Date.now()
+  taskLastJobProcessed = 0
+  taskJobRateEma = 0
+  taskPollTimer = setInterval(pollTaskJob, 1000)
+  pollTaskJob()
+}
+
+function stopTaskPolling() {
+  if (taskPollTimer) {
+    clearInterval(taskPollTimer)
+    taskPollTimer = null
+  }
+}
+
+async function pollTaskJob() {
+  if (!taskActiveJobId.value) return
+  try {
+    const res = await axios.get(`/api/admin/upload/jobs/${taskActiveJobId.value}`)
+    const job = res.data
+
+    const total = job.totalRows ?? 0
+    const processed = job.processedRows ?? 0
+    const inserted = job.insertedCount ?? 0
+    const skipped = job.skippedCount ?? 0
+    taskJobMessage.value = job.message || ''
+
+    if (total > 0) {
+      taskProgressPct.value = Math.min(100, Math.round((processed / total) * 100))
+    } else {
+      taskProgressPct.value = 0
+    }
+
+    const now = Date.now()
+    const dt = Math.max(1, (now - taskLastJobSampleAt) / 1000)
+    const dProc = Math.max(0, processed - taskLastJobProcessed)
+    const rate = dProc / dt
+    taskJobRateEma = taskJobRateEma ? (taskJobRateEma * 0.8 + rate * 0.2) : rate
+    taskLastJobSampleAt = now
+    taskLastJobProcessed = processed
+
+    if (total > 0 && taskJobRateEma > 0 && processed < total) {
+      taskServerEtaText.value = formatEta((total - processed) / taskJobRateEma)
+    } else {
+      taskServerEtaText.value = ''
+    }
+
+    if (job.status === 'SUCCESS' || job.status === 'FAILED' || job.status === 'CANCELLED') {
+      stopTaskPolling()
+      if (job.status === 'SUCCESS') {
+        taskResult.value = {
+          totalRows: total,
+          insertedCount: inserted,
+          skippedCount: skipped,
+          elapsedMs: job.finishedAt && job.startedAt
+            ? (new Date(job.finishedAt).getTime() - new Date(job.startedAt).getTime())
+            : 0,
+        }
+      } else {
+        taskResult.value = { errorMessage: job.errorMessage || '적재 실패' }
+      }
+      localStorage.removeItem('taskContractJobId')
+      taskActiveJobId.value = ''
+      taskJobMessage.value = ''
+      taskServerEtaText.value = ''
+      taskProgressPhase.value = 'idle'
+    } else {
+      taskProgressPhase.value = 'processing'
+    }
+  } catch (e) {
+    // 일시 오류 시에도 폴링 지속
+  }
+}
+
 function formatEta(sec) {
   if (!Number.isFinite(sec) || sec < 0) return ''
   const s = Math.ceil(sec)
@@ -386,6 +674,10 @@ function formatBytes(bytes) {
 if (activeJobId.value) {
   progressPhase.value = 'processing'
   startPolling()
+}
+if (taskActiveJobId.value) {
+  taskProgressPhase.value = 'processing'
+  startTaskPolling()
 }
 </script>
 

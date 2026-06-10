@@ -139,9 +139,9 @@ public class TaskMemberContractCsvJobService {
 
     // 파일명으로 업종 자동 판별
     private String detectContractType(String fileName) {
-        if (fileName == null) return "engineering";
+        if (fileName == null) return "service";
         if (fileName.contains("공사")) return "construction";
-        return "engineering";
+        return "service";
     }
 
     private void runJob(String jobId, String tempPath, String fileName, long fileSizeBytes, String contractType, String uploader) {
@@ -275,13 +275,37 @@ public class TaskMemberContractCsvJobService {
     }
 
     private String[] splitLine(String line) {
-        String[] parts = line.split("\t", -1);
-        for (int i = 0; i < parts.length; i++) {
-            String v = parts[i].trim();
-            if (v.startsWith("\"") && v.endsWith("\"") && v.length() >= 2) v = v.substring(1, v.length() - 1);
-            parts[i] = v;
+        // RFC 4180 CSV 파서: 쌍따옴표로 감싼 필드 내 쉼표를 구분자로 오인하지 않도록 처리
+        List<String> fields = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        boolean inQuote = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (inQuote) {
+                if (c == '"') {
+                    // escaped quote ""
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        cur.append('"');
+                        i++;
+                    } else {
+                        inQuote = false;
+                    }
+                } else {
+                    cur.append(c);
+                }
+            } else {
+                if (c == '"') {
+                    inQuote = true;
+                } else if (c == ',') {
+                    fields.add(cur.toString().trim());
+                    cur.setLength(0);
+                } else {
+                    cur.append(c);
+                }
+            }
         }
-        return parts;
+        fields.add(cur.toString().trim());
+        return fields.toArray(new String[0]);
     }
 
     private String n(String v) { return (v == null || v.isEmpty()) ? null : v; }
