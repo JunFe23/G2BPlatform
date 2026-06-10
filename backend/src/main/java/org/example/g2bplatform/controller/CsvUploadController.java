@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.g2bplatform.DTO.CsvUploadJobDto;
 import org.example.g2bplatform.service.SpecificItemCsvJobService;
+import org.example.g2bplatform.service.TaskMemberContractCsvJobService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class CsvUploadController {
 
     private final SpecificItemCsvJobService specificItemCsvJobService;
+    private final TaskMemberContractCsvJobService taskMemberContractCsvJobService;
 
     /**
      * 특정품목 조달 내역 CSV 업로드 → 비동기 적재 Job 생성.
@@ -48,12 +50,37 @@ public class CsvUploadController {
         return ResponseEntity.ok(job);
     }
 
+    @Operation(summary = "업무별 구성원별 계약내역 CSV 적재(Job 시작)",
+               description = "기술용역/공사 CSV를 업로드하면 비동기 적재 Job을 생성하고 jobId를 반환합니다. " +
+                             "파일명에 '공사' 포함 시 construction, 나머지는 engineering으로 자동 분류됩니다.")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping(value = "/task-member-contract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CsvUploadJobDto> uploadTaskMemberContract(
+            @RequestParam("file") MultipartFile file,
+            Authentication auth) {
+
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().body(CsvUploadJobDto.builder()
+                    .status("FAILED")
+                    .errorMessage("파일이 첨부되지 않았습니다.")
+                    .build());
+        }
+
+        String uploader = (auth == null) ? null : auth.getName();
+        CsvUploadJobDto job = taskMemberContractCsvJobService.startJob(file, uploader);
+
+        if ("FAILED".equals(job.getStatus())) return ResponseEntity.unprocessableEntity().body(job);
+
+        return ResponseEntity.ok(job);
+    }
+
     @Operation(summary = "CSV 적재 Job 상태 조회",
             description = "CSV 적재 Job 진행률/상태를 조회합니다.")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/jobs/{jobId}")
     public ResponseEntity<CsvUploadJobDto> getJob(@PathVariable String jobId) {
         CsvUploadJobDto job = specificItemCsvJobService.getJob(jobId);
+        if (job == null) job = taskMemberContractCsvJobService.getJob(jobId);
         if (job == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(job);
     }
