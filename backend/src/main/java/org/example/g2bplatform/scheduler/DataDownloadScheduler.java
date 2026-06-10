@@ -2,12 +2,14 @@ package org.example.g2bplatform.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import org.example.g2bplatform.service.ScheduledDownloadService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true")
 public class DataDownloadScheduler {
 
     private final ScheduledDownloadService scheduledDownloadService;
