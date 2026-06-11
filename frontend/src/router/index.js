@@ -15,6 +15,7 @@ import BidList from '../views/BidList.vue'
 import HomeView from '../views/HomeView.vue'
 import AboutView from '../views/AboutView.vue'
 import ReportGoodsView from '../views/ReportGoodsView.vue'
+import ReportSpecificItemView from '../views/ReportSpecificItemView.vue'
 import ReportShoppingMallView from '../views/ReportShoppingMallView.vue'
 import ReportDashboardView from '../views/ReportDashboardView.vue'
 import ReportServicesView from '../views/ReportServicesView.vue'
@@ -80,6 +81,12 @@ const router = createRouter({
       path: '/report-goods',
       name: 'report-goods',
       component: ReportGoodsView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/report-specific-item',
+      name: 'report-specific-item',
+      component: ReportSpecificItemView,
       meta: { requiresAuth: true },
     },
     {

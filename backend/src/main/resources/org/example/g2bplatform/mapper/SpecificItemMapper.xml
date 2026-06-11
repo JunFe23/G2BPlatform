@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.example.g2bplatform.mapper.SpecificItemMapper">
+
+    <sql id="dataTypeLabel">
+        CASE data_type
+            WHEN 'shopping_mall' THEN '쇼핑몰(제3자단가)'
+            ELSE '물품(일반계약)'
+        END AS dataTypeLabel
+    </sql>
+
+    <sql id="commonWhere">
+        WHERE is_active = 'Y'
+        <if test="p.dataType != null">
+            AND data_type = #{p.dataType}
+        </if>
+        <if test="p.demandAgencyName != null">
+            AND demand_agency_name LIKE CONCAT('%', #{p.demandAgencyName}, '%')
+        </if>
+        <if test="p.demandAgencyRegion != null">
+            AND demand_agency_region LIKE CONCAT('%', #{p.demandAgencyRegion}, '%')
+        </if>
+        <if test="p.vendorBizRegNo != null">
+            AND vendor_biz_reg_no = #{p.vendorBizRegNo}
+        </if>
+        <if test="p.itemCategoryNo != null">
+            AND item_category_no LIKE CONCAT('%', #{p.itemCategoryNo}, '%')
+        </if>
+        <if test="p.detailItemNo != null">
+            AND detail_item_no = #{p.detailItemNo}
+        </if>
+        <if test="p.isMas != null">
+            AND is_mas = #{p.isMas}
+        </if>
+        <if test="p.isExcellentProduct != null">
+            AND is_excellent_product = #{p.isExcellentProduct}
+        </if>
+        <if test="p.year != null">
+            AND contract_date &gt;= CONCAT(#{p.year}, '-01-01')
+            AND contract_date &lt;  DATE_ADD(CONCAT(#{p.year}, '-01-01'), INTERVAL 1 YEAR)
+        </if>
+        <if test="p.month != null">
+            AND contract_date &gt;= CONCAT(#{p.month}, '-01')
+            AND contract_date &lt;  DATE_ADD(CONCAT(#{p.month}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="p.rangeStart != null and p.rangeEnd != null">
+            AND contract_date &gt;= CONCAT(#{p.rangeStart}, '-01')
+            AND contract_date &lt;  DATE_ADD(CONCAT(#{p.rangeEnd}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="p.showSavedOnly == true">
+            AND saved = 'Y'
+        </if>
+    </sql>
+
+    <!-- ==================== FLAT ==================== -->
+
+    <select id="selectFlatList" resultType="map">
+        SELECT
+            id                                                  AS id,
+            <include refid="dataTypeLabel"/>,
+            data_type                                           AS dataType,
+            contract_no                                         AS contractNo,
+            change_seq                                          AS changeSeq,
+            item_seq                                            AS itemSeq,
+            is_final_contract                                   AS isFinalContract,
+            is_long_term                                        AS isLongTerm,
+            demand_agency_name                                  AS demandAgencyName,
+            demand_agency_region                                AS demandAgencyRegion,
+            vendor_name                                         AS vendorName,
+            vendor_biz_reg_no                                   AS vendorBizRegNo,
+            contract_name                                       AS contractName,
+            contract_method                                     AS contractMethod,
+            bid_notice_no                                       AS bidNoticeNo,
+            contract_type                                       AS contractType,
+            delivery_contract_type                              AS deliveryContractType,
+            item_category_no                                    AS itemCategoryNo,
+            item_category_name                                  AS itemCategoryName,
+            detail_item_no                                      AS detailItemNo,
+            detail_item_name                                    AS detailItemName,
+            item_identifier_no                                  AS itemIdentifierNo,
+            item_identifier_name                                AS itemIdentifierName,
+            unit                                                AS unit,
+            unit_price                                          AS unitPrice,
+            quantity                                            AS quantity,
+            supply_amount                                       AS supplyAmount,
+            is_mas                                              AS isMas,
+            is_excellent_product                                AS isExcellentProduct,
+            is_direct_purchase                                  AS isDirectPurchase,
+            is_sme_competitive                                  AS isSmeCompetitive,
+            DATE_FORMAT(contract_date, '%Y-%m-%d')              AS contractDate,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
+            IFNULL(saved, 'N')                                  AS saved
+        FROM specific_item_flat
+        <include refid="commonWhere"/>
+        ORDER BY contract_date DESC, contract_no, item_seq
+        LIMIT #{p.start}, #{p.length}
+    </select>
+
+    <select id="selectFlatCount" resultType="int">
+        SELECT COUNT(*)
+        FROM specific_item_flat
+        <include refid="commonWhere"/>
+    </select>
+
+    <!-- ==================== GROUPED ==================== -->
+
+    <select id="selectGroupedList" resultType="map">
+        SELECT
+            MIN(id)                                             AS id,
+            <include refid="dataTypeLabel"/>,
+            data_type                                           AS dataType,
+            contract_no                                         AS contractNo,
+            vendor_name                                         AS vendorName,
+            vendor_biz_reg_no                                   AS vendorBizRegNo,
+            demand_agency_name                                  AS demandAgencyName,
+            demand_agency_region                                AS demandAgencyRegion,
+            contract_method                                     AS contractMethod,
+            contract_type                                       AS contractType,
+            item_category_no                                    AS itemCategoryNo,
+            detail_item_name                                    AS detailItemName,
+            MAX(is_long_term)                                   AS isLongTerm,
+            DATE_FORMAT(MIN(first_contract_date), '%Y-%m-%d')  AS firstContractDate,
+            DATE_FORMAT(MAX(contract_date), '%Y-%m-%d')        AS lastContractDate,
+            SUM(COALESCE(supply_amount, 0))                    AS totalSupplyAmount,
+            COUNT(*)                                            AS contractCount,
+            MAX(IFNULL(saved, 'N'))                            AS saved
+        FROM specific_item_flat
+        <include refid="commonWhere"/>
+        GROUP BY data_type, contract_no, vendor_biz_reg_no, demand_agency_name,
+                 contract_method, contract_type, item_category_no, detail_item_name, vendor_name
+        ORDER BY lastContractDate DESC
+        LIMIT #{p.start}, #{p.length}
+    </select>
+
+    <select id="selectGroupedCount" resultType="int">
+        SELECT COUNT(*) FROM (
+            SELECT contract_no
+            FROM specific_item_flat
+            <include refid="commonWhere"/>
+            GROUP BY data_type, contract_no, vendor_biz_reg_no, demand_agency_name,
+                     contract_method, contract_type, item_category_no, detail_item_name, vendor_name
+        ) t
+    </select>
+
+    <!-- ==================== SAVED ==================== -->
+
+    <update id="updateSaved">
+        UPDATE specific_item_flat
+        SET saved = #{saved}
+        WHERE contract_no = #{contractNo}
+        <if test="itemSeq != null">
+            AND item_seq = #{itemSeq}
+        </if>
+    </update>
+
+</mapper>

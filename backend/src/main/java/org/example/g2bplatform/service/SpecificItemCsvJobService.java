@@ -55,6 +55,7 @@ public class SpecificItemCsvJobService {
 
     private final JdbcTemplate jdbc;
     private final TaskExecutor csvJobExecutor;
+    private final SpecificItemEtlService specificItemEtlService;
 
     public CsvUploadJobDto startSpecificItemJob(MultipartFile file, String uploader) {
         String jobId = UUID.randomUUID().toString();
@@ -149,6 +150,11 @@ public class SpecificItemCsvJobService {
                     result.getErrorMessage(),
                     jobId
             );
+
+            // CSV 적재 성공 시 flat 테이블 ETL 자동 트리거
+            if ("SUCCESS".equals(finalStatus)) {
+                specificItemEtlService.startEtlJob(uploader);
+            }
         } catch (Exception e) {
             log.error("Job 실패: {}", jobId, e);
             jdbc.update(
