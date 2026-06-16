@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.g2bplatform.DTO.CsvUploadJobDto;
 import org.example.g2bplatform.service.SpecificItemCsvJobService;
+import org.example.g2bplatform.service.SpecificItemEtlService;
 import org.example.g2bplatform.service.TaskMemberContractCsvJobService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ public class CsvUploadController {
 
     private final SpecificItemCsvJobService specificItemCsvJobService;
     private final TaskMemberContractCsvJobService taskMemberContractCsvJobService;
+    private final SpecificItemEtlService specificItemEtlService;
 
     /**
      * 특정품목 조달 내역 CSV 업로드 → 비동기 적재 Job 생성.
@@ -81,6 +83,7 @@ public class CsvUploadController {
     public ResponseEntity<CsvUploadJobDto> getJob(@PathVariable String jobId) {
         CsvUploadJobDto job = specificItemCsvJobService.getJob(jobId);
         if (job == null) job = taskMemberContractCsvJobService.getJob(jobId);
+        if (job == null) job = specificItemEtlService.getJob(jobId);
         if (job == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(job);
     }
