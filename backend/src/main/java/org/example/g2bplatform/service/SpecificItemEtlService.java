@@ -22,7 +22,7 @@ public class SpecificItemEtlService {
 
     private static final String INSERT_SQL =
             "INSERT IGNORE INTO specific_item_flat (" +
-            "  data_type, contract_no, change_seq, item_seq, is_final_contract, is_long_term," +
+            "  data_type, contract_no, change_seq, item_seq, is_final_contract, is_long_term, first_year_contract_no," +
             "  demand_agency_code, demand_agency_name, demand_agency_region," +
             "  vendor_name, vendor_biz_reg_no, vendor_enterprise_type, vendor_region," +
             "  contract_name, contract_method, bid_notice_no, contract_type, delivery_contract_type," +
@@ -33,7 +33,7 @@ public class SpecificItemEtlService {
             "  contract_date, first_contract_date," +
             "  jurisdiction_type, delivery_location, source_file" +
             ") VALUES (" +
-            "  ?,?,?,?,?,?," +
+            "  ?,?,?,?,?,?,?," +
             "  ?,?,?," +
             "  ?,?,?,?," +
             "  ?,?,?,?,?," +
@@ -53,7 +53,7 @@ public class SpecificItemEtlService {
         String jobId = UUID.randomUUID().toString();
 
         long total = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM procurement_specific_item_raw WHERE business_type = '물품'",
+                "SELECT COUNT(*) FROM procurement_specific_item_raw WHERE business_type = '물품' AND is_final_contract = 'Y'",
                 Long.class);
 
         jdbc.update(
@@ -111,7 +111,7 @@ public class SpecificItemEtlService {
         try {
             while (true) {
                 List<Map<String, Object>> rows = jdbc.queryForList(
-                        "SELECT * FROM procurement_specific_item_raw WHERE business_type = '물품' AND id > ? ORDER BY id LIMIT ?",
+                        "SELECT * FROM procurement_specific_item_raw WHERE business_type = '물품' AND is_final_contract = 'Y' AND id > ? ORDER BY id LIMIT ?",
                         lastId, BATCH_SIZE);
 
                 if (rows.isEmpty()) break;
@@ -131,6 +131,10 @@ public class SpecificItemEtlService {
                         (int) processed, (int) inserted, (int) (processed - inserted), jobId);
             }
 
+            // flat 적재 완료 → grouped 재집계 (saved 보존)
+            jdbc.update("UPDATE csv_upload_job SET message='grouped 집계 중' WHERE id=?", jobId);
+            rebuildGrouped();
+
             jdbc.update("UPDATE csv_upload_job SET status='SUCCESS', message='완료', processed_rows=?, inserted_count=?, skipped_count=?, finished_at=NOW() WHERE id=?",
                     (int) processed, (int) inserted, (int) (processed - inserted), jobId);
             log.info("[ETL] 완료 jobId={}, inserted={}", jobId, inserted);
@@ -142,13 +146,75 @@ public class SpecificItemEtlService {
         }
     }
 
+    /**
+     * specific_item_flat → specific_item_grouped 재집계.
+     * 단기/단일계약은 1행 그대로, 장기계약은 초년도계약번호로 연차를 1행으로 병합.
+     * 기존 grouped의 saved 값은 묶음 키(data_type, group_key, vendor_biz_reg_no) 기준으로 보존.
+     */
+    private void rebuildGrouped() {
+        log.info("[ETL] grouped 재집계 시작");
+
+        // 1) 기존 saved 백업
+        jdbc.execute("DROP TEMPORARY TABLE IF EXISTS tmp_grouped_saved");
+        jdbc.execute(
+                "CREATE TEMPORARY TABLE tmp_grouped_saved AS " +
+                "SELECT data_type, group_key, vendor_biz_reg_no, saved " +
+                "FROM specific_item_grouped WHERE saved = 'Y'");
+
+        // 2) 재집계
+        jdbc.update("TRUNCATE TABLE specific_item_grouped");
+        int grouped = jdbc.update(
+                "INSERT INTO specific_item_grouped (" +
+                "  data_type, group_key, vendor_biz_reg_no, first_year_contract_no, contract_no," +
+                "  vendor_name, demand_agency_name, demand_agency_region, contract_method, contract_type," +
+                "  item_category_no, detail_item_name, is_long_term," +
+                "  first_contract_date, last_contract_date, total_supply_amount, contract_count, saved" +
+                ") SELECT" +
+                "  data_type," +
+                "  COALESCE(first_year_contract_no, contract_no) AS group_key," +
+                "  vendor_biz_reg_no," +
+                "  MAX(first_year_contract_no)," +
+                "  MIN(contract_no)," +
+                "  MAX(vendor_name)," +
+                "  MAX(demand_agency_name)," +
+                "  MIN(demand_agency_region)," +
+                "  MAX(contract_method)," +
+                "  MAX(contract_type)," +
+                "  MAX(item_category_no)," +
+                "  MAX(detail_item_name)," +
+                "  MAX(is_long_term)," +
+                "  MIN(first_contract_date)," +
+                "  MAX(contract_date)," +
+                "  SUM(COALESCE(supply_amount, 0))," +
+                "  COUNT(DISTINCT contract_no)," +
+                "  'N'" +
+                " FROM specific_item_flat" +
+                " WHERE is_active = 'Y'" +
+                " GROUP BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no");
+
+        // 3) saved 복원
+        int restored = jdbc.update(
+                "UPDATE specific_item_grouped g " +
+                "JOIN tmp_grouped_saved t " +
+                "  ON g.data_type = t.data_type" +
+                "  AND g.group_key = t.group_key" +
+                "  AND g.vendor_biz_reg_no <=> t.vendor_biz_reg_no " +
+                "SET g.saved = 'Y'");
+
+        jdbc.execute("DROP TEMPORARY TABLE IF EXISTS tmp_grouped_saved");
+        log.info("[ETL] grouped 재집계 완료 grouped={}, saved복원={}", grouped, restored);
+    }
+
     private Object[] toParams(Map<String, Object> r) {
         String contractType = str(r.get("contract_type"));
         String deliveryType = str(r.get("delivery_contract_type"));
         String dataType = ("제3자단가계약".equals(contractType) && "납품".equals(deliveryType))
                 ? "shopping_mall" : "general";
         String longTermType = str(r.get("new_long_term_type"));
-        String isLongTerm = (longTermType != null) ? "Y" : "N";
+        boolean isLong = "신규(장기)".equals(longTermType)
+                || "장기".equals(longTermType)
+                || "계속비".equals(longTermType);
+        String isLongTerm = isLong ? "Y" : "N";
 
         return new Object[]{
                 dataType,
@@ -157,6 +223,7 @@ public class SpecificItemEtlService {
                 toInt(r.get("item_seq"), 1),
                 flag(str(r.get("is_final_contract"))),
                 isLongTerm,
+                str(r.get("first_year_contract_no")),
                 str(r.get("demand_agency_code")),
                 str(r.get("demand_agency_name")),
                 str(r.get("demand_agency_region")),

@@ -42,6 +42,10 @@
           <input type="checkbox" v-model="filters.showSavedOnly" />
           저장된 데이터만 보기
         </label>
+        <label v-if="!grouped" class="checkbox-label">
+          <input type="checkbox" v-model="filters.excellentOnly" />
+          우수제품만 보기
+        </label>
         <span class="actions-sep" aria-hidden="true"></span>
         <div class="long-term-toggle-wrap">
           <span class="long-term-toggle-label">장기계약 건</span>
@@ -255,10 +259,11 @@ const filters = reactive({
   rangeStart: '',
   rangeEnd: '',
   showSavedOnly: false,
+  excellentOnly: false,
 })
 
 function groupedRowKey(item) {
-  return `${item.contractNo || ''}_${item.vendorBizRegNo || ''}_${item.itemCategoryNo || ''}`
+  return `${item.dataType || ''}_${item.groupKey || ''}_${item.vendorBizRegNo || ''}`
 }
 
 function flatRowKey(item) {
@@ -283,6 +288,7 @@ function buildParams(includePaging = true) {
     rangeStart: filters.dateType === 'range' ? filters.rangeStart || undefined : undefined,
     rangeEnd: filters.dateType === 'range' ? filters.rangeEnd || undefined : undefined,
     showSavedOnly: filters.showSavedOnly,
+    isExcellentProduct: !grouped.value && filters.excellentOnly ? 'Y' : undefined,
   }
   if (includePaging) {
     p.start = (currentPage.value - 1) * PAGE_SIZE
@@ -363,8 +369,16 @@ const handleDownloadExcel = async () => {
 const toggleSave = async (item) => {
   const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
   try {
-    const payload = { saved: nextSaved, contractNo: item.contractNo }
-    if (!grouped.value) payload.itemSeq = item.itemSeq
+    const payload = { saved: nextSaved, grouped: grouped.value }
+    if (grouped.value) {
+      payload.dataType = item.dataType
+      payload.groupKey = item.groupKey
+      payload.vendorBizRegNo = item.vendorBizRegNo
+    } else {
+      payload.contractNo = item.contractNo
+      payload.changeSeq = item.changeSeq
+      payload.itemSeq = item.itemSeq
+    }
     await axios.patch(API_BASE + '/saved', payload)
     item.saved = nextSaved
   } catch (e) {
@@ -384,6 +398,11 @@ watch(
   () => fetchData(true),
 )
 
+watch(
+  () => filters.excellentOnly,
+  () => fetchData(true),
+)
+
 onMounted(() => fetchData())
 </script>
 
@@ -391,7 +410,7 @@ onMounted(() => fetchData())
 .page-title {
   font-size: 1.4em;
   font-weight: 700;
-  color: #1e293b;
+  color: #ecf0f1;
   margin-bottom: 20px;
 }
 .search-container {

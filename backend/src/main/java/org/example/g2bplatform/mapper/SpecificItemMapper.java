@@ -18,4 +18,6 @@ public interface SpecificItemMapper {
     int selectGroupedCount(@Param("p") Map<String, Object> params);
 
     void updateSaved(Map<String, Object> params);
+
+    void updateGroupedSaved(Map<String, Object> params);
 }

@@ -107,12 +107,48 @@
 
     <!-- ==================== GROUPED ==================== -->
 
+    <sql id="groupedWhere">
+        WHERE 1=1
+        <if test="p.dataType != null">
+            AND data_type = #{p.dataType}
+        </if>
+        <if test="p.demandAgencyName != null">
+            AND demand_agency_name LIKE CONCAT('%', #{p.demandAgencyName}, '%')
+        </if>
+        <if test="p.demandAgencyRegion != null">
+            AND demand_agency_region LIKE CONCAT('%', #{p.demandAgencyRegion}, '%')
+        </if>
+        <if test="p.vendorBizRegNo != null">
+            AND vendor_biz_reg_no = #{p.vendorBizRegNo}
+        </if>
+        <if test="p.itemCategoryNo != null">
+            AND item_category_no LIKE CONCAT('%', #{p.itemCategoryNo}, '%')
+        </if>
+        <if test="p.year != null">
+            AND last_contract_date &gt;= CONCAT(#{p.year}, '-01-01')
+            AND last_contract_date &lt;  DATE_ADD(CONCAT(#{p.year}, '-01-01'), INTERVAL 1 YEAR)
+        </if>
+        <if test="p.month != null">
+            AND last_contract_date &gt;= CONCAT(#{p.month}, '-01')
+            AND last_contract_date &lt;  DATE_ADD(CONCAT(#{p.month}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="p.rangeStart != null and p.rangeEnd != null">
+            AND last_contract_date &gt;= CONCAT(#{p.rangeStart}, '-01')
+            AND last_contract_date &lt;  DATE_ADD(CONCAT(#{p.rangeEnd}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="p.showSavedOnly == true">
+            AND saved = 'Y'
+        </if>
+    </sql>
+
     <select id="selectGroupedList" resultType="map">
         SELECT
-            MIN(id)                                             AS id,
+            id                                                  AS id,
             <include refid="dataTypeLabel"/>,
             data_type                                           AS dataType,
+            group_key                                           AS groupKey,
             contract_no                                         AS contractNo,
+            first_year_contract_no                              AS firstYearContractNo,
             vendor_name                                         AS vendorName,
             vendor_biz_reg_no                                   AS vendorBizRegNo,
             demand_agency_name                                  AS demandAgencyName,
@@ -121,28 +157,22 @@
             contract_type                                       AS contractType,
             item_category_no                                    AS itemCategoryNo,
             detail_item_name                                    AS detailItemName,
-            MAX(is_long_term)                                   AS isLongTerm,
-            DATE_FORMAT(MIN(first_contract_date), '%Y-%m-%d')  AS firstContractDate,
-            DATE_FORMAT(MAX(contract_date), '%Y-%m-%d')        AS lastContractDate,
-            SUM(COALESCE(supply_amount, 0))                    AS totalSupplyAmount,
-            COUNT(*)                                            AS contractCount,
-            MAX(IFNULL(saved, 'N'))                            AS saved
-        FROM specific_item_flat
-        <include refid="commonWhere"/>
-        GROUP BY data_type, contract_no, vendor_biz_reg_no, demand_agency_name,
-                 contract_method, contract_type, item_category_no, detail_item_name, vendor_name
-        ORDER BY lastContractDate DESC
+            is_long_term                                        AS isLongTerm,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
+            DATE_FORMAT(last_contract_date, '%Y-%m-%d')         AS lastContractDate,
+            total_supply_amount                                 AS totalSupplyAmount,
+            contract_count                                      AS contractCount,
+            IFNULL(saved, 'N')                                  AS saved
+        FROM specific_item_grouped
+        <include refid="groupedWhere"/>
+        ORDER BY last_contract_date DESC, id
         LIMIT #{p.start}, #{p.length}
     </select>
 
     <select id="selectGroupedCount" resultType="int">
-        SELECT COUNT(*) FROM (
-            SELECT contract_no
-            FROM specific_item_flat
-            <include refid="commonWhere"/>
-            GROUP BY data_type, contract_no, vendor_biz_reg_no, demand_agency_name,
-                     contract_method, contract_type, item_category_no, detail_item_name, vendor_name
-        ) t
+        SELECT COUNT(*)
+        FROM specific_item_grouped
+        <include refid="groupedWhere"/>
     </select>
 
     <!-- ==================== SAVED ==================== -->
@@ -151,9 +181,20 @@
         UPDATE specific_item_flat
         SET saved = #{saved}
         WHERE contract_no = #{contractNo}
+        <if test="changeSeq != null">
+            AND change_seq = #{changeSeq}
+        </if>
         <if test="itemSeq != null">
             AND item_seq = #{itemSeq}
         </if>
+    </update>
+
+    <update id="updateGroupedSaved">
+        UPDATE specific_item_grouped
+        SET saved = #{saved}
+        WHERE data_type = #{dataType}
+          AND group_key = #{groupKey}
+          AND vendor_biz_reg_no &lt;=&gt; #{vendorBizRegNo}
     </update>
 
 </mapper>

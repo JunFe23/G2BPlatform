@@ -68,10 +68,14 @@ public class SpecificItemController {
         return ResponseEntity.ok(res);
     }
 
-    /** 저장 여부 토글 */
+    /** 저장 여부 토글 — grouped 여부에 따라 대상 테이블 분기 */
     @PatchMapping("/api/specific-item/saved")
     public ResponseEntity<Void> toggleSaved(@RequestBody Map<String, Object> body) {
-        specificItemMapper.updateSaved(body);
+        if (Boolean.TRUE.equals(body.get("grouped"))) {
+            specificItemMapper.updateGroupedSaved(body);
+        } else {
+            specificItemMapper.updateSaved(body);
+        }
         return ResponseEntity.ok().build();
     }
 
