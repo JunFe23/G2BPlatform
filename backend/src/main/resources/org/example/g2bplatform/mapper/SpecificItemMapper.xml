@@ -113,9 +113,11 @@
             vendor_biz_reg_no                                   AS vendorBizRegNo,
             demand_agency_name                                  AS demandAgencyName,
             demand_agency_region                                AS demandAgencyRegion,
+            contract_name                                       AS contractName,
             contract_method                                     AS contractMethod,
             contract_type                                       AS contractType,
             item_category_no                                    AS itemCategoryNo,
+            item_category_name                                  AS itemCategoryName,
             detail_item_no                                      AS detailItemNo,
             detail_item_name                                    AS detailItemName,
             item_identifier_name                                AS itemIdentifierName,
@@ -184,13 +186,17 @@
             vendor_biz_reg_no                                   AS vendorBizRegNo,
             demand_agency_name                                  AS demandAgencyName,
             demand_agency_region                                AS demandAgencyRegion,
+            contract_name                                       AS contractName,
             contract_method                                     AS contractMethod,
             contract_type                                       AS contractType,
+            is_mas                                              AS isMas,
             item_category_no                                    AS itemCategoryNo,
+            item_category_name                                  AS itemCategoryName,
             detail_item_name                                    AS detailItemName,
             is_long_term                                        AS isLongTerm,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
             DATE_FORMAT(last_contract_date, '%Y-%m-%d')         AS lastContractDate,
+            initial_contract_amount                             AS initialContractAmount,
             total_supply_amount                                 AS totalSupplyAmount,
             contract_count                                      AS contractCount,
             IFNULL(saved, 'N')                                  AS saved
@@ -198,6 +204,15 @@
         <include refid="groupedWhere"/>
         ORDER BY last_contract_date DESC, id
         LIMIT #{p.start}, #{p.length}
+    </select>
+
+    <!-- 묶어서 보기 상단 합계: 최초계약금액 합계 / 최종계약금액 합계 -->
+    <select id="selectGroupedTotals" resultType="map">
+        SELECT
+            COALESCE(SUM(initial_contract_amount), 0) AS initialAmountSum,
+            COALESCE(SUM(total_supply_amount), 0)     AS finalAmountSum
+        FROM specific_item_grouped
+        <include refid="groupedWhere"/>
     </select>
 
     <select id="selectGroupedCount" resultType="int">
@@ -214,11 +229,15 @@
             vendor_biz_reg_no                                   AS vendorBizRegNo,
             demand_agency_name                                  AS demandAgencyName,
             demand_agency_region                                AS demandAgencyRegion,
+            contract_name                                       AS contractName,
+            contract_method                                     AS contractMethod,
             contract_type                                       AS contractType,
+            is_mas                                              AS isMas,
             item_category_no                                    AS itemCategoryNo,
-            detail_item_name                                    AS detailItemName,
+            item_category_name                                  AS itemCategoryName,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
             DATE_FORMAT(last_contract_date, '%Y-%m-%d')         AS lastContractDate,
+            initial_contract_amount                             AS initialContractAmount,
             total_supply_amount                                 AS totalSupplyAmount,
             contract_count                                      AS contractCount,
             is_long_term                                        AS isLongTerm,

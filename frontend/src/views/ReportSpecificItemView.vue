@@ -83,6 +83,13 @@
       </div>
     </div>
 
+    <!-- 묶어서 보기 상단 합계 -->
+    <div v-if="grouped && totals" class="grouped-totals">
+      <span class="total-item">최초계약금액 합계 <strong>{{ formatNumber(totals.initialAmountSum) }}원</strong></span>
+      <span class="total-sep">|</span>
+      <span class="total-item">최종계약금액 합계 <strong>{{ formatNumber(totals.finalAmountSum) }}원</strong></span>
+    </div>
+
     <!-- 데이터 테이블 -->
     <div class="table-container">
       <div class="table-wrapper">
@@ -95,12 +102,15 @@
               <th>사업자번호</th>
               <th>수요기관명</th>
               <th>수요기관지역</th>
+              <th>계약명</th>
               <th>계약방법</th>
               <th>계약유형</th>
+              <th>MAS</th>
               <th>물품분류번호</th>
-              <th>세부품명</th>
+              <th>물품분류명</th>
               <th>최초계약일자</th>
               <th>최종계약일자</th>
+              <th>최초계약금액</th>
               <th>최종계약금액(합계)</th>
               <th>계약건수</th>
               <th>장기여부</th>
@@ -113,9 +123,11 @@
               <th>사업자번호</th>
               <th>수요기관명</th>
               <th>수요기관지역</th>
+              <th>계약명</th>
               <th>계약방법</th>
               <th>계약유형</th>
               <th>물품분류번호</th>
+              <th>물품분류명</th>
               <th>세부품명번호</th>
               <th>세부품명</th>
               <th>물품식별명</th>
@@ -135,10 +147,10 @@
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td :colspan="grouped ? 15 : 23" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td :colspan="grouped ? 18 : 25" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td :colspan="grouped ? 15 : 23" class="no-data">데이터가 없습니다.</td>
+              <td :colspan="grouped ? 18 : 25" class="no-data">데이터가 없습니다.</td>
             </tr>
 
             <!-- 합쳐서 보기 행 -->
@@ -153,12 +165,15 @@
                 <td>{{ item.vendorBizRegNo }}</td>
                 <td>{{ item.demandAgencyName }}</td>
                 <td>{{ item.demandAgencyRegion }}</td>
+                <td>{{ item.contractName }}</td>
                 <td>{{ item.contractMethod }}</td>
                 <td>{{ item.contractType }}</td>
+                <td>{{ item.isMas }}</td>
                 <td>{{ item.itemCategoryNo }}</td>
-                <td>{{ item.detailItemName }}</td>
+                <td>{{ item.itemCategoryName }}</td>
                 <td>{{ item.firstContractDate }}</td>
                 <td>{{ item.lastContractDate }}</td>
+                <td>{{ formatNumber(item.initialContractAmount) }}</td>
                 <td>{{ formatNumber(item.totalSupplyAmount) }}</td>
                 <td>{{ item.contractCount }}</td>
                 <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
@@ -180,9 +195,11 @@
                 <td>{{ item.vendorBizRegNo }}</td>
                 <td>{{ item.demandAgencyName }}</td>
                 <td>{{ item.demandAgencyRegion }}</td>
+                <td>{{ item.contractName }}</td>
                 <td>{{ item.contractMethod }}</td>
                 <td>{{ item.contractType }}</td>
                 <td>{{ item.itemCategoryNo }}</td>
+                <td>{{ item.itemCategoryName }}</td>
                 <td>{{ item.detailItemNo }}</td>
                 <td>{{ item.detailItemName }}</td>
                 <td>{{ item.itemIdentifierName }}</td>
@@ -238,6 +255,7 @@ const items = ref([])
 const recordsFiltered = ref(0)
 const currentPage = ref(1)
 const grouped = ref(false)
+const totals = ref(null)
 
 function onToggleClick() {
   grouped.value = !grouped.value
@@ -319,10 +337,12 @@ const fetchData = async (resetPage = false) => {
     const { data } = await axios.get(API_BASE, { params: buildParams(true) })
     items.value = Array.isArray(data.data) ? data.data : []
     recordsFiltered.value = data.recordsFiltered ?? items.value.length
+    totals.value = grouped.value && data.totals ? data.totals : null
   } catch (e) {
     console.error('특정품목 조회 실패', e)
     items.value = []
     recordsFiltered.value = 0
+    totals.value = null
   } finally {
     isLoading.value = false
   }
@@ -624,10 +644,16 @@ input[type='month']:focus {
 }
 .data-table th,
 .data-table td {
-  padding: 12px 10px;
+  padding: 6px 8px;
   border: 1px solid #e2e8f0;
   text-align: center;
-  font-size: 0.9em;
+  font-size: 0.82em;
+}
+/* 요구 3: 컬럼 폭 압축 — 긴 텍스트는 말줄임 처리해 한 화면에 최대한 표시 */
+.data-table td {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .data-table th {
   background: #f1f5f9;
@@ -649,11 +675,41 @@ input[type='month']:focus {
 }
 .table-wrapper {
   max-height: 70vh;
-  overflow: auto;
+  overflow: scroll; /* 요구 6: 상하·좌우 스크롤바 상시 표시 */
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  scrollbar-width: auto; /* Firefox: 항상 표시 */
 }
+/* 요구 6: WebKit(Chrome/Safari) 스크롤바 상시 표시 */
+.table-wrapper::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: #b0b8c4;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+.table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+/* 요구 4: 묶어서 보기 상단 합계 밴드 */
+.grouped-totals {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  background: #eef2f7;
+  border: 1px solid #d6dee8;
+  border-radius: 8px;
+  font-size: 0.92em;
+  color: #334155;
+}
+.grouped-totals strong { color: #1d4ed8; margin-left: 4px; }
+.grouped-totals .total-sep { color: #94a3b8; }
 .data-table th {
   position: sticky;
   top: 0;
