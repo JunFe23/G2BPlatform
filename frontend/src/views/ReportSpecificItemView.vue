@@ -46,6 +46,10 @@
           <input type="checkbox" v-model="filters.excellentOnly" />
           우수제품만 보기
         </label>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="filters.topExcellentOnly" />
+          자사 우수제품만 보기
+        </label>
         <span class="actions-sep" aria-hidden="true"></span>
         <div class="long-term-toggle-wrap">
           <span class="long-term-toggle-label">장기계약 건</span>
@@ -108,6 +112,7 @@
               <th>MAS</th>
               <th>물품분류번호</th>
               <th>물품분류명</th>
+              <th>자사우수제품</th>
               <th>최초계약일자</th>
               <th>최종계약일자</th>
               <th>최초계약금액</th>
@@ -137,6 +142,7 @@
               <th>공급금액</th>
               <th>MAS</th>
               <th>우수제품</th>
+              <th>자사우수제품</th>
               <th>직접구매</th>
               <th>중기간경쟁</th>
               <th>최초계약일자</th>
@@ -147,10 +153,10 @@
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td :colspan="grouped ? 18 : 25" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td :colspan="grouped ? 19 : 26" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td :colspan="grouped ? 18 : 25" class="no-data">데이터가 없습니다.</td>
+              <td :colspan="grouped ? 19 : 26" class="no-data">데이터가 없습니다.</td>
             </tr>
 
             <!-- 합쳐서 보기 행 -->
@@ -171,6 +177,7 @@
                 <td>{{ item.isMas }}</td>
                 <td>{{ item.itemCategoryNo }}</td>
                 <td>{{ item.itemCategoryName }}</td>
+                <td>{{ item.isTopExcellent }}</td>
                 <td>{{ item.firstContractDate }}</td>
                 <td>{{ item.lastContractDate }}</td>
                 <td>{{ formatNumber(item.initialContractAmount) }}</td>
@@ -209,6 +216,7 @@
                 <td>{{ formatNumber(item.supplyAmount) }}</td>
                 <td>{{ item.isMas }}</td>
                 <td>{{ item.isExcellentProduct }}</td>
+                <td>{{ item.isTopExcellent }}</td>
                 <td>{{ item.isDirectPurchase }}</td>
                 <td>{{ item.isSmeCompetitive }}</td>
                 <td>{{ item.firstContractDate }}</td>
@@ -278,6 +286,7 @@ const filters = reactive({
   rangeEnd: '',
   showSavedOnly: false,
   excellentOnly: false,
+  topExcellentOnly: false,
 })
 
 function groupedRowKey(item) {
@@ -307,6 +316,7 @@ function buildParams(includePaging = true) {
     rangeEnd: filters.dateType === 'range' ? filters.rangeEnd || undefined : undefined,
     showSavedOnly: filters.showSavedOnly,
     isExcellentProduct: !grouped.value && filters.excellentOnly ? 'Y' : undefined,
+    topExcellentOnly: filters.topExcellentOnly || undefined,
   }
   if (includePaging) {
     p.start = (currentPage.value - 1) * PAGE_SIZE
@@ -420,6 +430,11 @@ watch(
 
 watch(
   () => filters.excellentOnly,
+  () => fetchData(true),
+)
+
+watch(
+  () => filters.topExcellentOnly,
   () => fetchData(true),
 )
 

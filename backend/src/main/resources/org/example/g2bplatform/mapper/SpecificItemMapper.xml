@@ -12,6 +12,12 @@
         END AS dataTypeLabel
     </sql>
 
+    <!-- 자사 우수제품 판정: 설정 테이블(top_excellent_category)에 등록된 물품분류번호면 Y -->
+    <sql id="topExcellentSelect">
+        CASE WHEN item_category_no IN (SELECT item_category_no FROM top_excellent_category WHERE is_active = 'Y')
+             THEN 'Y' ELSE 'N' END AS isTopExcellent
+    </sql>
+
     <sql id="commonWhere">
         WHERE is_active = 'Y'
         <if test="p.dataType != null">
@@ -37,6 +43,9 @@
         </if>
         <if test="p.isExcellentProduct != null">
             AND is_excellent_product = #{p.isExcellentProduct}
+        </if>
+        <if test="p.topExcellentOnly == true">
+            AND item_category_no IN (SELECT item_category_no FROM top_excellent_category WHERE is_active = 'Y')
         </if>
         <if test="p.year != null">
             AND contract_date &gt;= CONCAT(#{p.year}, '-01-01')
@@ -88,6 +97,7 @@
             supply_amount                                       AS supplyAmount,
             is_mas                                              AS isMas,
             is_excellent_product                                AS isExcellentProduct,
+            <include refid="topExcellentSelect"/>,
             is_direct_purchase                                  AS isDirectPurchase,
             is_sme_competitive                                  AS isSmeCompetitive,
             DATE_FORMAT(contract_date, '%Y-%m-%d')              AS contractDate,
@@ -127,6 +137,7 @@
             supply_amount                                       AS supplyAmount,
             is_mas                                              AS isMas,
             is_excellent_product                                AS isExcellentProduct,
+            <include refid="topExcellentSelect"/>,
             is_direct_purchase                                  AS isDirectPurchase,
             is_sme_competitive                                  AS isSmeCompetitive,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
@@ -156,6 +167,9 @@
         </if>
         <if test="p.itemCategoryNo != null">
             AND item_category_no LIKE CONCAT('%', #{p.itemCategoryNo}, '%')
+        </if>
+        <if test="p.topExcellentOnly == true">
+            AND item_category_no IN (SELECT item_category_no FROM top_excellent_category WHERE is_active = 'Y')
         </if>
         <if test="p.year != null">
             AND last_contract_date &gt;= CONCAT(#{p.year}, '-01-01')
@@ -192,6 +206,7 @@
             is_mas                                              AS isMas,
             item_category_no                                    AS itemCategoryNo,
             item_category_name                                  AS itemCategoryName,
+            <include refid="topExcellentSelect"/>,
             detail_item_name                                    AS detailItemName,
             is_long_term                                        AS isLongTerm,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
@@ -235,6 +250,7 @@
             is_mas                                              AS isMas,
             item_category_no                                    AS itemCategoryNo,
             item_category_name                                  AS itemCategoryName,
+            <include refid="topExcellentSelect"/>,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
             DATE_FORMAT(last_contract_date, '%Y-%m-%d')         AS lastContractDate,
             initial_contract_amount                             AS initialContractAmount,
