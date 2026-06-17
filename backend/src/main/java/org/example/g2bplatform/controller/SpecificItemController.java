@@ -81,12 +81,13 @@ public class SpecificItemController {
     }
 
     /**
-     * 엑셀 다운로드 — 대용량 대응.
-     * DB 결과를 MyBatis Cursor로 스트리밍하고 SXSSFWorkbook(윈도우 플러시)으로 생성,
-     * StreamingResponseBody로 응답에 직접 흘려보내 전체 List/Workbook 메모리 적재를 피한다.
+     * 엑셀 다운로드 — 대용량 대응(동기).
+     * DB 결과를 MyBatis Cursor로 스트리밍하고 SXSSFWorkbook(윈도우 플러시)으로 생성해
+     * 전체 List/Workbook 메모리 적재를 피한다. 요청 스레드에서 동기로 생성하므로
+     * (StreamingResponseBody 비동기 재디스패치 시 Spring Security AccessDenied 회피) 보안 필터가 정상 동작한다.
      */
     @GetMapping("/api/specific-item/excel")
-    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody> excel(
+    public ResponseEntity<byte[]> excel(
             @RequestParam(required = false) String dataType,
             @RequestParam(required = false) String demandAgencyName,
             @RequestParam(required = false) String demandAgencyRegion,
@@ -101,19 +102,19 @@ public class SpecificItemController {
             @RequestParam(required = false) String rangeEnd,
             @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly,
             @RequestParam(required = false, defaultValue = "false") boolean grouped
-    ) {
+    ) throws java.io.IOException {
         Map<String, Object> params = buildParams(
                 dataType, demandAgencyName, demandAgencyRegion, vendorBizRegNo,
                 itemCategoryNo, detailItemNo, isMas, isExcellentProduct,
                 year, month, rangeStart, rangeEnd, showSavedOnly, grouped, 0, Integer.MAX_VALUE);
 
-        org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody body =
-                out -> writeExcel(out, params, grouped);
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        writeExcel(out, params, grouped);
 
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"specific_item.xlsx\"")
                 .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                .body(body);
+                .body(out.toByteArray());
     }
 
     private Map<String, Object> buildParams(
