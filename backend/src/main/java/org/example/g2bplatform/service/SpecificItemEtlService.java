@@ -162,8 +162,9 @@ public class SpecificItemEtlService {
 
         // 2) 재집계
         jdbc.update("TRUNCATE TABLE specific_item_grouped");
-        // 날짜·금액 기준은 contract_date(최종 변경 반영 계약일)로 통일.
-        // 최초계약금액 = 그룹 내 가장 이른 contract_date 건들의 supply_amount 합 (윈도우로 grp_min_date 산출).
+        // 날짜 기준은 first_contract_date(원계약 체결일)로 산출. 변경계약이 있으면 contract_date는
+        // 변경일이라 연차 식별이 왜곡되므로 first_contract_date로 묶음의 최초/최종 연차를 식별한다.
+        // 최초계약금액 = 그룹 내 가장 이른 first_contract_date 연차의 supply_amount 합 (윈도우로 grp_min_date 산출).
         int grouped = jdbc.update(
                 "INSERT INTO specific_item_grouped (" +
                 "  data_type, group_key, vendor_biz_reg_no, first_year_contract_no, contract_no," +
@@ -187,15 +188,15 @@ public class SpecificItemEtlService {
                 "  MAX(item_category_name)," +
                 "  MAX(detail_item_name)," +
                 "  MAX(is_long_term)," +
-                "  MIN(contract_date)," +                  // 최초계약일자 = 가장 이른 계약일자
-                "  MAX(contract_date)," +                  // 최종계약일자
+                "  MIN(first_contract_date)," +            // 최초계약일자 = 가장 이른 원계약일
+                "  MAX(first_contract_date)," +            // 최종계약일자 = 가장 늦은 원계약일
                 "  SUM(COALESCE(supply_amount, 0))," +     // 최종계약금액 합계
-                "  SUM(CASE WHEN contract_date = grp_min_date THEN COALESCE(supply_amount,0) ELSE 0 END)," + // 최초계약금액
+                "  SUM(CASE WHEN first_contract_date = grp_min_date THEN COALESCE(supply_amount,0) ELSE 0 END)," + // 최초계약금액
                 "  COUNT(DISTINCT contract_no)," +
                 "  'N'" +
                 " FROM (" +
                 "   SELECT *," +
-                "     MIN(contract_date) OVER (PARTITION BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no) AS grp_min_date" +
+                "     MIN(first_contract_date) OVER (PARTITION BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no) AS grp_min_date" +
                 "   FROM specific_item_flat WHERE is_active = 'Y'" +
                 " ) t" +
                 " GROUP BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no");
