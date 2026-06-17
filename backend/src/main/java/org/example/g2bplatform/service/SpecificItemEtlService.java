@@ -162,12 +162,14 @@ public class SpecificItemEtlService {
 
         // 2) 재집계
         jdbc.update("TRUNCATE TABLE specific_item_grouped");
+        // 날짜·금액 기준은 contract_date(최종 변경 반영 계약일)로 통일.
+        // 최초계약금액 = 그룹 내 가장 이른 contract_date 건들의 supply_amount 합 (윈도우로 grp_min_date 산출).
         int grouped = jdbc.update(
                 "INSERT INTO specific_item_grouped (" +
                 "  data_type, group_key, vendor_biz_reg_no, first_year_contract_no, contract_no," +
-                "  vendor_name, demand_agency_name, demand_agency_region, contract_method, contract_type," +
-                "  item_category_no, detail_item_name, is_long_term," +
-                "  first_contract_date, last_contract_date, total_supply_amount, contract_count, saved" +
+                "  vendor_name, demand_agency_name, demand_agency_region, contract_name, contract_method, contract_type, is_mas," +
+                "  item_category_no, item_category_name, detail_item_name, is_long_term," +
+                "  first_contract_date, last_contract_date, total_supply_amount, initial_contract_amount, contract_count, saved" +
                 ") SELECT" +
                 "  data_type," +
                 "  COALESCE(first_year_contract_no, contract_no) AS group_key," +
@@ -177,18 +179,25 @@ public class SpecificItemEtlService {
                 "  MAX(vendor_name)," +
                 "  MAX(demand_agency_name)," +
                 "  MIN(demand_agency_region)," +
+                "  MAX(contract_name)," +
                 "  MAX(contract_method)," +
                 "  MAX(contract_type)," +
+                "  MAX(is_mas)," +
                 "  MAX(item_category_no)," +
+                "  MAX(item_category_name)," +
                 "  MAX(detail_item_name)," +
                 "  MAX(is_long_term)," +
-                "  MIN(first_contract_date)," +
-                "  MAX(contract_date)," +
-                "  SUM(COALESCE(supply_amount, 0))," +
+                "  MIN(contract_date)," +                  // 최초계약일자 = 가장 이른 계약일자
+                "  MAX(contract_date)," +                  // 최종계약일자
+                "  SUM(COALESCE(supply_amount, 0))," +     // 최종계약금액 합계
+                "  SUM(CASE WHEN contract_date = grp_min_date THEN COALESCE(supply_amount,0) ELSE 0 END)," + // 최초계약금액
                 "  COUNT(DISTINCT contract_no)," +
                 "  'N'" +
-                " FROM specific_item_flat" +
-                " WHERE is_active = 'Y'" +
+                " FROM (" +
+                "   SELECT *," +
+                "     MIN(contract_date) OVER (PARTITION BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no) AS grp_min_date" +
+                "   FROM specific_item_flat WHERE is_active = 'Y'" +
+                " ) t" +
                 " GROUP BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no");
 
         // 3) saved 복원 — 백업한 키 기준 batch UPDATE (NULL-safe <=>)
