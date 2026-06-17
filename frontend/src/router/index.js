@@ -74,7 +74,7 @@ const router = createRouter({
       name: 'main',
       redirect: () => {
         const store = useAuthStore()
-        return store.isLoggedIn ? '/report-goods' : '/login'
+        return store.isLoggedIn ? '/report-specific-item' : '/login'
       },
     },
     {

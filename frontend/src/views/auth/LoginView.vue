@@ -61,7 +61,7 @@ const handleLogin = async () => {
   try {
     await authStore.login(username.value, password.value)
     await authStore.fetchMe()
-    const redirect = route.query.redirect || '/report-goods'
+    const redirect = route.query.redirect || '/report-specific-item'
     router.push(redirect)
   } catch (e) {
     const code = e.response?.data?.code
