@@ -12,6 +12,14 @@
           <option value="shopping_mall">쇼핑몰(제3자단가)</option>
         </select>
 
+        <!-- 계약방법 구분 (MAS / 3자단가 / 물품) -->
+        <select v-model="filters.contractKind" class="date-select">
+          <option value="">계약방법 전체</option>
+          <option value="mas">MAS(다수공급자계약)</option>
+          <option value="third">3자단가(일반)</option>
+          <option value="goods">물품(총액·일반단가)</option>
+        </select>
+
         <input type="text" v-model="filters.demandAgencyName" placeholder="수요기관명 검색" />
         <input type="text" v-model="filters.demandAgencyRegion" placeholder="수요기관지역 검색" />
         <input type="text" v-model="filters.vendorBizRegNo" placeholder="사업자번호 검색" />
@@ -270,6 +278,7 @@ const years = Array.from({ length: 10 }, (_, i) => String(2026 - i))
 
 const filters = reactive({
   dataType: '',
+  contractKind: '',
   demandAgencyName: '',
   demandAgencyRegion: '',
   vendorBizRegNo: '',
@@ -300,6 +309,7 @@ function buildParams(includePaging = true) {
   const p = {
     grouped: grouped.value,
     dataType: filters.dataType || undefined,
+    contractKind: filters.contractKind || undefined,
     demandAgencyName: filters.demandAgencyName || undefined,
     demandAgencyRegion: filters.demandAgencyRegion || undefined,
     vendorBizRegNo: filters.vendorBizRegNo || undefined,

@@ -53,6 +53,15 @@
         <if test="p.isMas != null">
             AND is_mas = #{p.isMas}
         </if>
+        <if test="p.contractKind == 'mas'">
+            AND data_type = 'shopping_mall' AND is_mas = 'Y'
+        </if>
+        <if test="p.contractKind == 'third'">
+            AND data_type = 'shopping_mall' AND is_mas = 'N'
+        </if>
+        <if test="p.contractKind == 'goods'">
+            AND data_type = 'general'
+        </if>
         <if test="p.isExcellentProduct != null">
             AND is_excellent_product = #{p.isExcellentProduct}
         </if>
@@ -177,6 +186,15 @@
         </if>
         <if test="p.vendorBizRegNo != null">
             AND vendor_biz_reg_no = #{p.vendorBizRegNo}
+        </if>
+        <if test="p.contractKind == 'mas'">
+            AND data_type = 'shopping_mall' AND is_mas = 'Y'
+        </if>
+        <if test="p.contractKind == 'third'">
+            AND data_type = 'shopping_mall' AND is_mas = 'N'
+        </if>
+        <if test="p.contractKind == 'goods'">
+            AND data_type = 'general'
         </if>
         <if test="p.itemCategoryNo != null">
             AND item_category_no LIKE CONCAT('%', #{p.itemCategoryNo}, '%')

@@ -42,6 +42,7 @@ public class SpecificItemController {
             @RequestParam(required = false) String detailItemNo,
             @RequestParam(required = false) String isMas,
             @RequestParam(required = false) String isExcellentProduct,
+            @RequestParam(required = false) String contractKind,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String month,
             @RequestParam(required = false) String rangeStart,
@@ -54,7 +55,7 @@ public class SpecificItemController {
     ) {
         Map<String, Object> params = buildParams(
                 dataType, demandAgencyName, demandAgencyRegion, vendorBizRegNo,
-                itemCategoryNo, detailItemNo, isMas, isExcellentProduct,
+                itemCategoryNo, detailItemNo, isMas, isExcellentProduct, contractKind,
                 year, month, rangeStart, rangeEnd, showSavedOnly, topExcellentOnly, grouped, start, length);
 
         List<Map<String, Object>> data = grouped
@@ -101,6 +102,7 @@ public class SpecificItemController {
             @RequestParam(required = false) String detailItemNo,
             @RequestParam(required = false) String isMas,
             @RequestParam(required = false) String isExcellentProduct,
+            @RequestParam(required = false) String contractKind,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String month,
             @RequestParam(required = false) String rangeStart,
@@ -111,7 +113,7 @@ public class SpecificItemController {
     ) throws java.io.IOException {
         Map<String, Object> params = buildParams(
                 dataType, demandAgencyName, demandAgencyRegion, vendorBizRegNo,
-                itemCategoryNo, detailItemNo, isMas, isExcellentProduct,
+                itemCategoryNo, detailItemNo, isMas, isExcellentProduct, contractKind,
                 year, month, rangeStart, rangeEnd, showSavedOnly, topExcellentOnly, grouped, 0, Integer.MAX_VALUE);
 
         java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
@@ -126,11 +128,12 @@ public class SpecificItemController {
     private Map<String, Object> buildParams(
             String dataType, String demandAgencyName, String demandAgencyRegion,
             String vendorBizRegNo, String itemCategoryNo, String detailItemNo,
-            String isMas, String isExcellentProduct,
+            String isMas, String isExcellentProduct, String contractKind,
             Integer year, String month, String rangeStart, String rangeEnd,
             boolean showSavedOnly, boolean topExcellentOnly, boolean grouped, int start, int length) {
 
         Map<String, Object> p = new HashMap<>();
+        if (ne(contractKind))      p.put("contractKind", contractKind);
         if (ne(dataType))          p.put("dataType", dataType);
         if (ne(demandAgencyName))  p.put("demandAgencyName", demandAgencyName);
         if (ne(demandAgencyRegion))p.put("demandAgencyRegion", demandAgencyRegion);
