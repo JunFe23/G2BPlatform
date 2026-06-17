@@ -12,11 +12,23 @@
         END AS dataTypeLabel
     </sql>
 
-    <!-- 자사 우수제품 판정: 설정 테이블(top_excellent_category)에 등록된 물품분류번호면 Y -->
+    <!-- 자사 우수제품 판정: 앱에서 전달한 분류번호 목록(리터럴 IN)으로 판정 (서브쿼리 회피로 인덱스 활용) -->
     <sql id="topExcellentSelect">
-        CASE WHEN item_category_no IN (SELECT item_category_no FROM top_excellent_category WHERE is_active = 'Y')
-             THEN 'Y' ELSE 'N' END AS isTopExcellent
+        <choose>
+            <when test="p.topCategories != null and p.topCategories.size() > 0">
+                CASE WHEN item_category_no IN
+                <foreach item="c" collection="p.topCategories" open="(" separator="," close=")">#{c}</foreach>
+                THEN 'Y' ELSE 'N' END AS isTopExcellent
+            </when>
+            <otherwise>
+                'N' AS isTopExcellent
+            </otherwise>
+        </choose>
     </sql>
+
+    <select id="selectTopCategories" resultType="string">
+        SELECT item_category_no FROM top_excellent_category WHERE is_active = 'Y'
+    </select>
 
     <sql id="commonWhere">
         WHERE is_active = 'Y'
@@ -44,8 +56,9 @@
         <if test="p.isExcellentProduct != null">
             AND is_excellent_product = #{p.isExcellentProduct}
         </if>
-        <if test="p.topExcellentOnly == true">
-            AND item_category_no IN (SELECT item_category_no FROM top_excellent_category WHERE is_active = 'Y')
+        <if test="p.topExcellentOnly == true and p.topCategories != null and p.topCategories.size() > 0">
+            AND item_category_no IN
+            <foreach item="c" collection="p.topCategories" open="(" separator="," close=")">#{c}</foreach>
         </if>
         <if test="p.year != null">
             AND contract_date &gt;= CONCAT(#{p.year}, '-01-01')
@@ -168,8 +181,9 @@
         <if test="p.itemCategoryNo != null">
             AND item_category_no LIKE CONCAT('%', #{p.itemCategoryNo}, '%')
         </if>
-        <if test="p.topExcellentOnly == true">
-            AND item_category_no IN (SELECT item_category_no FROM top_excellent_category WHERE is_active = 'Y')
+        <if test="p.topExcellentOnly == true and p.topCategories != null and p.topCategories.size() > 0">
+            AND item_category_no IN
+            <foreach item="c" collection="p.topCategories" open="(" separator="," close=")">#{c}</foreach>
         </if>
         <if test="p.year != null">
             AND last_contract_date &gt;= CONCAT(#{p.year}, '-01-01')

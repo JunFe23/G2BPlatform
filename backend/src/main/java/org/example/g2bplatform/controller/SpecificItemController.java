@@ -145,6 +145,8 @@ public class SpecificItemController {
         if (ne(rangeEnd))          p.put("rangeEnd", rangeEnd);
         p.put("showSavedOnly", showSavedOnly);
         p.put("topExcellentOnly", topExcellentOnly);
+        // 자사 우수제품 판정/필터용 분류번호 목록 (리터럴 IN — 서브쿼리 회피로 인덱스 활용)
+        p.put("topCategories", specificItemMapper.selectTopCategories());
         p.put("start", start);
         p.put("length", length);
         return p;

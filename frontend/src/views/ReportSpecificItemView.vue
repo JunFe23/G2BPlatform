@@ -42,10 +42,6 @@
           <input type="checkbox" v-model="filters.showSavedOnly" />
           저장된 데이터만 보기
         </label>
-        <label v-if="!grouped" class="checkbox-label">
-          <input type="checkbox" v-model="filters.excellentOnly" />
-          우수제품만 보기
-        </label>
         <label class="checkbox-label">
           <input type="checkbox" v-model="filters.topExcellentOnly" />
           자사 우수제품만 보기
@@ -285,7 +281,6 @@ const filters = reactive({
   rangeStart: '',
   rangeEnd: '',
   showSavedOnly: false,
-  excellentOnly: false,
   topExcellentOnly: false,
 })
 
@@ -315,7 +310,6 @@ function buildParams(includePaging = true) {
     rangeStart: filters.dateType === 'range' ? filters.rangeStart || undefined : undefined,
     rangeEnd: filters.dateType === 'range' ? filters.rangeEnd || undefined : undefined,
     showSavedOnly: filters.showSavedOnly,
-    isExcellentProduct: !grouped.value && filters.excellentOnly ? 'Y' : undefined,
     topExcellentOnly: filters.topExcellentOnly || undefined,
   }
   if (includePaging) {
@@ -425,11 +419,6 @@ const formatNumber = (num) => {
 
 watch(
   () => filters.showSavedOnly,
-  () => fetchData(true),
-)
-
-watch(
-  () => filters.excellentOnly,
   () => fetchData(true),
 )
 

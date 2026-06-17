@@ -27,6 +27,9 @@ public interface SpecificItemMapper {
     /** 엑셀 export 전용 — 전체 행을 스트리밍으로 반환 */
     Cursor<Map<String, Object>> selectGroupedListExport(@Param("p") Map<String, Object> params);
 
+    /** 자사 우수제품 기준 물품분류번호 목록 (설정 테이블) */
+    List<String> selectTopCategories();
+
     void updateSaved(Map<String, Object> params);
 
     void updateGroupedSaved(Map<String, Object> params);
