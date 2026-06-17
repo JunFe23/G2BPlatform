@@ -47,6 +47,7 @@ public class SpecificItemController {
             @RequestParam(required = false) String rangeStart,
             @RequestParam(required = false) String rangeEnd,
             @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly,
+            @RequestParam(required = false, defaultValue = "false") boolean topExcellentOnly,
             @RequestParam(required = false, defaultValue = "false") boolean grouped,
             @RequestParam(defaultValue = "0") int start,
             @RequestParam(defaultValue = "100") int length
@@ -54,7 +55,7 @@ public class SpecificItemController {
         Map<String, Object> params = buildParams(
                 dataType, demandAgencyName, demandAgencyRegion, vendorBizRegNo,
                 itemCategoryNo, detailItemNo, isMas, isExcellentProduct,
-                year, month, rangeStart, rangeEnd, showSavedOnly, grouped, start, length);
+                year, month, rangeStart, rangeEnd, showSavedOnly, topExcellentOnly, grouped, start, length);
 
         List<Map<String, Object>> data = grouped
                 ? specificItemMapper.selectGroupedList(params)
@@ -105,12 +106,13 @@ public class SpecificItemController {
             @RequestParam(required = false) String rangeStart,
             @RequestParam(required = false) String rangeEnd,
             @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly,
+            @RequestParam(required = false, defaultValue = "false") boolean topExcellentOnly,
             @RequestParam(required = false, defaultValue = "false") boolean grouped
     ) throws java.io.IOException {
         Map<String, Object> params = buildParams(
                 dataType, demandAgencyName, demandAgencyRegion, vendorBizRegNo,
                 itemCategoryNo, detailItemNo, isMas, isExcellentProduct,
-                year, month, rangeStart, rangeEnd, showSavedOnly, grouped, 0, Integer.MAX_VALUE);
+                year, month, rangeStart, rangeEnd, showSavedOnly, topExcellentOnly, grouped, 0, Integer.MAX_VALUE);
 
         java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
         writeExcel(out, params, grouped);
@@ -126,7 +128,7 @@ public class SpecificItemController {
             String vendorBizRegNo, String itemCategoryNo, String detailItemNo,
             String isMas, String isExcellentProduct,
             Integer year, String month, String rangeStart, String rangeEnd,
-            boolean showSavedOnly, boolean grouped, int start, int length) {
+            boolean showSavedOnly, boolean topExcellentOnly, boolean grouped, int start, int length) {
 
         Map<String, Object> p = new HashMap<>();
         if (ne(dataType))          p.put("dataType", dataType);
@@ -142,6 +144,7 @@ public class SpecificItemController {
         if (ne(rangeStart))        p.put("rangeStart", rangeStart);
         if (ne(rangeEnd))          p.put("rangeEnd", rangeEnd);
         p.put("showSavedOnly", showSavedOnly);
+        p.put("topExcellentOnly", topExcellentOnly);
         p.put("start", start);
         p.put("length", length);
         return p;
@@ -156,8 +159,8 @@ public class SpecificItemController {
         try {
             org.apache.poi.ss.usermodel.Sheet sheet = wb.createSheet("특정품목");
             String[] headers = grouped
-                    ? new String[]{"구분","업체명","사업자번호","수요기관명","수요기관지역","계약명","계약방법","계약유형","MAS","물품분류번호","물품분류명","최초계약일자","최종계약일자","최초계약금액","최종계약금액(합계)","계약건수","장기여부","저장"}
-                    : new String[]{"구분","업체명","사업자번호","수요기관명","수요기관지역","계약명","계약방법","계약유형","물품분류번호","물품분류명","세부품명번호","세부품명","물품식별명","단위","단가","수량","공급금액","MAS","우수제품","직접구매","중기간경쟁","최초계약일자","계약일자","장기여부","저장"};
+                    ? new String[]{"구분","업체명","사업자번호","수요기관명","수요기관지역","계약명","계약방법","계약유형","MAS","물품분류번호","물품분류명","자사우수제품","최초계약일자","최종계약일자","최초계약금액","최종계약금액(합계)","계약건수","장기여부","저장"}
+                    : new String[]{"구분","업체명","사업자번호","수요기관명","수요기관지역","계약명","계약방법","계약유형","물품분류번호","물품분류명","세부품명번호","세부품명","물품식별명","단위","단가","수량","공급금액","MAS","우수제품","자사우수제품","직접구매","중기간경쟁","최초계약일자","계약일자","장기여부","저장"};
 
             org.apache.poi.ss.usermodel.Row header = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) header.createCell(i).setCellValue(headers[i]);
@@ -195,13 +198,14 @@ public class SpecificItemController {
         setCell(row, 8, r.get("isMas"));
         setCell(row, 9, r.get("itemCategoryNo"));
         setCell(row, 10, r.get("itemCategoryName"));
-        setCell(row, 11, r.get("firstContractDate"));
-        setCell(row, 12, r.get("lastContractDate"));
-        setCell(row, 13, r.get("initialContractAmount"));
-        setCell(row, 14, r.get("totalSupplyAmount"));
-        setCell(row, 15, r.get("contractCount"));
-        setCell(row, 16, r.get("isLongTerm"));
-        setCell(row, 17, r.get("saved"));
+        setCell(row, 11, r.get("isTopExcellent"));
+        setCell(row, 12, r.get("firstContractDate"));
+        setCell(row, 13, r.get("lastContractDate"));
+        setCell(row, 14, r.get("initialContractAmount"));
+        setCell(row, 15, r.get("totalSupplyAmount"));
+        setCell(row, 16, r.get("contractCount"));
+        setCell(row, 17, r.get("isLongTerm"));
+        setCell(row, 18, r.get("saved"));
     }
 
     private void writeFlatRow(org.apache.poi.ss.usermodel.Row row, Map<String, Object> r) {
@@ -224,12 +228,13 @@ public class SpecificItemController {
         setCell(row, 16, r.get("supplyAmount"));
         setCell(row, 17, r.get("isMas"));
         setCell(row, 18, r.get("isExcellentProduct"));
-        setCell(row, 19, r.get("isDirectPurchase"));
-        setCell(row, 20, r.get("isSmeCompetitive"));
-        setCell(row, 21, r.get("firstContractDate"));
-        setCell(row, 22, r.get("contractDate"));
-        setCell(row, 23, r.get("isLongTerm"));
-        setCell(row, 24, r.get("saved"));
+        setCell(row, 19, r.get("isTopExcellent"));
+        setCell(row, 20, r.get("isDirectPurchase"));
+        setCell(row, 21, r.get("isSmeCompetitive"));
+        setCell(row, 22, r.get("firstContractDate"));
+        setCell(row, 23, r.get("contractDate"));
+        setCell(row, 24, r.get("isLongTerm"));
+        setCell(row, 25, r.get("saved"));
     }
 
     private void setCell(org.apache.poi.ss.usermodel.Row row, int col, Object val) {
