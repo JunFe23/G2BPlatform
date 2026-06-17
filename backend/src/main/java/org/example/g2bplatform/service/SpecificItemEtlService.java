@@ -154,11 +154,10 @@ public class SpecificItemEtlService {
     private void rebuildGrouped() {
         log.info("[ETL] grouped 재집계 시작");
 
-        // 1) 기존 saved 백업
-        jdbc.execute("DROP TEMPORARY TABLE IF EXISTS tmp_grouped_saved");
-        jdbc.execute(
-                "CREATE TEMPORARY TABLE tmp_grouped_saved AS " +
-                "SELECT data_type, group_key, vendor_biz_reg_no, saved " +
+        // 1) 기존 saved 백업 — TEMPORARY 테이블은 커넥션 풀에서 세션이 바뀌면 사라지므로
+        //    JdbcTemplate 호출 간 공유 불가. saved 키를 메모리로 읽어 재적용한다.
+        List<Map<String, Object>> savedKeys = jdbc.queryForList(
+                "SELECT data_type, group_key, vendor_biz_reg_no " +
                 "FROM specific_item_grouped WHERE saved = 'Y'");
 
         // 2) 재집계
@@ -192,16 +191,18 @@ public class SpecificItemEtlService {
                 " WHERE is_active = 'Y'" +
                 " GROUP BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no");
 
-        // 3) saved 복원
-        int restored = jdbc.update(
-                "UPDATE specific_item_grouped g " +
-                "JOIN tmp_grouped_saved t " +
-                "  ON g.data_type = t.data_type" +
-                "  AND g.group_key = t.group_key" +
-                "  AND g.vendor_biz_reg_no <=> t.vendor_biz_reg_no " +
-                "SET g.saved = 'Y'");
+        // 3) saved 복원 — 백업한 키 기준 batch UPDATE (NULL-safe <=>)
+        int restored = 0;
+        if (!savedKeys.isEmpty()) {
+            int[] res = jdbc.batchUpdate(
+                    "UPDATE specific_item_grouped SET saved = 'Y' " +
+                    "WHERE data_type = ? AND group_key = ? AND vendor_biz_reg_no <=> ?",
+                    savedKeys.stream()
+                            .map(k -> new Object[]{k.get("data_type"), k.get("group_key"), k.get("vendor_biz_reg_no")})
+                            .toList());
+            for (int r : res) if (r > 0) restored++;
+        }
 
-        jdbc.execute("DROP TEMPORARY TABLE IF EXISTS tmp_grouped_saved");
         log.info("[ETL] grouped 재집계 완료 grouped={}, saved복원={}", grouped, restored);
     }
 
