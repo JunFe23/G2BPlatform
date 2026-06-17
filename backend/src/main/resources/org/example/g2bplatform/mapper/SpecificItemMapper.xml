@@ -105,6 +105,37 @@
         <include refid="commonWhere"/>
     </select>
 
+    <!-- 엑셀 export 전용: LIMIT 없이 전체를 스트리밍(fetchSize=Integer.MIN_VALUE)으로 -->
+    <select id="selectFlatListExport" resultType="map" fetchSize="-2147483648" resultSetType="FORWARD_ONLY">
+        SELECT
+            <include refid="dataTypeLabel"/>,
+            vendor_name                                         AS vendorName,
+            vendor_biz_reg_no                                   AS vendorBizRegNo,
+            demand_agency_name                                  AS demandAgencyName,
+            demand_agency_region                                AS demandAgencyRegion,
+            contract_method                                     AS contractMethod,
+            contract_type                                       AS contractType,
+            item_category_no                                    AS itemCategoryNo,
+            detail_item_no                                      AS detailItemNo,
+            detail_item_name                                    AS detailItemName,
+            item_identifier_name                                AS itemIdentifierName,
+            unit                                                AS unit,
+            unit_price                                          AS unitPrice,
+            quantity                                            AS quantity,
+            supply_amount                                       AS supplyAmount,
+            is_mas                                              AS isMas,
+            is_excellent_product                                AS isExcellentProduct,
+            is_direct_purchase                                  AS isDirectPurchase,
+            is_sme_competitive                                  AS isSmeCompetitive,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
+            DATE_FORMAT(contract_date, '%Y-%m-%d')              AS contractDate,
+            is_long_term                                        AS isLongTerm,
+            IFNULL(saved, 'N')                                  AS saved
+        FROM specific_item_flat
+        <include refid="commonWhere"/>
+        ORDER BY contract_date DESC, contract_no, item_seq
+    </select>
+
     <!-- ==================== GROUPED ==================== -->
 
     <sql id="groupedWhere">
@@ -173,6 +204,28 @@
         SELECT COUNT(*)
         FROM specific_item_grouped
         <include refid="groupedWhere"/>
+    </select>
+
+    <!-- 엑셀 export 전용: LIMIT 없이 전체를 스트리밍으로 -->
+    <select id="selectGroupedListExport" resultType="map" fetchSize="-2147483648" resultSetType="FORWARD_ONLY">
+        SELECT
+            <include refid="dataTypeLabel"/>,
+            vendor_name                                         AS vendorName,
+            vendor_biz_reg_no                                   AS vendorBizRegNo,
+            demand_agency_name                                  AS demandAgencyName,
+            demand_agency_region                                AS demandAgencyRegion,
+            contract_type                                       AS contractType,
+            item_category_no                                    AS itemCategoryNo,
+            detail_item_name                                    AS detailItemName,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
+            DATE_FORMAT(last_contract_date, '%Y-%m-%d')         AS lastContractDate,
+            total_supply_amount                                 AS totalSupplyAmount,
+            contract_count                                      AS contractCount,
+            is_long_term                                        AS isLongTerm,
+            IFNULL(saved, 'N')                                  AS saved
+        FROM specific_item_grouped
+        <include refid="groupedWhere"/>
+        ORDER BY last_contract_date DESC, id
     </select>
 
     <!-- ==================== SAVED ==================== -->

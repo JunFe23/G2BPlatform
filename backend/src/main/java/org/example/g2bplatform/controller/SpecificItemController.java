@@ -20,6 +20,7 @@ public class SpecificItemController {
 
     private final SpecificItemEtlService etlService;
     private final SpecificItemMapper specificItemMapper;
+    private final org.apache.ibatis.session.SqlSessionFactory sqlSessionFactory;
 
     /** ETL 실행 — SUPER_ADMIN 전용, 비동기 Job 반환 */
     @PostMapping("/api/admin/etl/specific-item")
@@ -79,9 +80,13 @@ public class SpecificItemController {
         return ResponseEntity.ok().build();
     }
 
-    /** 엑셀 다운로드 */
+    /**
+     * 엑셀 다운로드 — 대용량 대응.
+     * DB 결과를 MyBatis Cursor로 스트리밍하고 SXSSFWorkbook(윈도우 플러시)으로 생성,
+     * StreamingResponseBody로 응답에 직접 흘려보내 전체 List/Workbook 메모리 적재를 피한다.
+     */
     @GetMapping("/api/specific-item/excel")
-    public ResponseEntity<byte[]> excel(
+    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody> excel(
             @RequestParam(required = false) String dataType,
             @RequestParam(required = false) String demandAgencyName,
             @RequestParam(required = false) String demandAgencyRegion,
@@ -102,15 +107,13 @@ public class SpecificItemController {
                 itemCategoryNo, detailItemNo, isMas, isExcellentProduct,
                 year, month, rangeStart, rangeEnd, showSavedOnly, grouped, 0, Integer.MAX_VALUE);
 
-        List<Map<String, Object>> rows = grouped
-                ? specificItemMapper.selectGroupedList(params)
-                : specificItemMapper.selectFlatList(params);
+        org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody body =
+                out -> writeExcel(out, params, grouped);
 
-        byte[] xlsx = buildExcel(rows, grouped);
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"specific_item.xlsx\"")
                 .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                .body(xlsx);
+                .body(body);
     }
 
     private Map<String, Object> buildParams(
@@ -141,8 +144,11 @@ public class SpecificItemController {
 
     private boolean ne(String v) { return v != null && !v.isBlank(); }
 
-    private byte[] buildExcel(List<Map<String, Object>> rows, boolean grouped) {
-        try (org.apache.poi.xssf.usermodel.XSSFWorkbook wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
+    private void writeExcel(java.io.OutputStream out, Map<String, Object> params, boolean grouped) throws java.io.IOException {
+        // SXSSF: 메모리에 최근 100행만 유지하고 나머지는 임시파일로 플러시
+        org.apache.poi.xssf.streaming.SXSSFWorkbook wb = new org.apache.poi.xssf.streaming.SXSSFWorkbook(100);
+        wb.setCompressTempFiles(true);
+        try {
             org.apache.poi.ss.usermodel.Sheet sheet = wb.createSheet("특정품목");
             String[] headers = grouped
                     ? new String[]{"구분","업체명","사업자번호","수요기관명","수요기관지역","계약유형","물품분류번호","세부품명","최초계약일자","최종계약일자","최종계약금액(합계)","계약건수","장기여부","저장"}
@@ -152,61 +158,77 @@ public class SpecificItemController {
             for (int i = 0; i < headers.length; i++) header.createCell(i).setCellValue(headers[i]);
 
             int rowIdx = 1;
-            for (Map<String, Object> r : rows) {
-                org.apache.poi.ss.usermodel.Row row = sheet.createRow(rowIdx++);
-                if (grouped) {
-                    setCell(row, 0, r.get("dataTypeLabel"));
-                    setCell(row, 1, r.get("vendorName"));
-                    setCell(row, 2, r.get("vendorBizRegNo"));
-                    setCell(row, 3, r.get("demandAgencyName"));
-                    setCell(row, 4, r.get("demandAgencyRegion"));
-                    setCell(row, 5, r.get("contractType"));
-                    setCell(row, 6, r.get("itemCategoryNo"));
-                    setCell(row, 7, r.get("detailItemName"));
-                    setCell(row, 8, r.get("firstContractDate"));
-                    setCell(row, 9, r.get("lastContractDate"));
-                    setCell(row, 10, r.get("totalSupplyAmount"));
-                    setCell(row, 11, r.get("contractCount"));
-                    setCell(row, 12, r.get("isLongTerm"));
-                    setCell(row, 13, r.get("saved"));
-                } else {
-                    setCell(row, 0, r.get("dataTypeLabel"));
-                    setCell(row, 1, r.get("vendorName"));
-                    setCell(row, 2, r.get("vendorBizRegNo"));
-                    setCell(row, 3, r.get("demandAgencyName"));
-                    setCell(row, 4, r.get("demandAgencyRegion"));
-                    setCell(row, 5, r.get("contractMethod"));
-                    setCell(row, 6, r.get("contractType"));
-                    setCell(row, 7, r.get("itemCategoryNo"));
-                    setCell(row, 8, r.get("detailItemNo"));
-                    setCell(row, 9, r.get("detailItemName"));
-                    setCell(row, 10, r.get("itemIdentifierName"));
-                    setCell(row, 11, r.get("unit"));
-                    setCell(row, 12, r.get("unitPrice"));
-                    setCell(row, 13, r.get("quantity"));
-                    setCell(row, 14, r.get("supplyAmount"));
-                    setCell(row, 15, r.get("isMas"));
-                    setCell(row, 16, r.get("isExcellentProduct"));
-                    setCell(row, 17, r.get("isDirectPurchase"));
-                    setCell(row, 18, r.get("isSmeCompetitive"));
-                    setCell(row, 19, r.get("firstContractDate"));
-                    setCell(row, 20, r.get("contractDate"));
-                    setCell(row, 21, r.get("isLongTerm"));
-                    setCell(row, 22, r.get("saved"));
+            // 스트리밍 람다는 컨트롤러 트랜잭션 밖(비동기)에서 실행되므로 전용 SqlSession을 직접 연다.
+            try (org.apache.ibatis.session.SqlSession session = sqlSessionFactory.openSession();
+                 org.apache.ibatis.cursor.Cursor<Map<String, Object>> cursor =
+                         grouped ? session.getMapper(SpecificItemMapper.class).selectGroupedListExport(params)
+                                 : session.getMapper(SpecificItemMapper.class).selectFlatListExport(params)) {
+                for (Map<String, Object> r : cursor) {
+                    org.apache.poi.ss.usermodel.Row row = sheet.createRow(rowIdx++);
+                    if (grouped) writeGroupedRow(row, r);
+                    else writeFlatRow(row, r);
                 }
             }
-            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
             wb.write(out);
-            return out.toByteArray();
         } catch (Exception e) {
-            throw new RuntimeException("엑셀 생성 실패", e);
+            throw new java.io.IOException("엑셀 생성 실패", e);
+        } finally {
+            wb.dispose(); // 임시파일 정리
+            wb.close();
         }
     }
 
+    private void writeGroupedRow(org.apache.poi.ss.usermodel.Row row, Map<String, Object> r) {
+        setCell(row, 0, r.get("dataTypeLabel"));
+        setCell(row, 1, r.get("vendorName"));
+        setCell(row, 2, r.get("vendorBizRegNo"));
+        setCell(row, 3, r.get("demandAgencyName"));
+        setCell(row, 4, r.get("demandAgencyRegion"));
+        setCell(row, 5, r.get("contractType"));
+        setCell(row, 6, r.get("itemCategoryNo"));
+        setCell(row, 7, r.get("detailItemName"));
+        setCell(row, 8, r.get("firstContractDate"));
+        setCell(row, 9, r.get("lastContractDate"));
+        setCell(row, 10, r.get("totalSupplyAmount"));
+        setCell(row, 11, r.get("contractCount"));
+        setCell(row, 12, r.get("isLongTerm"));
+        setCell(row, 13, r.get("saved"));
+    }
+
+    private void writeFlatRow(org.apache.poi.ss.usermodel.Row row, Map<String, Object> r) {
+        setCell(row, 0, r.get("dataTypeLabel"));
+        setCell(row, 1, r.get("vendorName"));
+        setCell(row, 2, r.get("vendorBizRegNo"));
+        setCell(row, 3, r.get("demandAgencyName"));
+        setCell(row, 4, r.get("demandAgencyRegion"));
+        setCell(row, 5, r.get("contractMethod"));
+        setCell(row, 6, r.get("contractType"));
+        setCell(row, 7, r.get("itemCategoryNo"));
+        setCell(row, 8, r.get("detailItemNo"));
+        setCell(row, 9, r.get("detailItemName"));
+        setCell(row, 10, r.get("itemIdentifierName"));
+        setCell(row, 11, r.get("unit"));
+        setCell(row, 12, r.get("unitPrice"));
+        setCell(row, 13, r.get("quantity"));
+        setCell(row, 14, r.get("supplyAmount"));
+        setCell(row, 15, r.get("isMas"));
+        setCell(row, 16, r.get("isExcellentProduct"));
+        setCell(row, 17, r.get("isDirectPurchase"));
+        setCell(row, 18, r.get("isSmeCompetitive"));
+        setCell(row, 19, r.get("firstContractDate"));
+        setCell(row, 20, r.get("contractDate"));
+        setCell(row, 21, r.get("isLongTerm"));
+        setCell(row, 22, r.get("saved"));
+    }
+
     private void setCell(org.apache.poi.ss.usermodel.Row row, int col, Object val) {
-        org.apache.poi.ss.usermodel.Cell cell = row.createCell(col);
-        if (val == null) { cell.setCellValue(""); return; }
-        if (val instanceof Number) cell.setCellValue(((Number) val).doubleValue());
-        else cell.setCellValue(val.toString());
+        // null/빈값은 셀 자체를 만들지 않아 대용량 export 시 셀 생성 비용 절감
+        if (val == null) return;
+        if (val instanceof Number) {
+            row.createCell(col).setCellValue(((Number) val).doubleValue());
+        } else {
+            String s = val.toString();
+            if (!s.isEmpty()) row.createCell(col).setCellValue(s);
+        }
     }
 }
