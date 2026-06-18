@@ -41,3 +41,6 @@ backend/sheet/*.json
 ### G2B 로컬 파일 ###
 docs/sample_csv/
 *.docx
+
+# 환경변수(비밀값) — New Relic 라이선스 키 등
+.env
