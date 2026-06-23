@@ -22,9 +22,51 @@
 
         <input type="text" v-model="filters.demandAgencyName" placeholder="수요기관명 검색" />
         <input type="text" v-model="filters.demandAgencyRegion" placeholder="수요기관지역 검색" />
-        <input type="text" v-model="filters.vendorBizRegNo" placeholder="사업자번호 검색" />
-        <input type="text" v-model="filters.itemCategoryNo" placeholder="물품분류번호 검색" />
-        <input type="text" v-model="filters.detailItemNo" placeholder="세부품명번호 검색" />
+        <div class="category-combobox">
+          <input
+            type="text"
+            v-model="filters.itemCategoryName"
+            placeholder="물품분류명 검색"
+            @input="onCategoryInput('name')"
+            @focus="showCategoryOptions('name')"
+            @blur="hideCategoryOptionsLater"
+          />
+          <div v-if="activeCategoryField === 'name' && categoryOptions.length > 0" class="category-option-list">
+            <button
+              v-for="option in categoryOptions"
+              :key="categoryOptionKey(option)"
+              type="button"
+              class="category-option"
+              @mousedown.prevent="selectCategory(option)"
+            >
+              <span class="category-option-name">{{ option.itemCategoryName }}</span>
+              <span class="category-option-no">{{ option.itemCategoryNo }}</span>
+            </button>
+          </div>
+        </div>
+        <div class="category-combobox">
+          <input
+            type="text"
+            v-model="filters.itemCategoryNo"
+            placeholder="물품분류번호 검색"
+            @input="onCategoryInput('no')"
+            @focus="showCategoryOptions('no')"
+            @blur="hideCategoryOptionsLater"
+          />
+          <div v-if="activeCategoryField === 'no' && categoryOptions.length > 0" class="category-option-list">
+            <button
+              v-for="option in categoryOptions"
+              :key="categoryOptionKey(option)"
+              type="button"
+              class="category-option"
+              @mousedown.prevent="selectCategory(option)"
+            >
+              <span class="category-option-name">{{ option.itemCategoryNo }}</span>
+              <span class="category-option-no">{{ option.itemCategoryName }}</span>
+            </button>
+          </div>
+        </div>
+        <input type="text" v-model="filters.contractName" placeholder="계약명 검색" />
 
         <select v-model="filters.dateType" class="date-select">
           <option value="year">연도 검색</option>
@@ -254,7 +296,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
@@ -268,6 +310,10 @@ const recordsFiltered = ref(0)
 const currentPage = ref(1)
 const grouped = ref(false)
 const totals = ref(null)
+const categoryOptions = ref([])
+const activeCategoryField = ref('')
+let categorySearchTimer = null
+let categoryHideTimer = null
 
 function onToggleClick() {
   grouped.value = !grouped.value
@@ -281,9 +327,9 @@ const filters = reactive({
   contractKind: '',
   demandAgencyName: '',
   demandAgencyRegion: '',
-  vendorBizRegNo: '',
   itemCategoryNo: '',
-  detailItemNo: '',
+  itemCategoryName: '',
+  contractName: '',
   dateType: 'year',
   year: '',
   month: '',
@@ -312,9 +358,9 @@ function buildParams(includePaging = true) {
     contractKind: filters.contractKind || undefined,
     demandAgencyName: filters.demandAgencyName || undefined,
     demandAgencyRegion: filters.demandAgencyRegion || undefined,
-    vendorBizRegNo: filters.vendorBizRegNo || undefined,
     itemCategoryNo: filters.itemCategoryNo || undefined,
-    detailItemNo: filters.detailItemNo || undefined,
+    itemCategoryName: filters.itemCategoryName || undefined,
+    contractName: filters.contractName || undefined,
     year: filters.dateType === 'year' && filters.year ? parseInt(filters.year, 10) : undefined,
     month: filters.dateType === 'month' ? filters.month || undefined : undefined,
     rangeStart: filters.dateType === 'range' ? filters.rangeStart || undefined : undefined,
@@ -370,6 +416,53 @@ const goPage = (page) => {
 }
 
 const handleSearch = () => fetchData(true)
+
+function categoryOptionKey(option) {
+  return `${option.itemCategoryNo || ''}_${option.itemCategoryName || ''}`
+}
+
+function categorySearchTerm(field = activeCategoryField.value) {
+  return field === 'no' ? filters.itemCategoryNo : filters.itemCategoryName
+}
+
+function onCategoryInput(field) {
+  activeCategoryField.value = field
+  if (field === 'name') filters.itemCategoryNo = ''
+  if (field === 'no') filters.itemCategoryName = ''
+  if (categorySearchTimer) clearTimeout(categorySearchTimer)
+  categorySearchTimer = setTimeout(() => fetchCategoryOptions(categorySearchTerm(field)), 250)
+}
+
+function showCategoryOptions(field) {
+  activeCategoryField.value = field
+  if (categoryHideTimer) clearTimeout(categoryHideTimer)
+  fetchCategoryOptions(categorySearchTerm(field))
+}
+
+function hideCategoryOptionsLater() {
+  if (categoryHideTimer) clearTimeout(categoryHideTimer)
+  categoryHideTimer = setTimeout(() => {
+    activeCategoryField.value = ''
+  }, 150)
+}
+
+async function fetchCategoryOptions(q = '') {
+  try {
+    const { data } = await axios.get(API_BASE + '/item-categories', {
+      params: { q: q || undefined, limit: 30 },
+    })
+    categoryOptions.value = Array.isArray(data.data) ? data.data : []
+  } catch (e) {
+    console.error('물품분류 옵션 조회 실패', e)
+    categoryOptions.value = []
+  }
+}
+
+function selectCategory(option) {
+  filters.itemCategoryNo = option.itemCategoryNo || ''
+  filters.itemCategoryName = option.itemCategoryName || ''
+  activeCategoryField.value = ''
+}
 
 const handleDownloadExcel = async () => {
   isLoadingExcel.value = true
@@ -438,6 +531,11 @@ watch(
 )
 
 onMounted(() => fetchData())
+
+onUnmounted(() => {
+  if (categorySearchTimer) clearTimeout(categorySearchTimer)
+  if (categoryHideTimer) clearTimeout(categoryHideTimer)
+})
 </script>
 
 <style scoped>
@@ -471,6 +569,49 @@ onMounted(() => fetchData())
 .search-filter-row select,
 .search-filter-row input[type='month'] {
   min-width: 100px;
+}
+.category-combobox {
+  position: relative;
+  min-width: 180px;
+}
+.category-combobox input[type='text'] {
+  box-sizing: border-box;
+  width: 100%;
+}
+.category-option-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+}
+.category-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  background: #fff;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+}
+.category-option:hover {
+  background: #f1f5f9;
+}
+.category-option-name {
+  font-weight: 600;
+}
+.category-option-no {
+  color: #64748b;
+  font-size: 0.8em;
 }
 .search-actions-row {
   display: flex;

@@ -30,6 +30,11 @@ public interface SpecificItemMapper {
     /** 자사 우수제품 기준 물품분류번호 목록 (설정 테이블) */
     List<String> selectTopCategories();
 
+    List<Map<String, Object>> selectItemCategories(
+            @Param("q") String q,
+            @Param("limit") int limit
+    );
+
     void updateSaved(Map<String, Object> params);
 
     void updateGroupedSaved(Map<String, Object> params);

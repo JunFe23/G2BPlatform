@@ -37,7 +37,7 @@
       </div>
       <ul>
         <li class="menu-item" id="toggle-report-data" @click="toggleReportSubmenu">
-          <span class="menu-label">보고서 데이터</span>
+          <span class="menu-label">시장데이터</span>
         </li>
         <ul v-show="isReportSubmenuOpen" class="submenu" style="padding-left: 20px">
           <li class="menu-item" @click="$router.push('/report-specific-item')">

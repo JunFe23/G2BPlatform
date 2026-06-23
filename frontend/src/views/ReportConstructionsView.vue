@@ -159,7 +159,8 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
-const API_BASE = '/api/report/constructions'
+const API_BASE = '/api/report/market-contracts'
+const CONTRACT_TYPE = 'construction'
 const COL_SPAN = 14
 const PAGE_SIZE = 100
 
@@ -200,6 +201,7 @@ function rowKey(item) {
 
 function buildParams(includePaging = true) {
   const p = {
+    contractType: CONTRACT_TYPE,
     grouped: longTermViewMerged.value,
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
@@ -291,9 +293,10 @@ const handleDownloadExcel = async () => {
 const toggleSave = async (item) => {
   const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
   try {
-    const payload = { grouped: longTermViewMerged.value, saved: nextSaved }
+    const payload = { contractType: CONTRACT_TYPE, grouped: longTermViewMerged.value, saved: nextSaved }
     if (longTermViewMerged.value) {
       payload.groupKey = item.groupKey
+      payload.vendorBizRegNo = item.vendorBizRegNo
     } else {
       payload.contractNo = item.contractNo
     }
