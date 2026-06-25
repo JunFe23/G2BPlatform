@@ -93,6 +93,8 @@
               <th>최초계약금액</th>
               <th>최종계약일자</th>
               <th>최종계약금액</th>
+              <th>착수일자</th>
+              <th>완수일자</th>
               <th>계약변경차수</th>
               <th>장기계약여부</th>
               <th>저장</th>
@@ -117,6 +119,8 @@
               <td>{{ formatNumber(item.firstContractAmount) }}</td>
               <td>{{ item.finalContractDate }}</td>
               <td>{{ formatNumber(item.finalContractAmount) }}</td>
+              <td>{{ item.startDate }}</td>
+              <td>{{ item.endDate }}</td>
               <td>{{ item.contractCount ?? '-' }}</td>
               <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
               <td>
@@ -159,8 +163,9 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
-const API_BASE = '/api/report/constructions'
-const COL_SPAN = 14
+const API_BASE = '/api/report/market-contracts'
+const CONTRACT_TYPE = 'construction'
+const COL_SPAN = 16
 const PAGE_SIZE = 100
 
 const isLoading = ref(false)
@@ -200,6 +205,7 @@ function rowKey(item) {
 
 function buildParams(includePaging = true) {
   const p = {
+    contractType: CONTRACT_TYPE,
     grouped: longTermViewMerged.value,
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
@@ -291,9 +297,10 @@ const handleDownloadExcel = async () => {
 const toggleSave = async (item) => {
   const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
   try {
-    const payload = { grouped: longTermViewMerged.value, saved: nextSaved }
+    const payload = { contractType: CONTRACT_TYPE, grouped: longTermViewMerged.value, saved: nextSaved }
     if (longTermViewMerged.value) {
       payload.groupKey = item.groupKey
+      payload.vendorBizRegNo = item.vendorBizRegNo
     } else {
       payload.contractNo = item.contractNo
     }

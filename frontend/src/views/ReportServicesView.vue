@@ -182,7 +182,7 @@
               <td>{{ item.firstContractDate }}</td>
               <td>{{ item.contractDate }}</td>
               <td>{{ item.startDate }}</td>
-              <td>{{ item.completionDate }}</td>
+              <td>{{ item.endDate }}</td>
               <td>{{ formatNumber(item.firstContractAmount) }}</td>
               <td>{{ formatNumber(item.contractAmount) }}</td>
               <td>{{ item.isLongTerm }}</td>
@@ -219,7 +219,8 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
-const API_BASE = '/api/report/services'
+const API_BASE = '/api/report/market-contracts'
+const CONTRACT_TYPE = 'service'
 const PAGE_SIZE = 100
 
 const isLoading = ref(false)
@@ -285,6 +286,7 @@ function flatRowKey(item) {
 
 function buildParams(includePaging = true) {
   const p = {
+    contractType: CONTRACT_TYPE,
     grouped: grouped.value,
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
@@ -378,7 +380,7 @@ const handleDownloadExcel = async () => {
 const toggleSave = async (item) => {
   const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
   try {
-    const payload = { grouped: grouped.value, saved: nextSaved }
+    const payload = { contractType: CONTRACT_TYPE, grouped: grouped.value, saved: nextSaved }
     if (grouped.value) {
       payload.groupKey = item.groupKey
       payload.vendorBizRegNo = item.vendorBizRegNo

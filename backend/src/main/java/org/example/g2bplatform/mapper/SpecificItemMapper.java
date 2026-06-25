@@ -24,11 +24,19 @@ public interface SpecificItemMapper {
     /** 묶어서 보기 상단 합계 (최초/최종 계약금액 합계) */
     Map<String, Object> selectGroupedTotals(@Param("p") Map<String, Object> params);
 
+    /** 풀어서 보기 상단 합계 (최초/최종 계약금액 합계) */
+    Map<String, Object> selectFlatTotals(@Param("p") Map<String, Object> params);
+
     /** 엑셀 export 전용 — 전체 행을 스트리밍으로 반환 */
     Cursor<Map<String, Object>> selectGroupedListExport(@Param("p") Map<String, Object> params);
 
     /** 자사 우수제품 기준 물품분류번호 목록 (설정 테이블) */
     List<String> selectTopCategories();
+
+    List<Map<String, Object>> selectItemCategories(
+            @Param("q") String q,
+            @Param("limit") int limit
+    );
 
     void updateSaved(Map<String, Object> params);
 

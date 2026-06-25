@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.example.g2bplatform.mapper.MarketContractMapper">
+
+    <sql id="commonFilters">
+        <if test="demandAgencyName != null and demandAgencyName != ''">
+            AND demand_agency_name LIKE CONCAT('%', #{demandAgencyName}, '%')
+        </if>
+        <if test="demandAgencyRegion != null and demandAgencyRegion != ''">
+            AND demand_agency_region LIKE CONCAT('%', #{demandAgencyRegion}, '%')
+        </if>
+        <if test="detailItemName != null and detailItemName != ''">
+            AND public_procurement_name LIKE CONCAT('%', #{detailItemName}, '%')
+        </if>
+        <if test="contractMethod != null and contractMethod != ''">
+            AND contract_method LIKE CONCAT('%', #{contractMethod}, '%')
+        </if>
+        <if test="procurementWorkArea != null and procurementWorkArea != ''">
+            AND public_procurement_major LIKE CONCAT('%', #{procurementWorkArea}, '%')
+        </if>
+        <if test="publicProcurementCategoryMid != null and publicProcurementCategoryMid != ''">
+            AND public_procurement_mid = #{publicProcurementCategoryMid}
+        </if>
+        <if test="publicProcurementCategory != null and publicProcurementCategory != ''">
+            AND public_procurement_name = #{publicProcurementCategory}
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND first_contract_date = #{firstCntrctDate}
+        </if>
+        <if test="showSavedOnly == true">
+            AND saved = 'Y'
+        </if>
+    </sql>
+
+    <sql id="flatWhere">
+        WHERE contract_type = #{contractType}
+          AND is_active = 'Y'
+        <include refid="commonFilters"/>
+        <if test="year != null">
+            AND contract_date &gt;= CONCAT(#{year}, '-01-01')
+            AND contract_date &lt; DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
+        </if>
+        <if test="month != null and month != ''">
+            AND contract_date &gt;= CONCAT(#{month}, '-01')
+            AND contract_date &lt; DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
+            AND contract_date &gt;= CONCAT(#{rangeStart}, '-01')
+            AND contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
+        </if>
+    </sql>
+
+    <sql id="groupedWhere">
+        WHERE contract_type = #{contractType}
+        <include refid="commonFilters"/>
+        <if test="year != null">
+            AND first_contract_date &gt;= CONCAT(#{year}, '-01-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
+        </if>
+        <if test="month != null and month != ''">
+            AND first_contract_date &gt;= CONCAT(#{month}, '-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
+        </if>
+        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
+            AND first_contract_date &gt;= CONCAT(#{rangeStart}, '-01')
+            AND first_contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
+        </if>
+    </sql>
+
+    <sql id="flatSelectColumns">
+        contract_type AS contractType,
+        contract_no AS contractNo,
+        contract_no AS contractDeliveryIntegratedNo,
+        vendor_biz_reg_no AS vendorBizRegNo,
+        vendor_name AS vendorName,
+        contract_name AS contractTitle,
+        contract_name AS contractName,
+        demand_agency_name AS demandAgencyName,
+        demand_agency_name AS demandAgency,
+        demand_agency_region AS demandAgencyRegion,
+        public_procurement_major AS procurementWorkArea,
+        public_procurement_mid AS publicProcurementCategoryMid,
+        public_procurement_name AS publicProcurementCategory,
+        public_procurement_name AS detailItemName,
+        contract_method AS contractMethod,
+        NULL AS bidNoticeNo,
+        first_year_contract_no AS initialYearContractNo,
+        first_year_contract_no AS firstYearContractNo,
+        DATE_FORMAT(first_contract_date, '%Y-%m-%d') AS firstContractDate,
+        DATE_FORMAT(contract_date, '%Y-%m-%d') AS contractDate,
+        DATE_FORMAT(contract_date, '%Y-%m-%d') AS finalContractDate,
+        first_contract_amount AS firstContractAmount,
+        total_contract_amount AS contractAmount,
+        total_contract_amount AS finalContractAmount,
+        current_contract_amount AS currentContractAmount,
+        change_seq AS latestChangeSeq,
+        change_seq AS contractCount,
+        is_long_term AS isLongTerm,
+        DATE_FORMAT(start_date, '%Y-%m-%d') AS startDate,
+        DATE_FORMAT(end_date, '%Y-%m-%d') AS endDate,
+        IFNULL(saved, 'N') AS saved
+    </sql>
+
+    <select id="selectFlatList" resultType="map">
+        SELECT
+            <include refid="flatSelectColumns"/>
+        FROM market_contract_flat
+        <include refid="flatWhere"/>
+        ORDER BY contract_date DESC, contract_no
+        LIMIT #{start}, #{length}
+    </select>
+
+    <select id="selectFlatCount" resultType="int">
+        SELECT COUNT(*)
+        FROM market_contract_flat
+        <include refid="flatWhere"/>
+    </select>
+
+    <select id="selectFlatListForExport" fetchSize="1000" resultType="map">
+        SELECT
+            <include refid="flatSelectColumns"/>
+        FROM market_contract_flat
+        <include refid="flatWhere"/>
+        ORDER BY contract_date DESC, contract_no
+    </select>
+
+    <update id="updateFlatSaved">
+        UPDATE market_contract_flat
+        SET saved = #{saved}
+        WHERE contract_type = #{contractType}
+          AND contract_no = #{contractNo}
+    </update>
+
+    <sql id="groupedSelectColumns">
+        contract_type AS contractType,
+        group_key AS groupKey,
+        contract_no AS contractNo,
+        vendor_biz_reg_no AS vendorBizRegNo,
+        vendor_name AS vendorName,
+        contract_name AS contractTitle,
+        contract_name AS contractName,
+        demand_agency_name AS demandAgencyName,
+        demand_agency_name AS demandAgency,
+        demand_agency_region AS demandAgencyRegion,
+        public_procurement_major AS procurementWorkArea,
+        public_procurement_mid AS publicProcurementCategoryMid,
+        public_procurement_name AS publicProcurementCategory,
+        public_procurement_name AS detailItemName,
+        contract_method AS contractMethod,
+        NULL AS bidNoticeNo,
+        first_year_contract_no AS initialYearContractNo,
+        first_year_contract_no AS firstYearContractNo,
+        DATE_FORMAT(first_contract_date, '%Y-%m-%d') AS initialContractDate,
+        DATE_FORMAT(first_contract_date, '%Y-%m-%d') AS firstContractDate,
+        initial_contract_amount AS initialContractAmount,
+        initial_contract_amount AS firstContractAmount,
+        DATE_FORMAT(last_contract_date, '%Y-%m-%d') AS finalContractDate,
+        total_contract_amount_sum AS finalContractAmountSum,
+        total_contract_amount_sum AS finalContractAmount,
+        contract_count AS contractCount,
+        contract_count AS groupContractCount,
+        is_long_term AS isLongTerm,
+        IFNULL(saved, 'N') AS saved
+    </sql>
+
+    <select id="selectGroupedList" resultType="map">
+        SELECT
+            <include refid="groupedSelectColumns"/>
+        FROM market_contract_grouped
+        <include refid="groupedWhere"/>
+        ORDER BY first_contract_date DESC, group_key, vendor_biz_reg_no
+        LIMIT #{start}, #{length}
+    </select>
+
+    <select id="selectGroupedCount" resultType="int">
+        SELECT COUNT(*)
+        FROM market_contract_grouped
+        <include refid="groupedWhere"/>
+    </select>
+
+    <select id="selectGroupedListForExport" fetchSize="1000" resultType="map">
+        SELECT
+            <include refid="groupedSelectColumns"/>
+        FROM market_contract_grouped
+        <include refid="groupedWhere"/>
+        ORDER BY first_contract_date DESC, group_key, vendor_biz_reg_no
+    </select>
+
+    <update id="updateGroupedSaved">
+        UPDATE market_contract_grouped
+        SET saved = #{saved}
+        WHERE contract_type = #{contractType}
+          AND group_key = #{groupKey}
+        <if test="vendorBizRegNo != null and vendorBizRegNo != ''">
+          AND vendor_biz_reg_no = #{vendorBizRegNo}
+        </if>
+    </update>
+
+</mapper>

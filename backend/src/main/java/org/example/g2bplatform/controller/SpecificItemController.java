@@ -39,6 +39,8 @@ public class SpecificItemController {
             @RequestParam(required = false) String demandAgencyRegion,
             @RequestParam(required = false) String vendorBizRegNo,
             @RequestParam(required = false) String itemCategoryNo,
+            @RequestParam(required = false) String itemCategoryName,
+            @RequestParam(required = false) String contractName,
             @RequestParam(required = false) String detailItemNo,
             @RequestParam(required = false) String isMas,
             @RequestParam(required = false) String isExcellentProduct,
@@ -55,7 +57,7 @@ public class SpecificItemController {
     ) {
         Map<String, Object> params = buildParams(
                 dataType, demandAgencyName, demandAgencyRegion, vendorBizRegNo,
-                itemCategoryNo, detailItemNo, isMas, isExcellentProduct, contractKind,
+                itemCategoryNo, itemCategoryName, contractName, detailItemNo, isMas, isExcellentProduct, contractKind,
                 year, month, rangeStart, rangeEnd, showSavedOnly, topExcellentOnly, grouped, start, length);
 
         List<Map<String, Object>> data = grouped
@@ -68,10 +70,23 @@ public class SpecificItemController {
         Map<String, Object> res = new HashMap<>();
         res.put("data", data);
         res.put("recordsFiltered", total);
-        if (grouped) {
-            // 묶어서 보기 상단 합계 (최초/최종 계약금액)
-            res.put("totals", specificItemMapper.selectGroupedTotals(params));
-        }
+        // 상단 합계 (최초/최종 계약금액) — 풀어서/합쳐서 모두 표시
+        res.put("totals", grouped
+                ? specificItemMapper.selectGroupedTotals(params)
+                : specificItemMapper.selectFlatTotals(params));
+        return ResponseEntity.ok(res);
+    }
+
+    /** 물품분류번호/명 검색형 select 옵션 */
+    @GetMapping("/api/specific-item/item-categories")
+    public ResponseEntity<Map<String, Object>> itemCategories(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "30") int limit
+    ) {
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+        Map<String, Object> res = new HashMap<>();
+        res.put("success", true);
+        res.put("data", specificItemMapper.selectItemCategories(ne(q) ? q.trim() : null, safeLimit));
         return ResponseEntity.ok(res);
     }
 
@@ -99,6 +114,8 @@ public class SpecificItemController {
             @RequestParam(required = false) String demandAgencyRegion,
             @RequestParam(required = false) String vendorBizRegNo,
             @RequestParam(required = false) String itemCategoryNo,
+            @RequestParam(required = false) String itemCategoryName,
+            @RequestParam(required = false) String contractName,
             @RequestParam(required = false) String detailItemNo,
             @RequestParam(required = false) String isMas,
             @RequestParam(required = false) String isExcellentProduct,
@@ -113,7 +130,7 @@ public class SpecificItemController {
     ) throws java.io.IOException {
         Map<String, Object> params = buildParams(
                 dataType, demandAgencyName, demandAgencyRegion, vendorBizRegNo,
-                itemCategoryNo, detailItemNo, isMas, isExcellentProduct, contractKind,
+                itemCategoryNo, itemCategoryName, contractName, detailItemNo, isMas, isExcellentProduct, contractKind,
                 year, month, rangeStart, rangeEnd, showSavedOnly, topExcellentOnly, grouped, 0, Integer.MAX_VALUE);
 
         java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
@@ -127,7 +144,7 @@ public class SpecificItemController {
 
     private Map<String, Object> buildParams(
             String dataType, String demandAgencyName, String demandAgencyRegion,
-            String vendorBizRegNo, String itemCategoryNo, String detailItemNo,
+            String vendorBizRegNo, String itemCategoryNo, String itemCategoryName, String contractName, String detailItemNo,
             String isMas, String isExcellentProduct, String contractKind,
             Integer year, String month, String rangeStart, String rangeEnd,
             boolean showSavedOnly, boolean topExcellentOnly, boolean grouped, int start, int length) {
@@ -139,6 +156,8 @@ public class SpecificItemController {
         if (ne(demandAgencyRegion))p.put("demandAgencyRegion", demandAgencyRegion);
         if (ne(vendorBizRegNo))    p.put("vendorBizRegNo", vendorBizRegNo);
         if (ne(itemCategoryNo))    p.put("itemCategoryNo", itemCategoryNo);
+        if (ne(itemCategoryName))  p.put("itemCategoryName", itemCategoryName);
+        if (ne(contractName))      p.put("contractName", contractName);
         if (ne(detailItemNo))      p.put("detailItemNo", detailItemNo);
         if (ne(isMas))             p.put("isMas", isMas);
         if (ne(isExcellentProduct))p.put("isExcellentProduct", isExcellentProduct);
