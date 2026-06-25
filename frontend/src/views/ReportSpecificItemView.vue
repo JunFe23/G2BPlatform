@@ -23,30 +23,32 @@
         <input type="text" v-model="filters.demandAgencyName" placeholder="수요기관명 검색" />
         <input type="text" v-model="filters.demandAgencyRegion" placeholder="수요기관지역 검색" />
         <div class="category-combobox">
-          <input
-            type="text"
-            v-model="categorySearch"
-            placeholder="물품분류명·번호 검색 (다중 선택)"
-            @input="onCategoryInput"
-            @focus="showCategoryOptions"
-            @blur="hideCategoryOptionsLater"
-          />
-          <div v-if="categoryDropdownOpen && categoryOptions.length > 0" class="category-option-list">
-            <button
-              v-for="option in categoryOptions"
-              :key="categoryOptionKey(option)"
-              type="button"
-              class="category-option"
-              :class="{ 'is-selected': isCategorySelected(option.itemCategoryNo) }"
-              @mousedown.prevent="selectCategory(option)"
-            >
-              <span class="category-option-name">{{ option.itemCategoryName }}</span>
-              <span class="category-option-no">{{ option.itemCategoryNo }}</span>
-            </button>
+          <div class="category-input-wrap">
+            <input
+              type="text"
+              v-model="categorySearch"
+              placeholder="물품분류명·번호 검색 (다중 선택)"
+              @input="onCategoryInput"
+              @focus="showCategoryOptions"
+              @blur="hideCategoryOptionsLater"
+            />
+            <div v-if="categoryDropdownOpen && categoryOptions.length > 0" class="category-option-list">
+              <button
+                v-for="option in categoryOptions"
+                :key="categoryOptionKey(option)"
+                type="button"
+                class="category-option"
+                :class="{ 'is-selected': isCategorySelected(option.itemCategoryNo) }"
+                @mousedown.prevent="selectCategory(option)"
+              >
+                <span class="category-option-name">{{ option.itemCategoryName }}</span>
+                <span class="category-option-no">{{ option.itemCategoryNo }}</span>
+              </button>
+            </div>
           </div>
           <div v-if="selectedCategories.length > 0" class="category-chips">
             <span v-for="cat in selectedCategories" :key="cat.itemCategoryNo" class="category-chip">
-              {{ cat.itemCategoryName }} ({{ cat.itemCategoryNo }})
+              <span class="category-chip-label">{{ cat.itemCategoryName }} ({{ cat.itemCategoryNo }})</span>
               <button
                 type="button"
                 class="category-chip-remove"
@@ -133,7 +135,7 @@
     <!-- 데이터 테이블 -->
     <div class="table-container">
       <div class="table-wrapper">
-        <table class="data-table">
+        <table class="data-table" ref="tableRef">
           <thead>
             <!-- 합쳐서 보기 헤더 -->
             <tr v-if="grouped">
@@ -292,7 +294,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
@@ -306,12 +308,22 @@ const recordsFiltered = ref(0)
 const currentPage = ref(1)
 const grouped = ref(false)
 const totals = ref(null)
-const categoryOptions = ref([])
+const allCategories = ref([]) // 물품분류 전체(소수, 최초 1회 로드). 입력 시 클라이언트 필터링.
 const categorySearch = ref('')
 const selectedCategories = ref([])
 const categoryDropdownOpen = ref(false)
-let categorySearchTimer = null
+const tableRef = ref(null)
 let categoryHideTimer = null
+
+const categoryOptions = computed(() => {
+  const q = categorySearch.value.trim().toLowerCase()
+  if (!q) return allCategories.value
+  return allCategories.value.filter(
+    (c) =>
+      (c.itemCategoryNo || '').toLowerCase().includes(q) ||
+      (c.itemCategoryName || '').toLowerCase().includes(q),
+  )
+})
 
 function onToggleClick() {
   grouped.value = !grouped.value
@@ -420,15 +432,13 @@ function categoryOptionKey(option) {
 }
 
 function onCategoryInput() {
+  // categoryOptions가 computed라 입력만으로 클라이언트 필터링됨 (API 호출 없음)
   categoryDropdownOpen.value = true
-  if (categorySearchTimer) clearTimeout(categorySearchTimer)
-  categorySearchTimer = setTimeout(() => fetchCategoryOptions(categorySearch.value), 250)
 }
 
 function showCategoryOptions() {
   categoryDropdownOpen.value = true
   if (categoryHideTimer) clearTimeout(categoryHideTimer)
-  fetchCategoryOptions(categorySearch.value)
 }
 
 function hideCategoryOptionsLater() {
@@ -446,15 +456,14 @@ function removeCategory(no) {
   selectedCategories.value = selectedCategories.value.filter((c) => c.itemCategoryNo !== no)
 }
 
-async function fetchCategoryOptions(q = '') {
+// 물품분류는 소수(약 27개)라 최초 1회만 로드. 이후 입력은 categoryOptions computed로 클라이언트 필터링.
+async function loadAllCategories() {
   try {
-    const { data } = await axios.get(API_BASE + '/item-categories', {
-      params: { q: q || undefined, limit: 30 },
-    })
-    categoryOptions.value = Array.isArray(data.data) ? data.data : []
+    const { data } = await axios.get(API_BASE + '/item-categories', { params: { limit: 100 } })
+    allCategories.value = Array.isArray(data.data) ? data.data : []
   } catch (e) {
     console.error('물품분류 옵션 조회 실패', e)
-    categoryOptions.value = []
+    allCategories.value = []
   }
 }
 
@@ -465,9 +474,17 @@ function selectCategory(option) {
       itemCategoryName: option.itemCategoryName,
     })
   }
-  // 다음 선택을 위해 검색어 초기화 + 옵션 갱신, 드롭다운은 열린 채 유지
+  // 다음 선택을 위해 검색어만 초기화 (드롭다운은 열린 채 유지)
   categorySearch.value = ''
-  fetchCategoryOptions('')
+}
+
+// 표 셀 말줄임(...) 시 hover로 전체값을 보이도록, 잘린 셀에만 native title 설정.
+function refreshCellTitles() {
+  const root = tableRef.value
+  if (!root) return
+  root.querySelectorAll('tbody td').forEach((td) => {
+    td.title = td.scrollWidth > td.clientWidth ? td.textContent.trim() : ''
+  })
 }
 
 const handleDownloadExcel = async () => {
@@ -536,10 +553,14 @@ watch(
   () => fetchData(true),
 )
 
-onMounted(() => fetchData())
+watch(items, () => nextTick(refreshCellTitles))
+
+onMounted(() => {
+  fetchData()
+  loadAllCategories()
+})
 
 onUnmounted(() => {
-  if (categorySearchTimer) clearTimeout(categorySearchTimer)
   if (categoryHideTimer) clearTimeout(categoryHideTimer)
 })
 </script>
@@ -565,7 +586,7 @@ onUnmounted(() => {
 .search-filter-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px 12px;
   flex: 1 1 100%;
   min-width: 0;
@@ -577,8 +598,10 @@ onUnmounted(() => {
   min-width: 100px;
 }
 .category-combobox {
-  position: relative;
   min-width: 180px;
+}
+.category-input-wrap {
+  position: relative;
 }
 .category-combobox input[type='text'] {
   box-sizing: border-box;
@@ -628,20 +651,27 @@ onUnmounted(() => {
 }
 .category-chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: 4px;
   margin-top: 4px;
 }
 .category-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 6px 2px 8px;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 6px 3px 8px;
   background: #e0e7ff;
   color: #3730a3;
-  border-radius: 12px;
+  border-radius: 6px;
   font-size: 0.8em;
-  line-height: 1.6;
+  line-height: 1.4;
+}
+.category-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .category-chip-remove {
   border: 0;
