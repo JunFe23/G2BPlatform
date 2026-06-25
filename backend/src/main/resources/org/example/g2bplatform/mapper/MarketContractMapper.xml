@@ -99,6 +99,8 @@
         change_seq AS latestChangeSeq,
         change_seq AS contractCount,
         is_long_term AS isLongTerm,
+        DATE_FORMAT(start_date, '%Y-%m-%d') AS startDate,
+        DATE_FORMAT(end_date, '%Y-%m-%d') AS endDate,
         IFNULL(saved, 'N') AS saved
     </sql>
 

@@ -153,6 +153,9 @@
             is_sme_competitive                                  AS isSmeCompetitive,
             DATE_FORMAT(contract_date, '%Y-%m-%d')              AS contractDate,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
+            DATE_FORMAT(first_item_contract_date, '%Y-%m-%d')   AS firstItemContractDate,
+            first_item_contract_amount                          AS firstItemContractAmount,
+            DATE_FORMAT(delivery_deadline, '%Y-%m-%d')          AS deliveryDeadline,
             IFNULL(saved, 'N')                                  AS saved
         FROM specific_item_flat
         <include refid="commonWhere"/>
@@ -162,6 +165,15 @@
 
     <select id="selectFlatCount" resultType="int">
         SELECT COUNT(*)
+        FROM specific_item_flat
+        <include refid="commonWhere"/>
+    </select>
+
+    <!-- 풀어서 보기 상단 합계: 최초계약금액 합계 / 최종계약금액 합계 -->
+    <select id="selectFlatTotals" resultType="map">
+        SELECT
+            COALESCE(SUM(first_item_contract_amount), 0) AS initialAmountSum,
+            COALESCE(SUM(supply_amount), 0)              AS finalAmountSum
         FROM specific_item_flat
         <include refid="commonWhere"/>
     </select>
@@ -193,6 +205,9 @@
             is_sme_competitive                                  AS isSmeCompetitive,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstContractDate,
             DATE_FORMAT(contract_date, '%Y-%m-%d')              AS contractDate,
+            DATE_FORMAT(first_item_contract_date, '%Y-%m-%d')   AS firstItemContractDate,
+            first_item_contract_amount                          AS firstItemContractAmount,
+            DATE_FORMAT(delivery_deadline, '%Y-%m-%d')          AS deliveryDeadline,
             is_long_term                                        AS isLongTerm,
             IFNULL(saved, 'N')                                  AS saved
         FROM specific_item_flat

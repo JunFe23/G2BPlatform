@@ -182,7 +182,7 @@
               <td>{{ item.firstContractDate }}</td>
               <td>{{ item.contractDate }}</td>
               <td>{{ item.startDate }}</td>
-              <td>{{ item.completionDate }}</td>
+              <td>{{ item.endDate }}</td>
               <td>{{ formatNumber(item.firstContractAmount) }}</td>
               <td>{{ formatNumber(item.contractAmount) }}</td>
               <td>{{ item.isLongTerm }}</td>

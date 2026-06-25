@@ -72,7 +72,8 @@ public class MarketContractEtlService {
                 "  contract_type, contract_no, change_seq, is_final_contract, first_year_contract_no, is_long_term," +
                 "  vendor_name, vendor_biz_reg_no, contract_name, demand_agency_name, demand_agency_region," +
                 "  public_procurement_major, public_procurement_mid, public_procurement_name, contract_method," +
-                "  first_contract_date, contract_date, first_contract_amount, total_contract_amount, current_contract_amount, saved" +
+                "  first_contract_date, contract_date, first_contract_amount, total_contract_amount, current_contract_amount," +
+                "  start_date, end_date, saved" +
                 ") SELECT" +
                 "  r.contract_type, r.contract_no, r.change_seq, r.is_final_contract, NULLIF(r.first_year_contract_no,'')," +
                 "  CASE WHEN r.new_long_term_type IN ('신규(장기)','장기','계속비') THEN 'Y' ELSE 'N' END," +
@@ -82,6 +83,8 @@ public class MarketContractEtlService {
                 "  CAST(NULLIF(REPLACE(r.first_contract_amount_raw,',',''),'') AS UNSIGNED)," +
                 "  CAST(NULLIF(REPLACE(r.total_contract_amount_raw,',',''),'') AS UNSIGNED)," +
                 "  CAST(NULLIF(REPLACE(r.current_contract_amount_raw,',',''),'') AS UNSIGNED)," +
+                "  CASE WHEN r.start_date REGEXP '^[0-9]{8}$' THEN STR_TO_DATE(r.start_date,'%Y%m%d') END," +
+                "  CASE WHEN r.end_date REGEXP '^[0-9]{8}$' THEN STR_TO_DATE(r.end_date,'%Y%m%d') END," +
                 "  'N'" +
                 " FROM task_member_contract_raw r" +
                 " JOIN market_target_category c ON c.is_active='Y'" +

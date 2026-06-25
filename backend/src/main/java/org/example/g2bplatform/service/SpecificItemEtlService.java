@@ -31,7 +31,7 @@ public class SpecificItemEtlService {
             "  unit_price, quantity, quantity_change, supply_amount, supply_amount_change," +
             "  is_mas, is_excellent_product, is_direct_purchase, is_sme_competitive," +
             "  contract_date, first_contract_date," +
-            "  jurisdiction_type, delivery_location, source_file" +
+            "  jurisdiction_type, delivery_location, delivery_deadline, source_file" +
             ") VALUES (" +
             "  ?,?,?,?,?,?,?," +
             "  ?,?,?," +
@@ -42,7 +42,7 @@ public class SpecificItemEtlService {
             "  ?,?,?,?,?," +
             "  ?,?,?,?," +
             "  ?,?," +
-            "  ?,?,?" +
+            "  ?,?,?,?" +
             ")";
 
     private final JdbcTemplate jdbc;
@@ -131,7 +131,11 @@ public class SpecificItemEtlService {
                         (int) processed, (int) inserted, (int) (processed - inserted), jobId);
             }
 
-            // flat 적재 완료 → grouped 재집계 (saved 보존)
+            // flat 적재 완료 → 품목별 최초계약일자/금액 채움 (ADR-0004)
+            jdbc.update("UPDATE csv_upload_job SET message='최초계약 산출 중' WHERE id=?", jobId);
+            fillFirstItemAmounts();
+
+            // → grouped 재집계 (saved 보존)
             jdbc.update("UPDATE csv_upload_job SET message='grouped 집계 중' WHERE id=?", jobId);
             rebuildGrouped();
 
@@ -144,6 +148,37 @@ public class SpecificItemEtlService {
             jdbc.update("UPDATE csv_upload_job SET status='FAILED', message='실패', error_message=?, finished_at=NOW() WHERE id=?",
                     e.getMessage(), jobId);
         }
+    }
+
+    /**
+     * flat 각 품목(item_seq)의 최초계약일자/금액 = 그 품목이 처음 등장한 차수(MIN change_seq)의
+     * 계약일자/공급금액 (ADR-0004). raw 유니크키 (contract_no, change_seq, item_seq)로 1:1 매칭.
+     */
+    private void fillFirstItemAmounts() {
+        int n = jdbc.update(
+                "UPDATE specific_item_flat f " +
+                "JOIN ( " +
+                "  SELECT r.contract_no, r.item_seq, " +
+                "         CASE WHEN r.contract_date REGEXP '^[0-9]{8}$' THEN STR_TO_DATE(r.contract_date,'%Y%m%d') END AS first_date, " +
+                "         CASE WHEN REPLACE(r.supply_amount_raw,',','') REGEXP '^[0-9]+$' THEN CAST(REPLACE(r.supply_amount_raw,',','') AS UNSIGNED) END AS first_amount " +
+                "  FROM procurement_specific_item_raw r " +
+                "  JOIN ( " +
+                "    SELECT contract_no, item_seq, MIN(change_seq) AS min_seq " +
+                "    FROM procurement_specific_item_raw WHERE business_type='물품' " +
+                "    GROUP BY contract_no, item_seq " +
+                "  ) m ON m.contract_no=r.contract_no AND m.item_seq=r.item_seq AND m.min_seq=r.change_seq " +
+                "  WHERE r.business_type='물품' " +
+                ") fa ON fa.contract_no=f.contract_no AND fa.item_seq=f.item_seq " +
+                "SET f.first_item_contract_date=fa.first_date, f.first_item_contract_amount=fa.first_amount");
+
+        // 납품기한 backfill — INSERT IGNORE로 건너뛴 기존 행도 채우기 위해 UPDATE (flat의 최종차수 raw 기준)
+        int d = jdbc.update(
+                "UPDATE specific_item_flat f " +
+                "JOIN procurement_specific_item_raw r " +
+                "  ON r.contract_no=f.contract_no AND r.item_seq=f.item_seq " +
+                " AND r.change_seq=f.change_seq AND r.business_type='물품' " +
+                "SET f.delivery_deadline = CASE WHEN r.delivery_deadline REGEXP '^[0-9]{8}$' THEN STR_TO_DATE(r.delivery_deadline,'%Y%m%d') END");
+        log.info("[ETL] 품목별 최초계약 {}건, 납품기한 {}건 채움", n, d);
     }
 
     /**
@@ -162,9 +197,12 @@ public class SpecificItemEtlService {
 
         // 2) 재집계
         jdbc.update("TRUNCATE TABLE specific_item_grouped");
-        // 날짜 기준은 first_contract_date(원계약 체결일)로 산출. 변경계약이 있으면 contract_date는
-        // 변경일이라 연차 식별이 왜곡되므로 first_contract_date로 묶음의 최초/최종 연차를 식별한다.
-        // 최초계약금액 = 그룹 내 가장 이른 first_contract_date 연차의 supply_amount 합 (윈도우로 grp_min_date 산출).
+        // ADR-0004: 품목(item_seq) 단위 최초/최종을 그룹으로 합산.
+        //  - 최초계약일자 = MIN(품목별 최초계약일자=first_item_contract_date)
+        //  - 최초계약금액 합 = SUM(first_item_contract_amount)
+        //  - 최종계약일자 = MAX(contract_date)  (최종차수 계약일)
+        //  - 최종계약금액 합 = SUM(supply_amount)
+        //  - 대표품목(분류/세부품명) = 맨앞(group 내 contract_no, item_seq 최소) 품목 (FIRST_VALUE)
         int grouped = jdbc.update(
                 "INSERT INTO specific_item_grouped (" +
                 "  data_type, group_key, vendor_biz_reg_no, first_year_contract_no, contract_no," +
@@ -184,20 +222,23 @@ public class SpecificItemEtlService {
                 "  MAX(contract_method)," +
                 "  MAX(contract_type)," +
                 "  MAX(is_mas)," +
-                "  MAX(item_category_no)," +
-                "  MAX(item_category_name)," +
-                "  MAX(detail_item_name)," +
+                "  MAX(rep_item_category_no)," +     // 대표품목(맨앞) 물품분류번호
+                "  MAX(rep_item_category_name)," +   // 대표품목 물품분류명
+                "  MAX(rep_detail_item_name)," +     // 대표품목 세부품명
                 "  MAX(is_long_term)," +
-                "  MIN(first_contract_date)," +            // 최초계약일자 = 가장 이른 원계약일
-                "  MAX(first_contract_date)," +            // 최종계약일자 = 가장 늦은 원계약일
-                "  SUM(COALESCE(supply_amount, 0))," +     // 최종계약금액 합계
-                "  SUM(CASE WHEN first_contract_date = grp_min_date THEN COALESCE(supply_amount,0) ELSE 0 END)," + // 최초계약금액
+                "  MIN(first_item_contract_date)," + // 최초계약일자 = 품목별 최초의 MIN
+                "  MAX(contract_date)," +            // 최종계약일자 = 최종차수 계약일의 MAX
+                "  SUM(COALESCE(supply_amount, 0))," +              // 최종계약금액 합계
+                "  SUM(COALESCE(first_item_contract_amount, 0))," + // 최초계약금액 합계
                 "  COUNT(DISTINCT contract_no)," +
                 "  'N'" +
                 " FROM (" +
                 "   SELECT *," +
-                "     MIN(first_contract_date) OVER (PARTITION BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no) AS grp_min_date" +
+                "     FIRST_VALUE(item_category_no)   OVER w AS rep_item_category_no," +
+                "     FIRST_VALUE(item_category_name) OVER w AS rep_item_category_name," +
+                "     FIRST_VALUE(detail_item_name)   OVER w AS rep_detail_item_name" +
                 "   FROM specific_item_flat WHERE is_active = 'Y'" +
+                "   WINDOW w AS (PARTITION BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no ORDER BY contract_no, item_seq)" +
                 " ) t" +
                 " GROUP BY data_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no");
 
@@ -267,6 +308,7 @@ public class SpecificItemEtlService {
                 toDate(str(r.get("first_contract_date"))),
                 str(r.get("jurisdiction_type")),
                 str(r.get("delivery_location")),
+                toDate(str(r.get("delivery_deadline"))),
                 str(r.get("source_file"))
         };
     }

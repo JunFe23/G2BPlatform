@@ -70,10 +70,10 @@ public class SpecificItemController {
         Map<String, Object> res = new HashMap<>();
         res.put("data", data);
         res.put("recordsFiltered", total);
-        if (grouped) {
-            // 묶어서 보기 상단 합계 (최초/최종 계약금액)
-            res.put("totals", specificItemMapper.selectGroupedTotals(params));
-        }
+        // 상단 합계 (최초/최종 계약금액) — 풀어서/합쳐서 모두 표시
+        res.put("totals", grouped
+                ? specificItemMapper.selectGroupedTotals(params)
+                : specificItemMapper.selectFlatTotals(params));
         return ResponseEntity.ok(res);
     }
 
