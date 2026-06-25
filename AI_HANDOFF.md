@@ -459,6 +459,33 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 프론트 `npm run build` PASS (152 modules, 삭제 뷰 참조 깨짐 없음).
 - diff: 9개 파일 변경 + 2개 뷰 삭제, 순 ~1,700줄 제거.
 
+### 배포 — 완료 ✅ (2026-06-25)
+- PR #24 master 머지(`7a4386d`) → EC2 deploy 브랜치(feature/G2B-8...)에 origin/master 머지(`7e14926`) → `docker compose build` + `up -d`.
+- 검증: 도메인 웹 HTTP 200, 배포 JS 번들에 `report-goods`/`report-shopping-mall` 참조 0건·`report-specific-item` 유지. API 정상 기동(Flyway 변경 없음). `deploy/g2b.conf` 서버 로컬수정 보존.
+
+---
+
+## 14. G2B-37 — 특정품목 물품분류 다중선택 검색 (2026-06-25)
+
+- 티켓: G2B-37 (Task, 에픽 G2B-25). 브랜치: `feature/G2B-37-multi-item-category` (master 분기).
+- 요구: 특정품목 조달내역 화면의 물품분류번호/분류명 필터를 단일 선택 → **다중 선택**.
+- 설계: **단일 콤보박스 + 칩** UI, `item_category_no` 기준 **정확매칭 IN**(기존 단일 LIKE 대체). 전송은 CSV(`itemCategoryNos=a,b`) → Spring `List<String>` 자동 분리.
+
+### 변경 — 프론트 (`ReportSpecificItemView.vue`)
+- 물품분류명·번호 두 입력 → **단일 콤보박스**(`categorySearch`). API(`/item-categories`)가 명·번호 둘 다 검색.
+- 상태: `selectedCategories[]`(칩), `categoryDropdownOpen`. 기존 `filters.itemCategoryNo/Name`·`activeCategoryField` 제거.
+- `selectCategory`=칩 추가(중복방지·선택 후 검색어 초기화·드롭다운 유지), `removeCategory`/`isCategorySelected` 추가. 선택된 옵션 ✓ 표시.
+- `buildParams`: `itemCategoryNos = selectedCategories.map(no).join(',')`. 목록·엑셀(URLSearchParams)·합계·페이지네이션 자동 반영.
+- 칩 CSS 추가.
+
+### 변경 — 백엔드
+- `SpecificItemController`(목록 GET + 엑셀 GET + buildParams): `itemCategoryNo`/`itemCategoryName` 단일 String → `List<String> itemCategoryNos`. 비어있지 않으면 params에 주입.
+- `SpecificItemMapper.xml`: flat `commonWhere` + grouped where의 단일 LIKE 2개 제거 → 기존 `topCategories` 패턴 복제한 `item_category_no IN <foreach collection="p.itemCategoryNos">`. list/count/export/totals 공유라 자동 반영.
+- `/item-categories` 옵션 API·`selectItemCategories`는 변경 없음.
+
+### 검증
+- 백엔드 `compileJava` PASS, 프론트 `npm run build` PASS (152 modules). 제거 식별자 잔존 0건.
+- ⚠️ **런타임 스모크 미실시**(로그인+백엔드+DB 필요). CSV→List 바인딩·IN foreach는 검증된 `topCategories` 패턴과 동일. 배포 후 또는 로컬 기동으로 다중 칩→IN 조회·엑셀 확인 권장.
+
 ### 남은 일
-- 커밋/PR/배포는 사용자 승인 후. DB 변경 없음 = Flyway 영향 없음. 배포는 EC2 deploy 브랜치 머지 + docker compose build/up.
-- (선택) 시각 확인: 로그인 후 시장데이터 메뉴에 물품/쇼핑몰 사라짐, `/report-specific-item` 정상, 잔존 화면(TOP 보고서의 saved 체크 포함) 무영향. 빌드로 정적 검증은 끝났으나 런타임 스모크는 미실시.
+- 커밋/PR/배포는 사용자 승인 후. DB 변경 없음 = Flyway 영향 없음.
