@@ -334,6 +334,19 @@ curl -X POST http://localhost:8080/api/admin/etl/market-contract \
 ### 남은 일
 - 커밋/PR/배포는 사용자 승인 후. (배포 절차: §8/§9 — EC2 deploy 브랜치에 origin 머지 → docker compose build/up. DB 변경 없음 = Flyway 영향 없음.)
 
+---
+
+## 11. G2B-34 — 특정품목 풀어서 합계 조회 성능 개선 (2026-06-25)
+
+- 티켓: G2B-34 (에픽 G2B-25). 브랜치: `feature/G2B-34-flat-totals-perf` (master 분기).
+- 문제: 풀어서 보기 첫 로드가 운영에서 12~23초(cold). 진단 — 목록 쿼리는 1ms(`idx_flat_list_order` 사용)로 빠르나, **상단 합계 `selectFlatTotals`가 매 요청마다 is_active='Y' 약 83만 행을 풀스캔 SUM**(커버링 인덱스 없음). 로컬은 데이터가 버퍼풀에 캐시돼 빠름(723ms), 운영은 RDS cold(23s)→warm(3s) = 버퍼풀 캐싱 차.
+- 변경:
+  - **V23 마이그레이션**: `CREATE INDEX idx_flat_totals ON specific_item_flat (is_active, first_item_contract_amount, supply_amount)` → 합계 SUM이 index-only(Extra: Using index)로 전환(EXPLAIN ALL→ref 확인). cold I/O ~20배↓.
+  - **SpecificItemController**: 합계(totals)를 **첫 페이지(start=0)에서만** 계산(페이지네이션 중 불변).
+  - **ReportSpecificItemView.vue**: 응답에 totals 없으면(페이지네이션) 기존 값 유지(`if (data.totals != null)`).
+- 검증: compile/build PASS. 로컬 V23 적용 후 — start=0 0.68s(totals 포함), start=100 0.17s(totals 없음). 인덱스 index-only 확인.
+- 배포 시 prod Flyway가 V23(CREATE INDEX) 자동 적용 → 운영 첫 로딩 대폭 개선 예상.
+
 ### 검증 명령(참고)
 ```sql
 -- flat 신규 컬럼 채움 확인

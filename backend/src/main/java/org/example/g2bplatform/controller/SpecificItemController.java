@@ -70,10 +70,13 @@ public class SpecificItemController {
         Map<String, Object> res = new HashMap<>();
         res.put("data", data);
         res.put("recordsFiltered", total);
-        // 상단 합계 (최초/최종 계약금액) — 풀어서/합쳐서 모두 표시
-        res.put("totals", grouped
-                ? specificItemMapper.selectGroupedTotals(params)
-                : specificItemMapper.selectFlatTotals(params));
+        // 상단 합계 (최초/최종 계약금액) — 페이지마다 전체 SUM은 비싸므로 첫 페이지(start=0)에서만 계산.
+        // 합계는 같은 필터 내 페이지네이션 중 불변이라 프론트가 첫 응답값을 유지한다.
+        if (start == 0) {
+            res.put("totals", grouped
+                    ? specificItemMapper.selectGroupedTotals(params)
+                    : specificItemMapper.selectFlatTotals(params));
+        }
         return ResponseEntity.ok(res);
     }
 
