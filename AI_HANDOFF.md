@@ -6,6 +6,7 @@
 > Codex 실행 메모: 2026-06-23 13:17 — 사용자 테스트용 로컬 앱 기동. Docker `g2bplatform-api-1`은 중지했고, 현재 작업트리 백엔드를 `8080`, 프론트를 `5173`에 띄움.
 > Codex 업데이트: 2026-06-23 13:22 — G2B-27 공사/용역 보고서 화면을 통합 API(`/api/report/market-contracts`)에 연결.
 > Codex 업데이트: 2026-06-23 13:45 — G2B-31 시장데이터 메뉴명 변경 및 특정품목 통합 화면 검색필터 개편 구현/검증 완료. 로컬 백엔드 `8080`, 프론트 `5173` 재기동.
+> Claude 업데이트: 2026-06-24 — **운영 RDS raw 적재 완료** + **운영 ETL(flat/grouped) 실행** (상세 §8).
 > 우선 `CLAUDE.md`(프로젝트 컨텍스트)도 함께 읽을 것.
 
 ---
@@ -272,3 +273,96 @@ curl -X POST http://localhost:8080/api/admin/etl/market-contract \
 - `application.properties`·service key 등 비밀값 커밋 금지.
 - 작업마다 Jira 티켓 생성·에픽 그룹화(담당자 Jun Fe).
 - 자세한 ADR·런북은 `docs/` 참고.
+
+---
+
+## 9. G2B-32 — 특정품목 품목별 최초/최종 + 납품·착수완수일 (2026-06-24, 진행 중)
+
+- 티켓: G2B-32 (에픽 G2B-25). 브랜치: `feature/G2B-32-item-first-final-amount` (현재 HEAD=feature/G2B-16에서 분기, master 미머지 작업 위에 스택).
+- 설계 결정: **ADR-0004** (`docs/adr/ADR-0004-specific-item-per-item-first-final.md`). ADR-0003 §4를 대체.
+
+### 구현 완료 (코드)
+- **V22 마이그레이션** `V22__add_first_item_amount_and_delivery_dates.sql`: `specific_item_flat`에 `first_item_contract_date/first_item_contract_amount/delivery_deadline`, `market_contract_flat`에 `start_date/end_date`.
+- **SpecificItemEtlService**: flat 적재 시 `delivery_deadline` 매핑 + `fillFirstItemAmounts()`(품목별 min(change_seq) 첫등장 contract_date/supply_amount UPDATE) + `rebuildGrouped` 산출 변경(최초일 MIN(first_item_contract_date), 최초금액 SUM(first_item_contract_amount), 최종일 MAX(contract_date), 대표품목 FIRST_VALUE(min item_seq)).
+- **MarketContractEtlService**: flat에 STR_TO_DATE(start_date/end_date) 매핑.
+- **SpecificItemMapper**: flat select에 firstItemContractDate/firstItemContractAmount/deliveryDeadline 추가, `selectFlatTotals` 신설(풀어서 상단 합계). grouped는 컬럼명 동일이라 무변경.
+- **SpecificItemController**: 풀어서/합쳐서 모두 `totals` 반환(flat=selectFlatTotals).
+- **MarketContractMapper**: flat 공통 컬럼 fragment에 startDate/endDate.
+- **프론트**: `ReportSpecificItemView`(풀어서: 최초계약일자=firstItemContractDate, 최초계약금액, 최종계약일자, 납품기한 컬럼 + 상단 합계를 풀어서에도 표시), `ReportConstructionsView`(착수/완수일 컬럼 + COL_SPAN 14→16), `ReportServicesView`(완수일 필드 completionDate→endDate 정정; 착수일 startDate 기존).
+- 검증: `compileJava` PASS, 프론트 `npm run build` PASS, ETL 품목별 최초/최종 로직 **로컬 SQL 샘플 검증 통과**(20171008DE1_1, 20191104D04_1 통합건).
+
+### 로컬 E2E 검증 — 완료 ✅ (2026-06-24)
+- 백엔드 bootRun 기동 → **Flyway V22 자동 적용**(now at v22, success=1).
+- **특정품목 ETL 재실행 SUCCESS**: flat 품목별 최초/최종/납품기한 채움(최초금액 870,712/870,753, 납품기한 870,671), grouped 합계·대표품목 정상. 샘플(20171008DE1_1 3품목, 20191104D04 장기그룹 최초합 145,092,170/최종합 343,180,170) 검증.
+- **API 스모크**: 풀어서/합쳐서 신규 필드 + totals(풀어서에도) 반환 확인.
+- **공사/용역 start/end**: market_contract_flat backfill(start 2,652,953/end 2,672,129) + API startDate/endDate 반환 확인.
+- ⚠️ ETL 버그 2건 발견·수정: ① flat INSERT IGNORE라 기존행 delivery_deadline 미채움 → backfill UPDATE 추가. ② supply_amount_raw 더티값('개')에 strict CAST 에러 → REGEXP 가드(숫자/8자리날짜만 변환). market start/end도 동일 가드.
+
+### 운영 적재 — 완료 ✅ (2026-06-24)
+- RDS t4g.large 임시 상향 상태에서 **검증된 SQL을 EC2 경유 직접 실행**(코드 미배포라 앱 ETL 대신 SQL): V22 ALTER + Flyway 기록(checksum 1550333026) + flat 신규컬럼 backfill + grouped 재집계 + market start/end backfill. ~18분, 정상.
+- 검증: specific_item_flat 885,340(최초금액 885,297/납품기한 885,254), grouped 438,743, market start 2,652,953/end 2,672,129. Flyway V22 success=1.
+- EC2·로컬 임시파일 정리 완료.
+
+### ⚠️ 남은 일
+1. **RDS를 micro로 복귀** — 적재 끝났으니 사용자 콘솔에서 하향(비용).
+2. **코드 배포** — 운영 DB엔 신규 컬럼/데이터 있으나 **운영 앱은 구코드**(매퍼가 신규컬럼 미조회)라 화면엔 아직 안 보임. PR 머지+배포 후 표시됨. ⚠️ 배포 전 운영에서 **구 ETL 트리거 금지**(구 rebuildGrouped가 grouped를 ADR-0003 방식으로 덮어씀). 스케줄러는 off라 자동 위험은 없음.
+3. 커밋/푸시/PR은 사용자 승인 후. (로컬 백엔드 8080 가동 중)
+
+### 검증 명령(참고)
+```sql
+-- flat 신규 컬럼 채움 확인
+SELECT contract_no,item_seq,first_item_contract_date,first_item_contract_amount,delivery_deadline,contract_date,supply_amount
+FROM specific_item_flat WHERE contract_no='20171008DE1_1';
+-- grouped 합계 확인
+SELECT group_key,first_contract_date,last_contract_date,initial_contract_amount,total_supply_amount,item_category_name
+FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
+```
+
+---
+
+## 8. 운영(RDS) 반영 기록 — 2026-06-24 (Claude)
+
+운영 RDS(`g2b-db-prod...ap-northeast-2`)는 이미 **Flyway V21까지 적용**돼 있고(EC2 `~/g2b` 배포 커밋 `5d9f60a`, `g2b-api-1` 가동), `market_*`/raw 테이블이 모두 생성돼 있었음(데이터만 비어있었음).
+
+### 8-1. raw 적재 — 완료 ✅
+- `task_member_contract_raw` **11,736,823행** 적재·검증 완료(로컬과 총건수·`contract_type`(공사 5,911,082/용역 5,825,741)·`source_file` 20개 전부 일치).
+- 방법: 로컬 `mysqldump --no-create-info --insert-ignore | gzip`(1.1GB) → EC2 `scp` → EC2에서 `zcat | mysql`(세션 `unique_checks=0`+`net_read_timeout=600`). EC2→RDS 동일 리전이라 수십 초.
+- ⚠️ **직결 파이프(노트북→ssh→RDS 스트리밍) 금지**: RDS `net_read_timeout=30s` 때문에 중간 정체 시 연결 끊김(`ERROR 2013`). 반드시 EC2에 파일 두고 EC2에서 적재.
+- 접속: `ssh -i ~/Desktop/G2B/ssh/g2b_prod.pem ubuntu@3.37.169.101`. RDS 비번은 EC2 `~/g2b/backend/src/main/resources/application.properties`에서 읽어 `MYSQL_PWD`로 주입(평문 노출 금지).
+
+### 8-2. ETL(flat/grouped) — **DB 내 연산 불가 → 로컬 계산본 벌크 적재로 전환**
+- ETL 엔드포인트 `POST /api/admin/etl/market-contract`는 운영 배포돼 있으나 SUPER_ADMIN JWT 필요(401). 처음엔 배포된 `runEtl`과 동일 SQL을 EC2→RDS로 직접 실행 시도.
+- ⚠️ **치명적 발견: 운영 RDS `innodb_buffer_pool_size = 27MB`** (매우 작은 인스턴스). flat INSERT(11.7M raw JOIN 스캔)가 거의 전부 디스크 I/O로 돌아 **40분에 34.7만 행(≈145 rows/sec)** 수준 → DB 내 ETL(JOIN/윈도우함수) 비현실적. 중단함.
+  - 중단(`KILL`) 후 부분삽입 34.7만 행 **롤백도 랜덤 I/O라 ≈77 rows/sec**로 매우 느림(약 70분).
+- ✅ **전환 전략**: 로컬엔 이미 flat/grouped가 계산 완료돼 있으므로, **raw와 동일하게 로컬 mysqldump → EC2 → RDS 벌크 적재**(`unique_checks=0`+`foreign_key_checks=0`, extended-insert → 순차 I/O라 빠름). 무거운 연산을 RDS에서 안 함.
+  - 자동화 스크립트(EC2): `~/prod_load_flat_grouped.sh` (롤백 종료 대기 → TRUNCATE → `zcat ~/market_flat_grouped.sql.gz | mysql`), 로그 `~/load_flat_grouped.log`, nohup.
+  - 덤프: 로컬 `mysqldump --no-create-info --insert-ignore market_contract_flat market_contract_grouped`(352MB gz).
+- **검증 기준(로컬 기대값)**: flat 2,672,131(공사 1,489,972/용역 1,182,159), grouped 2,623,994(공사 1,473,667/용역 1,150,327).
+- 완료 후 EC2 임시파일(`prod_market_etl.sql`, `run_market_etl.sh`, `market_etl.log`, `prod_load_flat_grouped.sh`, `market_flat_grouped.sql.gz`, `load_flat_grouped.log`) 정리.
+
+> **운영 반영 원칙(중요)**: 이 RDS 인스턴스에서는 `market_contract_*` ETL을 **DB 내 INSERT...SELECT로 돌리지 말 것**. 항상 로컬에서 ETL 수행 후 결과 테이블을 벌크 적재. 근본 해결은 RDS 인스턴스 상향 또는 `innodb_buffer_pool_size` 증대(G2B-30). raw 대량 적재법은 [[reference-prod-rds-bulk-load]] 참고.
+
+### 8-3. 인스턴스 사양 / 적재 완료 (2026-06-24)
+- 운영 RDS `g2b-db-prod` = (원래) **db.t4g.micro / RAM 1GB / gp2 70GiB / single-AZ / MySQL 8.4.5**. 버퍼풀 27MB는 1GB RAM의 한계.
+- **micro에서 벌크 적재가 2시간+ 멈춤** — 원인: ① 버스터블 **CPU 크레딧 고갈**(수 시간 연속 부하), ② 27MB 버퍼풀 + gp2 ~210 IOPS I/O 한계. `SELECT MAX(id)`조차 행(완전 포화).
+- **해결: RDS를 `db.t4g.large`로 임시 상향(즉시 적용)** → 재부팅으로 멈춘 적재 중단(벌크 로드는 배치별 auto-commit이라 커밋된 134만 행은 잔존, 트랜잭션 롤백 없음). 상향 후 **버퍼풀 27MB → 5.4GB**(파라미터는 인스턴스 비례 자동, 하드코딩 아님).
+- **TRUNCATE 후 전체 재적재 → 약 6.5분 완료**(`MYSQL_EXIT=0`). ✅ **검증: 로컬과 정확히 일치**
+  - flat **2,672,131** (construction 1,489,972 / service 1,182,159)
+  - grouped **2,623,994** (construction 1,473,667 / service 1,150,327)
+- EC2·로컬 임시파일 전부 정리 완료.
+- ⚠️ **현재 RDS는 t4g.large 상태(비용↑).** 적재 끝났으니 **micro로 복귀하거나, 운영 스펙 결정 필요**(아래).
+
+### 8-4. 운영 인프라 권고 (비용/성능)
+- 인스턴스: db.t4g.micro(1GB)는 이 데이터 규모(아래 8-5)엔 부적합. **근무시간만 사용(10명) 패턴**이므로 **EventBridge 스케줄 기동(평일 주간만) + RDS t4g.large(8GB) or small + gp3** 조합이 월 ~8–10만원으로 적정(상세 채팅 논의).
+- 스토리지: **gp2 → gp3 전환 권장**(크기무관 3,000 IOPS, gp2보다 저렴). 적재 끝난 지금 콘솔에서 전환 가능.
+- ⚠️ **스토리지 자동조정 최대 임계값이 70GiB로 현재 할당량과 동일** → 더 못 늘어남. 가득 차면 장애. 임계값 상향 필요.
+
+### 8-5. DB 용량 현황 (2026-06-24)
+- g2b 스키마 **약 52.7GB / 70GiB (~75%)**. 여유 ~10–15GB로 빠듯.
+- 용량 큰 테이블: `contract_info_detail_list_thing` 17.8GB(3,351만행), `contract_info_construction_work` 9.0GB, `contract_info_service` 8.8GB, `contract_info_list_thing` 4.5GB, `daily_contracts_*` 등 = **약 40GB**. 현재 raw `task_member_contract_raw` 9.5GB.
+- ⚠️ **정정(이전 메모 오류): 이 40GB는 "드롭 가능한 죽은 레거시"가 아님.** `/api/data`·`/api/data/excel`(DataController+DataMapper) 통해 **구 화면 ServicesView/GoodsView/ConstructionsView/TargetProjectsView/ShoppingMallView가 지금도 라이브로 읽음.** 신 `market_contract` 화면과 병존 중.
+- 운영 스케줄러 `app.scheduling.enabled=false` → 자동수집 off라 40GB는 **더 안 쌓이지만(안정)**, 구 화면 은퇴 전엔 **DROP 불가**.
+- **디스크 대응**: 드롭으로 못 푸니 **스토리지 자동조정 임계값 상향(70→100GB)** 이 안전 조치. 레거시 제거는 구 화면 마이그레이션 완료 후(별도 티켓, G2B-29 / [[project-scheduler-cleanup-todo]]).
+
+### 8-6. 다음 작업
+- ① RDS 스펙 결정(micro 복귀 vs 스케줄+적정스펙) ② gp3 전환 + 자동조정 임계값 상향 ③ 레거시 테이블 정리 ④ 운영 보고서 화면(공사/용역) 동작 확인 ⑤ (선택) 업로드→ETL 자동 체이닝 코드 ⑥ super_admin 비밀번호 교체(EC2 `ps`에 평문 노출 이력).

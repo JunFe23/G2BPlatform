@@ -24,6 +24,9 @@ public interface SpecificItemMapper {
     /** 묶어서 보기 상단 합계 (최초/최종 계약금액 합계) */
     Map<String, Object> selectGroupedTotals(@Param("p") Map<String, Object> params);
 
+    /** 풀어서 보기 상단 합계 (최초/최종 계약금액 합계) */
+    Map<String, Object> selectFlatTotals(@Param("p") Map<String, Object> params);
+
     /** 엑셀 export 전용 — 전체 행을 스트리밍으로 반환 */
     Cursor<Map<String, Object>> selectGroupedListExport(@Param("p") Map<String, Object> params);
 

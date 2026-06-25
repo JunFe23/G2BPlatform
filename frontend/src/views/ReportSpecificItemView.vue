@@ -133,8 +133,8 @@
       </div>
     </div>
 
-    <!-- 묶어서 보기 상단 합계 -->
-    <div v-if="grouped && totals" class="grouped-totals">
+    <!-- 상단 합계 (풀어서/합쳐서 공통) -->
+    <div v-if="totals" class="grouped-totals">
       <span class="total-item">최초계약금액 합계 <strong>{{ formatNumber(totals.initialAmountSum) }}원</strong></span>
       <span class="total-sep">|</span>
       <span class="total-item">최종계약금액 합계 <strong>{{ formatNumber(totals.finalAmountSum) }}원</strong></span>
@@ -192,17 +192,19 @@
               <th>직접구매</th>
               <th>중기간경쟁</th>
               <th>최초계약일자</th>
-              <th>계약일자</th>
+              <th>최초계약금액</th>
+              <th>최종계약일자</th>
+              <th>납품기한</th>
               <th>장기여부</th>
               <th>저장</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td :colspan="grouped ? 19 : 26" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td :colspan="grouped ? 19 : 28" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td :colspan="grouped ? 19 : 26" class="no-data">데이터가 없습니다.</td>
+              <td :colspan="grouped ? 19 : 28" class="no-data">데이터가 없습니다.</td>
             </tr>
 
             <!-- 합쳐서 보기 행 -->
@@ -265,8 +267,10 @@
                 <td>{{ item.isTopExcellent }}</td>
                 <td>{{ item.isDirectPurchase }}</td>
                 <td>{{ item.isSmeCompetitive }}</td>
-                <td>{{ item.firstContractDate }}</td>
+                <td>{{ item.firstItemContractDate }}</td>
+                <td>{{ formatNumber(item.firstItemContractAmount) }}</td>
                 <td>{{ item.contractDate }}</td>
+                <td>{{ item.deliveryDeadline }}</td>
                 <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
                 <td>
                   <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
@@ -397,7 +401,7 @@ const fetchData = async (resetPage = false) => {
     const { data } = await axios.get(API_BASE, { params: buildParams(true) })
     items.value = Array.isArray(data.data) ? data.data : []
     recordsFiltered.value = data.recordsFiltered ?? items.value.length
-    totals.value = grouped.value && data.totals ? data.totals : null
+    totals.value = data.totals || null
   } catch (e) {
     console.error('특정품목 조회 실패', e)
     items.value = []
