@@ -67,11 +67,9 @@
         <if test="p.vendorBizRegNo != null">
             AND vendor_biz_reg_no = #{p.vendorBizRegNo}
         </if>
-        <if test="p.itemCategoryNo != null">
-            AND item_category_no LIKE CONCAT('%', #{p.itemCategoryNo}, '%')
-        </if>
-        <if test="p.itemCategoryName != null">
-            AND item_category_name LIKE CONCAT('%', #{p.itemCategoryName}, '%')
+        <if test="p.itemCategoryNos != null and p.itemCategoryNos.size() > 0">
+            AND item_category_no IN
+            <foreach item="c" collection="p.itemCategoryNos" open="(" separator="," close=")">#{c}</foreach>
         </if>
         <if test="p.contractName != null">
             AND contract_name LIKE CONCAT('%', #{p.contractName}, '%')
@@ -240,11 +238,9 @@
         <if test="p.contractKind == 'goods'">
             AND data_type = 'general'
         </if>
-        <if test="p.itemCategoryNo != null">
-            AND item_category_no LIKE CONCAT('%', #{p.itemCategoryNo}, '%')
-        </if>
-        <if test="p.itemCategoryName != null">
-            AND item_category_name LIKE CONCAT('%', #{p.itemCategoryName}, '%')
+        <if test="p.itemCategoryNos != null and p.itemCategoryNos.size() > 0">
+            AND item_category_no IN
+            <foreach item="c" collection="p.itemCategoryNos" open="(" separator="," close=")">#{c}</foreach>
         </if>
         <if test="p.contractName != null">
             AND contract_name LIKE CONCAT('%', #{p.contractName}, '%')

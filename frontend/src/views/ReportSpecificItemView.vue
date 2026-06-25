@@ -25,45 +25,35 @@
         <div class="category-combobox">
           <input
             type="text"
-            v-model="filters.itemCategoryName"
-            placeholder="물품분류명 검색"
-            @input="onCategoryInput('name')"
-            @focus="showCategoryOptions('name')"
+            v-model="categorySearch"
+            placeholder="물품분류명·번호 검색 (다중 선택)"
+            @input="onCategoryInput"
+            @focus="showCategoryOptions"
             @blur="hideCategoryOptionsLater"
           />
-          <div v-if="activeCategoryField === 'name' && categoryOptions.length > 0" class="category-option-list">
+          <div v-if="categoryDropdownOpen && categoryOptions.length > 0" class="category-option-list">
             <button
               v-for="option in categoryOptions"
               :key="categoryOptionKey(option)"
               type="button"
               class="category-option"
+              :class="{ 'is-selected': isCategorySelected(option.itemCategoryNo) }"
               @mousedown.prevent="selectCategory(option)"
             >
               <span class="category-option-name">{{ option.itemCategoryName }}</span>
               <span class="category-option-no">{{ option.itemCategoryNo }}</span>
             </button>
           </div>
-        </div>
-        <div class="category-combobox">
-          <input
-            type="text"
-            v-model="filters.itemCategoryNo"
-            placeholder="물품분류번호 검색"
-            @input="onCategoryInput('no')"
-            @focus="showCategoryOptions('no')"
-            @blur="hideCategoryOptionsLater"
-          />
-          <div v-if="activeCategoryField === 'no' && categoryOptions.length > 0" class="category-option-list">
-            <button
-              v-for="option in categoryOptions"
-              :key="categoryOptionKey(option)"
-              type="button"
-              class="category-option"
-              @mousedown.prevent="selectCategory(option)"
-            >
-              <span class="category-option-name">{{ option.itemCategoryNo }}</span>
-              <span class="category-option-no">{{ option.itemCategoryName }}</span>
-            </button>
+          <div v-if="selectedCategories.length > 0" class="category-chips">
+            <span v-for="cat in selectedCategories" :key="cat.itemCategoryNo" class="category-chip">
+              {{ cat.itemCategoryName }} ({{ cat.itemCategoryNo }})
+              <button
+                type="button"
+                class="category-chip-remove"
+                @click="removeCategory(cat.itemCategoryNo)"
+                aria-label="제거"
+              >×</button>
+            </span>
           </div>
         </div>
         <input type="text" v-model="filters.contractName" placeholder="계약명 검색" />
@@ -317,7 +307,9 @@ const currentPage = ref(1)
 const grouped = ref(false)
 const totals = ref(null)
 const categoryOptions = ref([])
-const activeCategoryField = ref('')
+const categorySearch = ref('')
+const selectedCategories = ref([])
+const categoryDropdownOpen = ref(false)
 let categorySearchTimer = null
 let categoryHideTimer = null
 
@@ -333,8 +325,6 @@ const filters = reactive({
   contractKind: '',
   demandAgencyName: '',
   demandAgencyRegion: '',
-  itemCategoryNo: '',
-  itemCategoryName: '',
   contractName: '',
   dateType: 'year',
   year: '',
@@ -364,8 +354,9 @@ function buildParams(includePaging = true) {
     contractKind: filters.contractKind || undefined,
     demandAgencyName: filters.demandAgencyName || undefined,
     demandAgencyRegion: filters.demandAgencyRegion || undefined,
-    itemCategoryNo: filters.itemCategoryNo || undefined,
-    itemCategoryName: filters.itemCategoryName || undefined,
+    itemCategoryNos: selectedCategories.value.length
+      ? selectedCategories.value.map((c) => c.itemCategoryNo).join(',')
+      : undefined,
     contractName: filters.contractName || undefined,
     year: filters.dateType === 'year' && filters.year ? parseInt(filters.year, 10) : undefined,
     month: filters.dateType === 'month' ? filters.month || undefined : undefined,
@@ -428,29 +419,31 @@ function categoryOptionKey(option) {
   return `${option.itemCategoryNo || ''}_${option.itemCategoryName || ''}`
 }
 
-function categorySearchTerm(field = activeCategoryField.value) {
-  return field === 'no' ? filters.itemCategoryNo : filters.itemCategoryName
-}
-
-function onCategoryInput(field) {
-  activeCategoryField.value = field
-  if (field === 'name') filters.itemCategoryNo = ''
-  if (field === 'no') filters.itemCategoryName = ''
+function onCategoryInput() {
+  categoryDropdownOpen.value = true
   if (categorySearchTimer) clearTimeout(categorySearchTimer)
-  categorySearchTimer = setTimeout(() => fetchCategoryOptions(categorySearchTerm(field)), 250)
+  categorySearchTimer = setTimeout(() => fetchCategoryOptions(categorySearch.value), 250)
 }
 
-function showCategoryOptions(field) {
-  activeCategoryField.value = field
+function showCategoryOptions() {
+  categoryDropdownOpen.value = true
   if (categoryHideTimer) clearTimeout(categoryHideTimer)
-  fetchCategoryOptions(categorySearchTerm(field))
+  fetchCategoryOptions(categorySearch.value)
 }
 
 function hideCategoryOptionsLater() {
   if (categoryHideTimer) clearTimeout(categoryHideTimer)
   categoryHideTimer = setTimeout(() => {
-    activeCategoryField.value = ''
+    categoryDropdownOpen.value = false
   }, 150)
+}
+
+function isCategorySelected(no) {
+  return selectedCategories.value.some((c) => c.itemCategoryNo === no)
+}
+
+function removeCategory(no) {
+  selectedCategories.value = selectedCategories.value.filter((c) => c.itemCategoryNo !== no)
 }
 
 async function fetchCategoryOptions(q = '') {
@@ -466,9 +459,15 @@ async function fetchCategoryOptions(q = '') {
 }
 
 function selectCategory(option) {
-  filters.itemCategoryNo = option.itemCategoryNo || ''
-  filters.itemCategoryName = option.itemCategoryName || ''
-  activeCategoryField.value = ''
+  if (option.itemCategoryNo && !isCategorySelected(option.itemCategoryNo)) {
+    selectedCategories.value.push({
+      itemCategoryNo: option.itemCategoryNo,
+      itemCategoryName: option.itemCategoryName,
+    })
+  }
+  // 다음 선택을 위해 검색어 초기화 + 옵션 갱신, 드롭다운은 열린 채 유지
+  categorySearch.value = ''
+  fetchCategoryOptions('')
 }
 
 const handleDownloadExcel = async () => {
@@ -613,12 +612,48 @@ onUnmounted(() => {
 .category-option:hover {
   background: #f1f5f9;
 }
+.category-option.is-selected {
+  background: #eff6ff;
+}
+.category-option.is-selected .category-option-name::after {
+  content: ' ✓';
+  color: #2563eb;
+}
 .category-option-name {
   font-weight: 600;
 }
 .category-option-no {
   color: #64748b;
   font-size: 0.8em;
+}
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 8px;
+  background: #e0e7ff;
+  color: #3730a3;
+  border-radius: 12px;
+  font-size: 0.8em;
+  line-height: 1.6;
+}
+.category-chip-remove {
+  border: 0;
+  background: transparent;
+  color: #4f46e5;
+  cursor: pointer;
+  font-size: 1.1em;
+  line-height: 1;
+  padding: 0;
+}
+.category-chip-remove:hover {
+  color: #1e1b4b;
 }
 .search-actions-row {
   display: flex;

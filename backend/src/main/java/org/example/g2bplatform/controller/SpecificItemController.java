@@ -38,8 +38,7 @@ public class SpecificItemController {
             @RequestParam(required = false) String demandAgencyName,
             @RequestParam(required = false) String demandAgencyRegion,
             @RequestParam(required = false) String vendorBizRegNo,
-            @RequestParam(required = false) String itemCategoryNo,
-            @RequestParam(required = false) String itemCategoryName,
+            @RequestParam(required = false) List<String> itemCategoryNos,
             @RequestParam(required = false) String contractName,
             @RequestParam(required = false) String detailItemNo,
             @RequestParam(required = false) String isMas,
@@ -57,7 +56,7 @@ public class SpecificItemController {
     ) {
         Map<String, Object> params = buildParams(
                 dataType, demandAgencyName, demandAgencyRegion, vendorBizRegNo,
-                itemCategoryNo, itemCategoryName, contractName, detailItemNo, isMas, isExcellentProduct, contractKind,
+                itemCategoryNos, contractName, detailItemNo, isMas, isExcellentProduct, contractKind,
                 year, month, rangeStart, rangeEnd, showSavedOnly, topExcellentOnly, grouped, start, length);
 
         List<Map<String, Object>> data = grouped
@@ -116,8 +115,7 @@ public class SpecificItemController {
             @RequestParam(required = false) String demandAgencyName,
             @RequestParam(required = false) String demandAgencyRegion,
             @RequestParam(required = false) String vendorBizRegNo,
-            @RequestParam(required = false) String itemCategoryNo,
-            @RequestParam(required = false) String itemCategoryName,
+            @RequestParam(required = false) List<String> itemCategoryNos,
             @RequestParam(required = false) String contractName,
             @RequestParam(required = false) String detailItemNo,
             @RequestParam(required = false) String isMas,
@@ -133,7 +131,7 @@ public class SpecificItemController {
     ) throws java.io.IOException {
         Map<String, Object> params = buildParams(
                 dataType, demandAgencyName, demandAgencyRegion, vendorBizRegNo,
-                itemCategoryNo, itemCategoryName, contractName, detailItemNo, isMas, isExcellentProduct, contractKind,
+                itemCategoryNos, contractName, detailItemNo, isMas, isExcellentProduct, contractKind,
                 year, month, rangeStart, rangeEnd, showSavedOnly, topExcellentOnly, grouped, 0, Integer.MAX_VALUE);
 
         java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
@@ -147,7 +145,7 @@ public class SpecificItemController {
 
     private Map<String, Object> buildParams(
             String dataType, String demandAgencyName, String demandAgencyRegion,
-            String vendorBizRegNo, String itemCategoryNo, String itemCategoryName, String contractName, String detailItemNo,
+            String vendorBizRegNo, List<String> itemCategoryNos, String contractName, String detailItemNo,
             String isMas, String isExcellentProduct, String contractKind,
             Integer year, String month, String rangeStart, String rangeEnd,
             boolean showSavedOnly, boolean topExcellentOnly, boolean grouped, int start, int length) {
@@ -158,8 +156,8 @@ public class SpecificItemController {
         if (ne(demandAgencyName))  p.put("demandAgencyName", demandAgencyName);
         if (ne(demandAgencyRegion))p.put("demandAgencyRegion", demandAgencyRegion);
         if (ne(vendorBizRegNo))    p.put("vendorBizRegNo", vendorBizRegNo);
-        if (ne(itemCategoryNo))    p.put("itemCategoryNo", itemCategoryNo);
-        if (ne(itemCategoryName))  p.put("itemCategoryName", itemCategoryName);
+        if (itemCategoryNos != null && !itemCategoryNos.isEmpty())
+                                   p.put("itemCategoryNos", itemCategoryNos);
         if (ne(contractName))      p.put("contractName", contractName);
         if (ne(detailItemNo))      p.put("detailItemNo", detailItemNo);
         if (ne(isMas))             p.put("isMas", isMas);
