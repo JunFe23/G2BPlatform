@@ -405,3 +405,29 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 
 ### 8-6. 다음 작업
 - ① RDS 스펙 결정(micro 복귀 vs 스케줄+적정스펙) ② gp3 전환 + 자동조정 임계값 상향 ③ 레거시 테이블 정리 ④ 운영 보고서 화면(공사/용역) 동작 확인 ⑤ (선택) 업로드→ETL 자동 체이닝 코드 ⑥ super_admin 비밀번호 교체(EC2 `ps`에 평문 노출 이력).
+
+---
+
+## 12. G2B-35 — 프로젝트 컨텍스트 문서 정리 + 워크플로우 규칙 (2026-06-25)
+
+- 티켓: G2B-35 (Task, 단독). 코드 변경 없음 = 빌드/배포/Flyway 영향 없음.
+- 배경: G2B-15/G2B-24 완료 처리 중 `CLAUDE.md`·`AGENTS.md`의 로드맵/현재 브랜치/미구현 섹션이 stale 함을 확인(시장데이터 통합이 master 머지·운영 반영됐는데 문서엔 "raw→flat/grouped ETL 미구현"으로 남아 있었음).
+
+### Jira 상태 정리 (이번 세션)
+- **G2B-15 → 완료**: raw 적재(11,736,823행) 검증 완료. flat/grouped는 G2B-24로 분리.
+- **G2B-24 → 완료**: V21(market_target_category 21건 + flat/grouped) + MarketContractEtlService + Controller/Mapper/ReportMarketService + 프론트 연동(커밋 `5d9f60a`). 완료 코멘트 추가됨.
+
+### 문서 변경 (이번 티켓)
+- `CLAUDE.md` / `AGENTS.md` (둘은 미러):
+  - **Git 규칙**에 "작업 단위 티켓 먼저 생성(담당자 Jun Fe) → 진행 중 전환 → 착수" + "작업 종료 시 `AI_HANDOFF.md` 티켓 섹션 추가/갱신" 규칙 명문화.
+  - **로드맵 현황**을 2블록으로: 특정품목 CSV(Phase 1~8 완료) + 시장데이터 통합(에픽 G2B-25, G2B-15/24/26/27/32/33/34 완료, G2B-28/29/30 미착수).
+  - **현재 브랜치**: `master — G2B-34까지 머지 완료 (e2e8ae2)`.
+  - **핵심 참고 파일**에 AI_HANDOFF.md + 시장데이터 DDL(V21~V23)/ETL/API·매퍼/화면 추가.
+  - **미구현** 섹션에서 완료된 "raw→flat/grouped ETL" 제거, G2B-28/29/30·RDS t4g.large 상태로 갱신.
+- `AI_HANDOFF.md`: 본 §12 추가.
+
+### 워크플로우 규칙 (이후 모든 작업에 적용)
+1. 작업 시작 전 G2B 프로젝트에 티켓 생성(담당자 Jun Fe) → 진행 중 전환.
+2. 작업 진행하며 코멘트로 갱신, 끝나면 완료 전환.
+3. **작업 종료 시 `AI_HANDOFF.md`에 해당 티켓 섹션(`## N. G2B-XX — 제목`) 추가/갱신** — 변경 파일·검증 결과·남은 일·배포 상태를 자족적으로 기재해 Codex가 바로 이어받을 수 있게 함.
+4. 커밋·푸시·PR·배포는 사용자 명시 승인 후에만.
