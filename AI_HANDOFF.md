@@ -303,10 +303,36 @@ curl -X POST http://localhost:8080/api/admin/etl/market-contract \
 - 검증: specific_item_flat 885,340(최초금액 885,297/납품기한 885,254), grouped 438,743, market start 2,652,953/end 2,672,129. Flyway V22 success=1.
 - EC2·로컬 임시파일 정리 완료.
 
+### 배포 완료 ✅ (2026-06-25)
+- 커밋·PR: PR #19(G2B-32→feature/G2B-16) 머지, PR #20(feature/G2B-16→master) 머지. master 최신.
+- **서버 배포 완료**: EC2 deploy 브랜치에 origin/feature/G2B-16 머지(f4173f8) → `docker compose build` + `up -d` → g2b-api-1/web-1 재기동. Flyway 23개 검증 통과(V22 재실행 없음, 수동 기록 checksum 1550333026 일치), API 신규필드/합계 반환 확인.
+- Jira: G2B-26·27·30·32 완료. G2B-28(TOP/시장현황 — 구 테이블 참조 리스크)·G2B-29(레거시 제거 — 구 화면 라이브) 미완료.
+
 ### ⚠️ 남은 일
-1. **RDS를 micro로 복귀** — 적재 끝났으니 사용자 콘솔에서 하향(비용).
-2. **코드 배포** — 운영 DB엔 신규 컬럼/데이터 있으나 **운영 앱은 구코드**(매퍼가 신규컬럼 미조회)라 화면엔 아직 안 보임. PR 머지+배포 후 표시됨. ⚠️ 배포 전 운영에서 **구 ETL 트리거 금지**(구 rebuildGrouped가 grouped를 ADR-0003 방식으로 덮어씀). 스케줄러는 off라 자동 위험은 없음.
-3. 커밋/푸시/PR은 사용자 승인 후. (로컬 백엔드 8080 가동 중)
+1. **RDS를 micro로 복귀** — 적재 끝났으니 사용자 콘솔에서 하향(비용). (현재 t4g.large)
+2. G2B-28(TOP/시장현황 전환, 운영 오류 리스크 우선 점검), G2B-29(레거시 제거) — 에픽 잔여.
+
+---
+
+## 10. G2B-33 — 특정품목 보기 최종계약금액 컬럼·순서 정정 (+엑셀) (2026-06-25)
+
+- 티켓: G2B-33 (에픽 G2B-25). 브랜치: `feature/G2B-33-final-amount-column` (master에서 분기).
+- 요구: 풀어서 보기 최종계약일자 뒤 '최종계약금액' 컬럼 추가 / 합쳐서 보기 순서를 최초일·최초금액(합계)·최종일·최종금액(합계)로 정정 / 엑셀에도 반영.
+
+### 변경 (frontend `ReportSpecificItemView.vue`)
+- 풀어서: 최종계약일자(`contractDate`) 뒤 **최종계약금액(`supplyAmount`)** 컬럼 추가. colspan 28→29.
+- 합쳐서: 순서 `firstContractDate → initialContractAmount → lastContractDate → totalSupplyAmount` (헤더/바디 동일), 라벨 '최초계약금액(합계)'.
+
+### 변경 (backend `SpecificItemController.writeExcel`)
+- 합쳐서 헤더/셀 순서 정정(최초일·최초금액합·최종일·최종금액합).
+- 풀어서 엑셀을 **화면과 일치**시킴(G2B-32 신규컬럼 누락분 보강): 컬럼을 `최초계약일자(firstItemContractDate)·최초계약금액(firstItemContractAmount)·최종계약일자(contractDate)·최종계약금액(supplyAmount)·납품기한(deliveryDeadline)`로 확장(flat 26→29열). 기존엔 firstContractDate/contractDate만 있었음.
+- export 쿼리(selectFlatListExport)는 G2B-32에서 이미 신규 컬럼 반환하므로 매퍼 변경 불요.
+
+### 검증
+- `compileJava` PASS, 프론트 `npm run build` PASS. 헤더↔바디 컬럼 수 정합성 확인.
+
+### 남은 일
+- 커밋/PR/배포는 사용자 승인 후. (배포 절차: §8/§9 — EC2 deploy 브랜치에 origin 머지 → docker compose build/up. DB 변경 없음 = Flyway 영향 없음.)
 
 ### 검증 명령(참고)
 ```sql

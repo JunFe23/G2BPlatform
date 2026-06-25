@@ -160,8 +160,8 @@
               <th>물품분류명</th>
               <th>자사우수제품</th>
               <th>최초계약일자</th>
+              <th>최초계약금액(합계)</th>
               <th>최종계약일자</th>
-              <th>최초계약금액</th>
               <th>최종계약금액(합계)</th>
               <th>계약건수</th>
               <th>장기여부</th>
@@ -194,6 +194,7 @@
               <th>최초계약일자</th>
               <th>최초계약금액</th>
               <th>최종계약일자</th>
+              <th>최종계약금액</th>
               <th>납품기한</th>
               <th>장기여부</th>
               <th>저장</th>
@@ -201,10 +202,10 @@
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td :colspan="grouped ? 19 : 28" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td :colspan="grouped ? 19 : 29" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td :colspan="grouped ? 19 : 28" class="no-data">데이터가 없습니다.</td>
+              <td :colspan="grouped ? 19 : 29" class="no-data">데이터가 없습니다.</td>
             </tr>
 
             <!-- 합쳐서 보기 행 -->
@@ -227,8 +228,8 @@
                 <td>{{ item.itemCategoryName }}</td>
                 <td>{{ item.isTopExcellent }}</td>
                 <td>{{ item.firstContractDate }}</td>
-                <td>{{ item.lastContractDate }}</td>
                 <td>{{ formatNumber(item.initialContractAmount) }}</td>
+                <td>{{ item.lastContractDate }}</td>
                 <td>{{ formatNumber(item.totalSupplyAmount) }}</td>
                 <td>{{ item.contractCount }}</td>
                 <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
@@ -270,6 +271,7 @@
                 <td>{{ item.firstItemContractDate }}</td>
                 <td>{{ formatNumber(item.firstItemContractAmount) }}</td>
                 <td>{{ item.contractDate }}</td>
+                <td>{{ formatNumber(item.supplyAmount) }}</td>
                 <td>{{ item.deliveryDeadline }}</td>
                 <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
                 <td>
