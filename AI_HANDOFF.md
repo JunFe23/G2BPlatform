@@ -489,3 +489,32 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 
 ### 남은 일
 - 커밋/PR/배포는 사용자 승인 후. DB 변경 없음 = Flyway 영향 없음.
+
+> G2B-37 배포 완료(2026-06-25): PR #25 머지(6cfb102) → EC2 deploy 머지(5c01ed5) → build/up. 도메인 200, 번들에 category-chip/다중선택 코드 반영 확인.
+
+---
+
+## 15. G2B-38 — 물품분류 조회 성능(V24)+칩 세로표기+표 셀 hover (2026-06-25)
+
+- 티켓: G2B-38 (Task, 에픽 G2B-25). 브랜치: `feature/G2B-38-item-category-perf-ux` (master 분기).
+
+### ① 물품분류 옵션 조회 성능
+- 원인: `SpecificItemMapper.selectItemCategories`의 `SELECT DISTINCT item_category_no, item_category_name`이 `item_category_name` 미인덱스 → specific_item_flat 885,340행 풀스캔+temp(distinct 실제 27개). 입력마다(디바운스) 반복.
+- 백엔드: **V24** `CREATE INDEX idx_flat_category_options ON specific_item_flat (is_active, item_category_no, item_category_name)`. EXPLAIN 로컬 검증: `type=ALL; Using temporary` → `type=range, key=idx_flat_category_options; Using index`(index-only, temp 제거).
+- 프론트: `/item-categories` **최초 1회만 로드**(`loadAllCategories`, onMounted, limit=100→전체 27개). 입력은 `categoryOptions` **computed로 클라이언트 필터링**(키입력 API 호출 제거). 기존 `fetchCategoryOptions`·디바운스 타이머 삭제.
+
+### ② 칩 세로표기 + 다른 필터 고정 (`ReportSpecificItemView.vue` 템플릿/CSS)
+- 입력+드롭다운을 `.category-input-wrap`(position:relative)로 감싸 드롭다운을 **입력 기준**으로 고정(칩이 늘어도 드롭다운 위치 불변).
+- `.search-filter-row` `align-items: center → flex-start`(다른 필터 제자리·동일크기 유지).
+- `.category-chips` `flex-direction: column`(입력 아래 **세로 리스트**), 칩에 `.category-chip-label` 말줄임.
+
+### ③ 표 셀 hover 전체값
+- 표에 `ref="tableRef"`. `watch(items, () => nextTick(refreshCellTitles))`로 데이터 갱신 시 `tbody td` 중 **잘린 셀(scrollWidth>clientWidth)만 `td.title` 설정** → native 툴팁. 셀별 :title 수정 없음.
+
+### 검증
+- 프론트 `npm run build` PASS (152 modules), 제거 식별자 잔존 0건.
+- ① EXPLAIN 로컬 확인(위). 로컬 인덱스는 드롭(Flyway V24가 정식 적용).
+- ⚠️ ②③ 시각 검증은 배포 후 도메인에서. 
+
+### 배포 유의
+- **V24 = 운영 RDS specific_item_flat(885만행)에 CREATE INDEX** → 배포 시 Flyway가 자동 실행, 수십 초~분 소요·일시 부하 가능(현재 t4g.large).
