@@ -1,4 +1,4 @@
-# G2BPlatform — Claude Code 컨텍스트
+# G2BPlatform — Codex 컨텍스트
 
 ## 프로젝트 개요
 
@@ -20,7 +20,7 @@
 - **모든 작업은 작업 단위로 Jira 티켓을 먼저 생성**(담당자 Jun Fe)하고 진행 중으로 전환한 뒤 착수. 묶이는 작업은 에픽으로 그룹화
 - 브랜치: `feature/{JIRA_KEY}-{slug}` (master에서 분기)
 - 커밋: `{JIRA_KEY} {type}: 한 줄 요약`
-- **작업 종료 시 `AI_HANDOFF.md`에 티켓 섹션 추가/갱신** — Codex 등 다른 AI가 바로 이어받을 수 있게 자족적으로 작성 (변경 파일·검증·남은 일·배포 상태)
+- **작업 종료 시 `AI_HANDOFF.md`에 티켓 섹션 추가/갱신** — Claude/Codex 어느 쪽이 이어받아도 끊김 없게 자족적으로 작성 (변경 파일·검증·남은 일·배포 상태)
 - **커밋·푸시·PR·서버 배포는 명시적 요청 시에만 실행**
 - `application.properties`, service key 등 비밀값 커밋 절대 금지
   - `backend/.gitignore`에 `application.properties` 등록되어 있음

@@ -44,3 +44,11 @@ docs/sample_csv/
 
 # 환경변수(비밀값) — New Relic 라이선스 키 등
 .env
+
+# AI 에이전트 로컬 설정(비밀값 포함 가능: .codex/config.toml에 Jira API 토큰 등) — 커밋 금지
+.codex/
+.claude/
+**/.claude/
+
+# 개인 산출물 — 리포 포함 금지
+portfolio/
