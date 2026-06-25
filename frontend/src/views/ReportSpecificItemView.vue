@@ -403,7 +403,8 @@ const fetchData = async (resetPage = false) => {
     const { data } = await axios.get(API_BASE, { params: buildParams(true) })
     items.value = Array.isArray(data.data) ? data.data : []
     recordsFiltered.value = data.recordsFiltered ?? items.value.length
-    totals.value = data.totals || null
+    // 합계는 첫 페이지(start=0)에서만 내려옴 — 페이지네이션 중엔 기존 값 유지
+    if (data.totals != null) totals.value = data.totals
   } catch (e) {
     console.error('특정품목 조회 실패', e)
     items.value = []
