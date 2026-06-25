@@ -183,8 +183,8 @@ public class SpecificItemController {
         try {
             org.apache.poi.ss.usermodel.Sheet sheet = wb.createSheet("특정품목");
             String[] headers = grouped
-                    ? new String[]{"구분","업체명","사업자번호","수요기관명","수요기관지역","계약명","계약방법","계약유형","MAS","물품분류번호","물품분류명","자사우수제품","최초계약일자","최종계약일자","최초계약금액","최종계약금액(합계)","계약건수","장기여부","저장"}
-                    : new String[]{"구분","업체명","사업자번호","수요기관명","수요기관지역","계약명","계약방법","계약유형","물품분류번호","물품분류명","세부품명번호","세부품명","물품식별명","단위","단가","수량","공급금액","MAS","우수제품","자사우수제품","직접구매","중기간경쟁","최초계약일자","계약일자","장기여부","저장"};
+                    ? new String[]{"구분","업체명","사업자번호","수요기관명","수요기관지역","계약명","계약방법","계약유형","MAS","물품분류번호","물품분류명","자사우수제품","최초계약일자","최초계약금액(합계)","최종계약일자","최종계약금액(합계)","계약건수","장기여부","저장"}
+                    : new String[]{"구분","업체명","사업자번호","수요기관명","수요기관지역","계약명","계약방법","계약유형","물품분류번호","물품분류명","세부품명번호","세부품명","물품식별명","단위","단가","수량","공급금액","MAS","우수제품","자사우수제품","직접구매","중기간경쟁","최초계약일자","최초계약금액","최종계약일자","최종계약금액","납품기한","장기여부","저장"};
 
             org.apache.poi.ss.usermodel.Row header = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) header.createCell(i).setCellValue(headers[i]);
@@ -224,8 +224,8 @@ public class SpecificItemController {
         setCell(row, 10, r.get("itemCategoryName"));
         setCell(row, 11, r.get("isTopExcellent"));
         setCell(row, 12, r.get("firstContractDate"));
-        setCell(row, 13, r.get("lastContractDate"));
-        setCell(row, 14, r.get("initialContractAmount"));
+        setCell(row, 13, r.get("initialContractAmount"));
+        setCell(row, 14, r.get("lastContractDate"));
         setCell(row, 15, r.get("totalSupplyAmount"));
         setCell(row, 16, r.get("contractCount"));
         setCell(row, 17, r.get("isLongTerm"));
@@ -255,10 +255,13 @@ public class SpecificItemController {
         setCell(row, 19, r.get("isTopExcellent"));
         setCell(row, 20, r.get("isDirectPurchase"));
         setCell(row, 21, r.get("isSmeCompetitive"));
-        setCell(row, 22, r.get("firstContractDate"));
-        setCell(row, 23, r.get("contractDate"));
-        setCell(row, 24, r.get("isLongTerm"));
-        setCell(row, 25, r.get("saved"));
+        setCell(row, 22, r.get("firstItemContractDate"));
+        setCell(row, 23, r.get("firstItemContractAmount"));
+        setCell(row, 24, r.get("contractDate"));
+        setCell(row, 25, r.get("supplyAmount"));
+        setCell(row, 26, r.get("deliveryDeadline"));
+        setCell(row, 27, r.get("isLongTerm"));
+        setCell(row, 28, r.get("saved"));
     }
 
     private void setCell(org.apache.poi.ss.usermodel.Row row, int col, Object val) {
