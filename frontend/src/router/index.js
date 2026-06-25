@@ -14,9 +14,7 @@ import SettingsView from '../views/SettingsView.vue'
 import BidList from '../views/BidList.vue'
 import HomeView from '../views/HomeView.vue'
 import AboutView from '../views/AboutView.vue'
-import ReportGoodsView from '../views/ReportGoodsView.vue'
 import ReportSpecificItemView from '../views/ReportSpecificItemView.vue'
-import ReportShoppingMallView from '../views/ReportShoppingMallView.vue'
 import ReportDashboardView from '../views/ReportDashboardView.vue'
 import ReportServicesView from '../views/ReportServicesView.vue'
 import ReportConstructionsView from '../views/ReportConstructionsView.vue'
@@ -78,21 +76,9 @@ const router = createRouter({
       },
     },
     {
-      path: '/report-goods',
-      name: 'report-goods',
-      component: ReportGoodsView,
-      meta: { requiresAuth: true },
-    },
-    {
       path: '/report-specific-item',
       name: 'report-specific-item',
       component: ReportSpecificItemView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/report-shopping-mall',
-      name: 'ReportShoppingMall',
-      component: ReportShoppingMallView,
       meta: { requiresAuth: true },
     },
     {
@@ -207,7 +193,7 @@ router.beforeEach((to, _from, next) => {
 
   if (isPublic) {
     if (to.meta.guestOnly && isLoggedIn) {
-      next({ name: 'report-goods' })
+      next({ name: 'report-specific-item' })
       return
     }
     next()
@@ -218,7 +204,7 @@ router.beforeEach((to, _from, next) => {
     return
   }
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    next({ name: 'report-goods' })
+    next({ name: 'report-specific-item' })
     return
   }
   next()
