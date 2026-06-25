@@ -431,3 +431,34 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 2. 작업 진행하며 코멘트로 갱신, 끝나면 완료 전환.
 3. **작업 종료 시 `AI_HANDOFF.md`에 해당 티켓 섹션(`## N. G2B-XX — 제목`) 추가/갱신** — 변경 파일·검증 결과·남은 일·배포 상태를 자족적으로 기재해 Codex가 바로 이어받을 수 있게 함.
 4. 커밋·푸시·PR·배포는 사용자 명시 승인 후에만.
+
+---
+
+## 13. G2B-36 — 시장데이터 물품/쇼핑몰 메뉴·페이지 제거 + procurements API 정리 (2026-06-25)
+
+- 티켓: G2B-36 (Task, 에픽 G2B-25). 브랜치: `feature/G2B-36-remove-market-goods-shoppingmall` (master 분기).
+- 배경: "특정품목 조달내역(물품·쇼핑몰 통합)" 메뉴 신설로 시장데이터 메뉴 내 **물품(ReportGoodsView)·쇼핑몰(ReportShoppingMallView)** 페이지 폐지.
+- ⚠️ **사전 분석 핵심**: 두 페이지가 쓰는 API 일부가 살아있는 다른 화면과 공유됨 → 전량 삭제 불가.
+  - `PATCH /api/report/procurements/saved`, `PATCH /api/report/shopping-mall/saved` → **TopContractsReportView가 공유** → 유지.
+  - `ShoppingMallService`(+매퍼) → 구 `ShoppingMallView`(`/api/shopping-mall`)와 공유 → 유지(shopping-mall 백엔드는 손대지 않음).
+  - `GET /api/report/procurements`·`/excel` 만 ReportGoodsView 전용 → 제거 대상.
+
+### 변경 — 프론트
+- `views/components/LegacySidebarLayout.vue`: 시장데이터 메뉴에서 `물품`·`쇼핑몰` `<li>` 제거.
+- `router/index.js`: `/report-goods`·`/report-shopping-mall` 라우트+import 제거. 기본 리다이렉트 `next({name:'report-goods'})` 2곳 → `report-specific-item`.
+- `views/ReportGoodsView.vue`·`views/ReportShoppingMallView.vue` 삭제.
+- `views/MainLayoutView.vue`(라우터 미등록 고아 페이지): 끊긴 `/report-goods` 버튼 1줄 제거.
+
+### 변경 — 백엔드(procurements 전용만 외과적 제거)
+- `ReportDataController.java`: `GET /procurements`·`GET /procurements/excel` 핸들러 제거(143줄). **`PATCH /procurements/saved` 유지**. shopping-mall 핸들러 전부 유지.
+- `ReportProcurementService.java`: `getList/getCount/streamForExcel` 제거. `updateGroupedSaved/updateFlatSaved` 유지. 미사용 import(List/Map/ResultHandler) 정리.
+- `ProcurementContractMapper.java`/`.xml`: 6개 select(flat/grouped list·count·export) + where 프래그먼트 제거. update(saved) 2개만 유지. (매퍼는 ReportProcurementService에만 주입됨을 grep 확인.)
+
+### 검증 — 완료 ✅
+- 백엔드 `./gradlew compileJava --rerun-tasks` PASS (죽은 참조 없음).
+- 프론트 `npm run build` PASS (152 modules, 삭제 뷰 참조 깨짐 없음).
+- diff: 9개 파일 변경 + 2개 뷰 삭제, 순 ~1,700줄 제거.
+
+### 남은 일
+- 커밋/PR/배포는 사용자 승인 후. DB 변경 없음 = Flyway 영향 없음. 배포는 EC2 deploy 브랜치 머지 + docker compose build/up.
+- (선택) 시각 확인: 로그인 후 시장데이터 메뉴에 물품/쇼핑몰 사라짐, `/report-specific-item` 정상, 잔존 화면(TOP 보고서의 saved 체크 포함) 무영향. 빌드로 정적 검증은 끝났으나 런타임 스모크는 미실시.

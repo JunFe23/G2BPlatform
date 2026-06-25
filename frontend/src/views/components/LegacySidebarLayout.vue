@@ -43,12 +43,6 @@
           <li class="menu-item" @click="$router.push('/report-specific-item')">
             <span class="menu-label">특정품목 (물품·쇼핑몰 통합)</span>
           </li>
-          <li class="menu-item" @click="$router.push('/report-goods')">
-            <span class="menu-label">물품</span>
-          </li>
-          <li class="menu-item" @click="$router.push('/report-shopping-mall')">
-            <span class="menu-label">쇼핑몰</span>
-          </li>
           <li class="menu-item" @click="$router.push('/report-services')">
             <span class="menu-label">용역</span>
           </li>
