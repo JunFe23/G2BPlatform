@@ -202,6 +202,23 @@
         </if>
     </update>
 
+    <!-- 상단 합계: 최초/최종 계약금액 합계 (목록과 동일 WHERE) -->
+    <select id="selectFlatTotals" resultType="map">
+        SELECT
+            COALESCE(SUM(first_contract_amount), 0) AS firstAmountTotal,
+            COALESCE(SUM(total_contract_amount), 0) AS finalAmountTotal
+        FROM market_contract_flat
+        <include refid="flatWhere"/>
+    </select>
+
+    <select id="selectGroupedTotals" resultType="map">
+        SELECT
+            COALESCE(SUM(initial_contract_amount), 0)   AS firstAmountTotal,
+            COALESCE(SUM(total_contract_amount_sum), 0) AS finalAmountTotal
+        FROM market_contract_grouped
+        <include refid="groupedWhere"/>
+    </select>
+
     <!-- 검색 필터 select 옵션: contract_type별 distinct (입찰계약방법 / 조달업무영역) -->
     <select id="selectDistinctContractMethods" resultType="string">
         SELECT DISTINCT contract_method

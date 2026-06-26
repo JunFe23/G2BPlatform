@@ -96,6 +96,13 @@
       </div>
     </div>
 
+    <!-- 상단 합계 (풀어서/합쳐서 공통) -->
+    <div v-if="totals" class="grouped-totals">
+      <span class="total-item">최초계약금액 합계 <strong>{{ formatNumber(totals.firstAmountTotal) }}원</strong></span>
+      <span class="total-sep">|</span>
+      <span class="total-item">최종계약금액 합계 <strong>{{ formatNumber(totals.finalAmountTotal) }}원</strong></span>
+    </div>
+
     <div class="table-container">
       <div class="table-wrapper" ref="tableRef">
         <!-- 합쳐서 보기 (grouped) -->
@@ -109,7 +116,7 @@
               <th>조달업무영역</th>
               <th>계약방법</th>
               <th>최초계약일자</th>
-              <th>최초계약금액</th>
+              <th>최초계약금액(합계)</th>
               <th>최종계약일자</th>
               <th>최종계약금액(합계)</th>
               <th>계약건수</th>
@@ -158,12 +165,12 @@
               <th>입찰공고번호</th>
               <th>공공조달분류(중)</th>
               <th>공공조달분류(소)</th>
-              <th>최초기준일자</th>
-              <th>기준일자</th>
+              <th>최초계약일자</th>
+              <th>최종계약일자</th>
               <th>착수일자</th>
               <th>완수일자</th>
               <th>최초계약금액</th>
-              <th>계약금액</th>
+              <th>최종계약금액</th>
               <th>장기여부</th>
               <th>저장</th>
             </tr>
@@ -187,11 +194,11 @@
               <td>{{ item.publicProcurementCategoryMid }}</td>
               <td>{{ item.publicProcurementCategory }}</td>
               <td>{{ item.firstContractDate }}</td>
-              <td>{{ item.contractDate }}</td>
+              <td>{{ item.finalContractDate }}</td>
               <td>{{ item.startDate }}</td>
               <td>{{ item.endDate }}</td>
               <td>{{ formatNumber(item.firstContractAmount) }}</td>
-              <td>{{ formatNumber(item.contractAmount) }}</td>
+              <td>{{ formatNumber(item.finalContractAmount) }}</td>
               <td>{{ item.isLongTerm }}</td>
               <td>
                 <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
@@ -236,6 +243,7 @@ const items = ref([])
 const recordsFiltered = ref(0)
 const currentPage = ref(1)
 const tableRef = ref(null)
+const totals = ref(null)
 
 /** true: 합쳐서 보기 (grouped), false: 풀어서 보기 (flat) */
 const grouped = ref(true)
@@ -344,10 +352,13 @@ const fetchData = async (resetPage = false) => {
     const { data } = await axios.get(API_BASE, { params: buildParams(true) })
     items.value = Array.isArray(data.data) ? data.data : []
     recordsFiltered.value = data.recordsFiltered ?? items.value.length
+    // 합계는 첫 페이지(start=0)에서만 내려옴 — 페이지네이션 중엔 기존 값 유지
+    if (data.totals != null) totals.value = data.totals
   } catch (e) {
     console.error('보고서 용역 조회 실패', e)
     items.value = []
     recordsFiltered.value = 0
+    totals.value = null
   } finally {
     isLoading.value = false
   }
@@ -749,6 +760,21 @@ input[type='month']:focus {
 .table-wrapper::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
+/* 상단 합계 밴드 — 물품 페이지와 동일 */
+.grouped-totals {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  background: #eef2f7;
+  border: 1px solid #d6dee8;
+  border-radius: 8px;
+  font-size: 0.92em;
+  color: #334155;
+}
+.grouped-totals strong { color: #1d4ed8; margin-left: 4px; }
+.grouped-totals .total-sep { color: #94a3b8; }
 .pagination {
   margin-top: 16px;
   padding: 14px 0;

@@ -112,13 +112,12 @@ public class MarketContractEtlService {
                 "  MAX(first_year_contract_no), MAX(vendor_name), vendor_biz_reg_no, MAX(contract_name)," +
                 "  MAX(demand_agency_name), MIN(demand_agency_region), MAX(public_procurement_major), MAX(public_procurement_mid)," +
                 "  MAX(public_procurement_name), MAX(contract_method), MAX(is_long_term)," +
-                "  MIN(first_contract_date), MAX(first_contract_date)," +
-                "  SUM(CASE WHEN first_contract_date = grp_min THEN COALESCE(first_contract_amount,0) ELSE 0 END)," +
+                // 물품 기준: 최초계약일자=MIN(first_contract_date), 최종계약일자=MAX(contract_date)
+                "  MIN(first_contract_date), MAX(contract_date)," +
+                // 물품 기준: 최초계약금액(합계)=그룹 전체 SUM(first_contract_amount), 최종계약금액(합계)=SUM(total)
+                "  SUM(COALESCE(first_contract_amount,0))," +
                 "  SUM(COALESCE(total_contract_amount,0)), COUNT(DISTINCT contract_no), 'N'" +
-                " FROM (" +
-                "   SELECT *, MIN(first_contract_date) OVER (PARTITION BY contract_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no) AS grp_min" +
-                "   FROM market_contract_flat WHERE is_active='Y'" +
-                " ) t" +
+                " FROM market_contract_flat WHERE is_active='Y'" +
                 " GROUP BY contract_type, COALESCE(first_year_contract_no, contract_no), vendor_biz_reg_no");
 
             // 5) grouped saved 복원

@@ -69,6 +69,29 @@ public class ReportMarketService {
                 firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
     }
 
+    public Map<String, Object> getTotals(
+            String contractType, boolean grouped,
+            String demandAgencyName, String demandAgencyRegion,
+            String detailItemName, String contractName, String contractMethod,
+            String procurementWorkArea, String publicProcurementCategoryMid, String publicProcurementCategory,
+            String firstCntrctDate, Integer year, String month,
+            String rangeStart, String rangeEnd, boolean showSavedOnly) {
+
+        String normalizedType = normalizeContractType(contractType);
+        if (grouped) {
+            return marketContractMapper.selectGroupedTotals(
+                    normalizedType, demandAgencyName, demandAgencyRegion,
+                    detailItemName, contractName, contractMethod, procurementWorkArea,
+                    publicProcurementCategoryMid, publicProcurementCategory,
+                    firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+        }
+        return marketContractMapper.selectFlatTotals(
+                normalizedType, demandAgencyName, demandAgencyRegion,
+                detailItemName, contractName, contractMethod, procurementWorkArea,
+                publicProcurementCategoryMid, publicProcurementCategory,
+                firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+    }
+
     public void streamForExcel(
             String contractType, boolean grouped,
             String demandAgencyName, String demandAgencyRegion,
