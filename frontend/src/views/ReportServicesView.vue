@@ -40,13 +40,16 @@
 
       <!-- 2줄: 공공조달분류 중분류 / 소분류 필터 -->
       <div class="search-filter-row search-category-row">
-        <span class="category-row-label">공공조달분류</span>
-        <select v-model="filters.publicProcurementCategoryMid" class="date-select" @change="onMidCategoryChange">
-          <option value="">중분류 (전체)</option>
+        <span class="category-row-label">공공조달분류 <small>(Ctrl/⌘+클릭 다중선택)</small></span>
+        <select
+          v-model="filters.publicProcurementCategoryMid"
+          class="date-select multi-select"
+          multiple
+          @change="onMidCategoryChange"
+        >
           <option v-for="mid in midCategories" :key="mid" :value="mid">{{ mid }}</option>
         </select>
-        <select v-model="filters.publicProcurementCategory" class="date-select">
-          <option value="">소분류 (전체)</option>
+        <select v-model="filters.publicProcurementCategory" class="date-select multi-select" multiple>
           <option v-for="sub in filteredSubCategories" :key="sub" :value="sub">{{ sub }}</option>
         </select>
       </div>
@@ -259,8 +262,8 @@ const filters = reactive({
   contractName: '',
   procurementWorkArea: '',
   cntctCnclsMthdNm: '',
-  publicProcurementCategoryMid: '',
-  publicProcurementCategory: '',
+  publicProcurementCategoryMid: [],
+  publicProcurementCategory: [],
   firstCntrctDate: '',
   dateType: 'year',
   year: '',
@@ -276,23 +279,20 @@ const workAreaOptions = ref([])
 
 const years = ['2025', '2024', '2023', '2022', '2021', '2020']
 
-/** 공공조달분류 계층 정의 */
-const categoryMap = {
-  설계: ['토목설계용역', '건축설계용역', '상하수도설계용역', '전기설계용역', '교통설계용역', '정보통신설계용역'],
-  감리: ['건축감리용역', '토목감리용역', '전기감리용역', '정보통신감리용역'],
-  CM: ['건축CM용역', '토목CM용역'],
-  기타: ['기타기술용역'],
-}
-const midCategories = Object.keys(categoryMap)
+/** 공공조달분류 계층 (market_target_category 기준, filter-options에서 동적 로드) */
+const categoryMap = ref({})
+const midCategories = computed(() => Object.keys(categoryMap.value))
 
 const filteredSubCategories = computed(() => {
-  if (!filters.publicProcurementCategoryMid) return Object.values(categoryMap).flat()
-  return categoryMap[filters.publicProcurementCategoryMid] ?? []
+  const mids = filters.publicProcurementCategoryMid
+  if (!mids.length) return Object.values(categoryMap.value).flat()
+  return mids.flatMap((m) => categoryMap.value[m] ?? [])
 })
 
 function onMidCategoryChange() {
-  // 중분류 바뀌면 소분류 초기화
-  filters.publicProcurementCategory = ''
+  // 중분류가 바뀌면, 더 이상 유효하지 않은 소분류 선택을 제거
+  const valid = new Set(filteredSubCategories.value)
+  filters.publicProcurementCategory = filters.publicProcurementCategory.filter((s) => valid.has(s))
 }
 
 /** grouped PK: (group_key, vendor_biz_reg_no) */
@@ -314,8 +314,12 @@ function buildParams(includePaging = true) {
     contractName: filters.contractName || undefined,
     procurementWorkArea: filters.procurementWorkArea || undefined,
     cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
-    publicProcurementCategoryMid: filters.publicProcurementCategoryMid || undefined,
-    publicProcurementCategory: filters.publicProcurementCategory || undefined,
+    publicProcurementCategoryMid: filters.publicProcurementCategoryMid.length
+      ? filters.publicProcurementCategoryMid.join(',')
+      : undefined,
+    publicProcurementCategory: filters.publicProcurementCategory.length
+      ? filters.publicProcurementCategory.join(',')
+      : undefined,
     firstCntrctDate: filters.firstCntrctDate || undefined,
     year: filters.dateType === 'year' && filters.year ? parseInt(filters.year, 10) : undefined,
     month: filters.dateType === 'month' ? filters.month || undefined : undefined,
@@ -450,10 +454,23 @@ async function loadFilterOptions() {
     })
     contractMethodOptions.value = Array.isArray(data.contractMethods) ? data.contractMethods : []
     workAreaOptions.value = Array.isArray(data.workAreas) ? data.workAreas : []
+    // 공공조달분류 계층 동적 구성: [{mid, name}] → { mid: [name, ...] } (mid/name 순서 유지)
+    const map = {}
+    if (Array.isArray(data.categories)) {
+      for (const row of data.categories) {
+        const mid = row.mid
+        const name = row.name
+        if (!mid || !name) continue
+        if (!map[mid]) map[mid] = []
+        if (!map[mid].includes(name)) map[mid].push(name)
+      }
+    }
+    categoryMap.value = map
   } catch (e) {
     console.error('필터 옵션 조회 실패', e)
     contractMethodOptions.value = []
     workAreaOptions.value = []
+    categoryMap.value = {}
   }
 }
 
@@ -504,6 +521,16 @@ onMounted(() => {
   color: #475569;
   white-space: nowrap;
   align-self: center;
+}
+.category-row-label small {
+  color: #94a3b8;
+  font-weight: 400;
+}
+.multi-select {
+  min-height: 70px;
+  min-width: 150px;
+  vertical-align: top;
+  padding: 2px;
 }
 .search-actions-row {
   display: flex;

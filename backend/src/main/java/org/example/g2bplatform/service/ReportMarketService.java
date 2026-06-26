@@ -122,7 +122,8 @@ public class ReportMarketService {
         String normalizedType = normalizeContractType(contractType);
         return Map.of(
                 "contractMethods", marketContractMapper.selectDistinctContractMethods(normalizedType),
-                "workAreas", marketContractMapper.selectDistinctWorkAreas(normalizedType));
+                "workAreas", marketContractMapper.selectDistinctWorkAreas(normalizedType),
+                "categories", marketContractMapper.selectCategoryHierarchy(normalizedType));
     }
 
     public int updateSaved(String contractType, boolean grouped, String key, String vendorBizRegNo, String saved) {
