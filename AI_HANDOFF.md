@@ -604,3 +604,17 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - 신규 백엔드: `MarketContractMapper.selectCategoryHierarchy` + xml, `ReportMarketService.getFilterOptions`에 categories 추가.
 - 검증: compileJava PASS, npm build PASS, V26 EXPLAIN(index-only) + 시간 4.2s→0.6s, FIND_IN_SET('CM') 7312건, 계층 6mid 확인. 로컬 인덱스 드롭(Flyway V26 정식 적용).
 - 남은 일: 커밋/PR/배포(Flyway V26 = CREATE INDEX 2종, 경량). 공사 페이지는 단일 select 유지(영향 없음).
+
+> G2B-44 배포 완료(2026-06-26): PR #32 머지(02651b9) → EC2 deploy → Flyway V26(인덱스 2종, 1m16s). 조달업무영역 옵션 4.2s→index-only, 중/소분류 다중선택(FIND_IN_SET)+categoryMap 동적. 도메인 200.
+
+---
+
+## 22. G2B-45 — 용역 중/소분류 콤보박스+칩 다중선택 (재사용 컴포넌트) (2026-06-27)
+
+- 티켓: G2B-45 (Task, 에픽 G2B-25). 브랜치: `feature/G2B-45-services-category-combobox`. **프론트 전용**(백엔드/마이그레이션/DB 무관).
+- 신설 `frontend/src/views/components/MultiSelectCombobox.vue`: props(options:string[], modelValue:string[], placeholder), v-model(update:modelValue). 검색 입력+필터 드롭다운+칩(✓표시·X제거)+blur 닫기. 물품 콤보박스 양식을 일반화(scoped CSS msc-*).
+- `ReportServicesView`: 중/소분류 native `<select multiple>` → `<MultiSelectCombobox>` 2개(중분류 options=midCategories, 소분류 options=filteredSubCategories). 계층 유지: 중분류 변경 watch로 무효 소분류 칩 정리. 기존 `.multi-select` CSS·onMidCategoryChange 제거.
+- 백엔드/buildParams/categoryMap 무변경(G2B-44에서 이미 CSV·FIND_IN_SET·동적 로드). 
+- 물품 페이지는 이번 범위 아님(자체 콤보박스 유지). 공사 페이지도 미변경.
+- 검증: `npm run build` PASS. 런타임(칩 다중선택·계층 좁힘·조회/엑셀)은 배포 후 도메인 확인.
+- 남은 일: 커밋/PR/배포(프론트만, DB 영향 없음).
