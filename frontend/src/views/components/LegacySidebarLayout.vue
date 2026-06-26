@@ -41,7 +41,7 @@
         </li>
         <ul v-show="isReportSubmenuOpen" class="submenu" style="padding-left: 20px">
           <li class="menu-item" @click="$router.push('/report-specific-item')">
-            <span class="menu-label">특정품목 (물품·쇼핑몰 통합)</span>
+            <span class="menu-label">물품</span>
           </li>
           <li class="menu-item" @click="$router.push('/report-services')">
             <span class="menu-label">용역</span>

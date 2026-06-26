@@ -518,3 +518,14 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 
 ### 배포 유의
 - **V24 = 운영 RDS specific_item_flat(885만행)에 CREATE INDEX** → 배포 시 Flyway가 자동 실행, 수십 초~분 소요·일시 부하 가능(현재 t4g.large).
+
+> G2B-38 배포 완료(2026-06-25): PR #26 머지(f142585) → EC2 deploy 머지(b636fd4) → build/up. V24 운영 적용(Flyway now at v24, 16s), RDS EXPLAIN index-only 확인, 도메인 200.
+
+---
+
+## 16. G2B-39 — 특정품목 메뉴명 '물품' + 엑셀 파일명 (2026-06-26)
+
+- 티켓: G2B-39 (Task, 에픽 G2B-25). 브랜치: `feature/G2B-39-menu-rename-excel-filename` (master 분기). 프론트 전용.
+- `LegacySidebarLayout.vue`: 시장데이터 메뉴 라벨 `특정품목 (물품·쇼핑몰 통합)` → `물품`.
+- `ReportSpecificItemView.vue`: 엑셀 `a.download`를 `물품_${excelStamp()}.xlsx`로. `excelStamp()`=yyyyMMddHHmm. (백엔드 Content-Disposition은 blob a.download가 덮어써 실제 파일명 지배 → 백엔드 무변경.)
+- 검증: `npm run build` PASS. 배포는 사용자 승인 후(코드만, DB/Flyway 영향 없음).
