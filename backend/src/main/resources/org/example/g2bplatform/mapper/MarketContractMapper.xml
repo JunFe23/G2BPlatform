@@ -24,11 +24,12 @@
         <if test="procurementWorkArea != null and procurementWorkArea != ''">
             AND public_procurement_major LIKE CONCAT('%', #{procurementWorkArea}, '%')
         </if>
+        <!-- 단일/다중(CSV) 모두 지원: 단일값이면 FIND_IN_SET이 1건 매칭 (공사 페이지 호환) -->
         <if test="publicProcurementCategoryMid != null and publicProcurementCategoryMid != ''">
-            AND public_procurement_mid = #{publicProcurementCategoryMid}
+            AND FIND_IN_SET(public_procurement_mid, #{publicProcurementCategoryMid}) &gt; 0
         </if>
         <if test="publicProcurementCategory != null and publicProcurementCategory != ''">
-            AND public_procurement_name = #{publicProcurementCategory}
+            AND FIND_IN_SET(public_procurement_name, #{publicProcurementCategory}) &gt; 0
         </if>
         <if test="firstCntrctDate != null and firstCntrctDate != ''">
             AND first_contract_date = #{firstCntrctDate}
@@ -227,6 +228,13 @@
           AND is_active = 'Y'
           AND contract_method IS NOT NULL AND contract_method &lt;&gt; ''
         ORDER BY contract_method
+    </select>
+
+    <select id="selectCategoryHierarchy" resultType="map">
+        SELECT category_mid AS mid, category_name AS name
+        FROM market_target_category
+        WHERE contract_type = #{contractType} AND is_active = 'Y'
+        ORDER BY id
     </select>
 
     <select id="selectDistinctWorkAreas" resultType="string">

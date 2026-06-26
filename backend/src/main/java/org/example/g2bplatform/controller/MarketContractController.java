@@ -74,7 +74,9 @@ public class MarketContractController {
             @Parameter(description = "저장된 데이터만") @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly
     ) {
         try {
-            String detailFilter = firstNonBlank(prdctClsfcNo, publicProcurementCategory);
+            // 소분류(publicProcurementCategory)는 FIND_IN_SET 전용 경로로 처리. 여기엔 자유검색(prdctClsfcNo)만.
+            // (다중선택 시 CSV가 detailItemName LIKE '%a,b%'로 들어가 매칭 깨지는 문제 방지)
+            String detailFilter = prdctClsfcNo;
             List<Map<String, Object>> list = reportMarketService.getList(
                     contractType, grouped, start, length,
                     dminsttNm, dminsttNmDetail, detailFilter, contractName, cntctCnclsMthdNm,
@@ -163,7 +165,9 @@ public class MarketContractController {
                 }
 
                 final int[] rowNumRef = {1};
-                String detailFilter = firstNonBlank(prdctClsfcNo, publicProcurementCategory);
+                // 소분류(publicProcurementCategory)는 FIND_IN_SET 전용 경로로 처리. 여기엔 자유검색(prdctClsfcNo)만.
+            // (다중선택 시 CSV가 detailItemName LIKE '%a,b%'로 들어가 매칭 깨지는 문제 방지)
+            String detailFilter = prdctClsfcNo;
                 reportMarketService.streamForExcel(
                         normalizedType, grouped,
                         dminsttNm, dminsttNmDetail, detailFilter, contractName, cntctCnclsMthdNm,

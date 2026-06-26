@@ -178,4 +178,7 @@ public interface MarketContractMapper {
     List<String> selectDistinctContractMethods(@Param("contractType") String contractType);
 
     List<String> selectDistinctWorkAreas(@Param("contractType") String contractType);
+
+    // 공공조달분류 중분류→소분류 계층 (market_target_category 기준, 다중선택 옵션)
+    List<Map<String, Object>> selectCategoryHierarchy(@Param("contractType") String contractType);
 }

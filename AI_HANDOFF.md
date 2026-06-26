@@ -587,3 +587,20 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - `idx_mcg_totals (contract_type, initial_contract_amount, total_contract_amount_sum)` — grouped 합계 커버링
 - 검증(로컬 EXPLAIN): 목록 filesort 제거(idx_mcf_cdate/idx_mcg_first 사용), totals Using index(index-only). 엑셀(Cursor export)도 동일 WHERE/ORDER라 함께 개선. 로컬 인덱스는 드롭(Flyway V25 정식 적용).
 - ⚠️ 배포: V25 = 운영 RDS flat(2.67M)·grouped(2.62M)에 CREATE INDEX 4종(Flyway 자동). CREATE INDEX는 §8-2 크래시(GROUP BY 집계)와 다른 경량 DDL이며 V24(885만행 1종 16s) 선례 있음 — 수십초~1분 예상이나 Flyway 로그 모니터 권장.
+
+> G2B-43 배포 완료(2026-06-26): PR #31 머지(0dd7098) → EC2 deploy → build/up. Flyway V25(인덱스 4종, 2m34s, 크래시 없음). 운영 EXPLAIN: 목록 filesort 제거, totals index-only. 도메인 200.
+
+---
+
+## 21. G2B-44 — 용역 검색필터: 조달업무영역 옵션 인덱스(V26) + 중/소분류 다중선택 (2026-06-26)
+
+- 티켓: G2B-44 (Task, 에픽 G2B-25). 브랜치: `feature/G2B-44-services-filter-perf-multiselect`.
+- #1 조달업무영역/입찰계약방법 옵션 느림: selectDistinctWorkAreas/ContractMethods가 flat contract_type 파티션(1.3M) 풀스캔+temp+filesort로 **4.2s**. **V26** 커버링 인덱스 `idx_mcf_workarea(contract_type,is_active,public_procurement_major)`·`idx_mcf_method(contract_type,is_active,contract_method)` → index-only, **0.6s**(로컬 실측).
+- #2 공공조달분류 중/소분류 다중선택:
+  - 백엔드 `commonFilters`: `public_procurement_mid = #{}`/`public_procurement_name = #{}` → **FIND_IN_SET(col, #{csv}) > 0** (단일/다중 CSV 모두, 공사 페이지 단일값 호환).
+  - ⚠️ 컨트롤러 `detailFilter = firstNonBlank(prdctClsfcNo, publicProcurementCategory)` → **`= prdctClsfcNo`** 로 변경(소분류 다중 CSV가 detailItemName LIKE '%a,b%'로 들어가 깨지는 문제 방지; 소분류는 FIND_IN_SET 전용).
+  - 프론트: 중/소분류 `<select multiple>` + buildParams CSV join, filteredSubCategories=선택 중분류들의 합집합, onMidCategoryChange가 무효 소분류 제거.
+  - **categoryMap 동적화**: 하드코딩 4개 mid(ICT 2개 누락) → filter-options에 `categories`(market_target_category mid→name, service 6mid/15name) 추가해 프론트가 동적 구성. 누락 카테고리 해결.
+  - 신규 백엔드: `MarketContractMapper.selectCategoryHierarchy` + xml, `ReportMarketService.getFilterOptions`에 categories 추가.
+- 검증: compileJava PASS, npm build PASS, V26 EXPLAIN(index-only) + 시간 4.2s→0.6s, FIND_IN_SET('CM') 7312건, 계층 6mid 확인. 로컬 인덱스 드롭(Flyway V26 정식 적용).
+- 남은 일: 커밋/PR/배포(Flyway V26 = CREATE INDEX 2종, 경량). 공사 페이지는 단일 select 유지(영향 없음).
