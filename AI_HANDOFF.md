@@ -556,3 +556,18 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 신규 백엔드: `MarketContractMapper.selectDistinctContractMethods/selectDistinctWorkAreas` + xml, `ReportMarketService.getFilterOptions`, 컨트롤러 `/filter-options`.
 - 검증: `compileJava` PASS, `npm run build` PASS. ⚠️ 런타임(필터옵션 응답·계약명 조회)은 배포 후 도메인 확인 예정.
 - 남은 일: 커밋/PR/배포 승인 후. 이후 G2B-42(데이터·합계·ETL), G2B-43(튜닝).
+
+> G2B-41 배포 완료(2026-06-26): PR #29 머지(caae05e) → EC2 deploy → build/up. 제목·필터 select·계약명·data-table CSS. 도메인 200, 번들 '시장데이터 - 용역'·filter-options 반영.
+
+---
+
+## 19. G2B-42 — 시장데이터-용역 데이터/합계/ETL 정정 (2026-06-26)
+
+- 티켓: G2B-42 (Task, 에픽 G2B-25, 용역 개편 2/3). 브랜치: `feature/G2B-42-services-data-totals`.
+- #4 flat: 컬럼을 최초계약일자(firstContractDate)·최종계약일자(finalContractDate)·착수(startDate)·완수(endDate)·최초계약금액(firstContractAmount)·최종계약금액(finalContractAmount)로 정리(데이터는 market_contract_flat=raw is_final행 기준, 매퍼에 이미 노출).
+- #4 합계: market totals 신설 — `selectFlatTotals`(SUM first_contract_amount, SUM total_contract_amount)·`selectGroupedTotals`(SUM initial, SUM total_sum), 컨트롤러 start=0에서 `totals` 반환, 프론트 상단 `grouped-totals` 밴드(firstAmountTotal/finalAmountTotal).
+- #4 grouped 라벨: 최초계약금액 → 최초계약금액(합계).
+- **ETL 물품 기준 정정**(`MarketContractEtlService`): `initial_contract_amount = SUM(first_contract_amount 그룹전체)`(기존 최초연차만), `last_contract_date = MAX(contract_date)`(기존 MAX(first_contract_date)), 윈도우 서브쿼리 제거(성능↑).
+- 검증: compileJava PASS, npm build PASS. **로컬 grouped 재적재 검증**: 2,623,994행, 샘플 initial=그룹 first합·last=MAX(contract_date) 일치, flat·grouped totals 동일.
+- ⚠️ **운영 반영**: 코드 변경만으로는 기존 prod grouped가 구 로직 → 배포 후 **grouped 재적재 필요**(EC2에서 TRUNCATE market_contract_grouped + 신 로직 INSERT, saved 백업/복원; flat은 불변이라 재적재 불요). 현재 RDS t4g.large.
+- 남은 일: 커밋/PR/배포 + prod grouped 재적재. 이후 G2B-43(튜닝, totals/정렬 인덱스 EXPLAIN).

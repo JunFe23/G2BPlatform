@@ -89,6 +89,14 @@ public class MarketContractController {
             body.put("success", true);
             body.put("data", list);
             body.put("recordsFiltered", filtered);
+            // 상단 합계는 첫 페이지(start=0)에서만 계산 — 같은 필터 내 페이지네이션 중 불변
+            if (start == 0) {
+                body.put("totals", reportMarketService.getTotals(
+                        contractType, grouped,
+                        dminsttNm, dminsttNmDetail, detailFilter, contractName, cntctCnclsMthdNm,
+                        procurementWorkArea, publicProcurementCategoryMid, publicProcurementCategory,
+                        firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly));
+            }
             return ResponseEntity.ok(body);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(error(e.getMessage()));
