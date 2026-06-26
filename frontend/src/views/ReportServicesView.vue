@@ -41,15 +41,10 @@
       <!-- 2줄: 공공조달분류 중분류 / 소분류 필터 -->
       <div class="search-filter-row search-category-row">
         <span class="category-row-label">공공조달분류</span>
-        <MultiSelectCombobox
-          v-model="filters.publicProcurementCategoryMid"
-          :options="midCategories"
-          placeholder="중분류 검색 (다중선택)"
-        />
-        <MultiSelectCombobox
+        <CategoryTreeSelect
           v-model="filters.publicProcurementCategory"
-          :options="filteredSubCategories"
-          placeholder="소분류 검색 (다중선택)"
+          :category-map="categoryMap"
+          placeholder="공공조달분류 선택"
         />
       </div>
 
@@ -234,7 +229,7 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
-import MultiSelectCombobox from './components/MultiSelectCombobox.vue'
+import CategoryTreeSelect from './components/CategoryTreeSelect.vue'
 
 const API_BASE = '/api/report/market-contracts'
 const CONTRACT_TYPE = 'service'
@@ -262,7 +257,6 @@ const filters = reactive({
   contractName: '',
   procurementWorkArea: '',
   cntctCnclsMthdNm: '',
-  publicProcurementCategoryMid: [],
   publicProcurementCategory: [],
   firstCntrctDate: '',
   dateType: 'year',
@@ -279,25 +273,8 @@ const workAreaOptions = ref([])
 
 const years = ['2025', '2024', '2023', '2022', '2021', '2020']
 
-/** 공공조달분류 계층 (market_target_category 기준, filter-options에서 동적 로드) */
+/** 공공조달분류 계층 { 중분류: [소분류] } (market_target_category 기준, filter-options에서 동적 로드) */
 const categoryMap = ref({})
-const midCategories = computed(() => Object.keys(categoryMap.value))
-
-const filteredSubCategories = computed(() => {
-  const mids = filters.publicProcurementCategoryMid
-  if (!mids.length) return Object.values(categoryMap.value).flat()
-  return mids.flatMap((m) => categoryMap.value[m] ?? [])
-})
-
-// 중분류가 바뀌면, 더 이상 유효하지 않은(선택된 중분류에 속하지 않는) 소분류 칩을 정리
-watch(
-  () => filters.publicProcurementCategoryMid,
-  () => {
-    const valid = new Set(filteredSubCategories.value)
-    filters.publicProcurementCategory = filters.publicProcurementCategory.filter((s) => valid.has(s))
-  },
-  { deep: true },
-)
 
 /** grouped PK: (group_key, vendor_biz_reg_no) */
 function groupedRowKey(item) {
@@ -318,9 +295,7 @@ function buildParams(includePaging = true) {
     contractName: filters.contractName || undefined,
     procurementWorkArea: filters.procurementWorkArea || undefined,
     cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
-    publicProcurementCategoryMid: filters.publicProcurementCategoryMid.length
-      ? filters.publicProcurementCategoryMid.join(',')
-      : undefined,
+    // 공공조달분류: 중분류는 UI 네비게이션, 실제 필터는 선택된 소분류 이름(CSV) — 백엔드 FIND_IN_SET(name)
     publicProcurementCategory: filters.publicProcurementCategory.length
       ? filters.publicProcurementCategory.join(',')
       : undefined,
