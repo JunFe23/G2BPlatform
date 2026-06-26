@@ -618,3 +618,18 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 물품 페이지는 이번 범위 아님(자체 콤보박스 유지). 공사 페이지도 미변경.
 - 검증: `npm run build` PASS. 런타임(칩 다중선택·계층 좁힘·조회/엑셀)은 배포 후 도메인 확인.
 - 남은 일: 커밋/PR/배포(프론트만, DB 영향 없음).
+
+> G2B-45 배포 완료(2026-06-27): PR #33 머지(8495270) → EC2 deploy. 용역 중/소분류 콤보박스+칩(MultiSelectCombobox). 도메인 200.
+
+---
+
+## 23. G2B-46 — 용역 공공조달분류 2단 패널 선택 (상위→하위 전체/개별) (2026-06-27)
+
+- 티켓: G2B-46 (Task, 에픽 G2B-25). 브랜치: `feature/G2B-46-category-tree-select`. **프론트 전용**.
+- 배경: 중/소분류 독립 선택이 어색 → 사람인류 2단 패널(좌 중분류 → 우 소분류 전체선택/개별)로 개편.
+- 신설 `frontend/src/views/components/CategoryTreeSelect.vue`: 트리거 버튼(선택 요약 'N개')→드롭다운 패널(좌측 중분류 목록+선택개수 배지, 우측 활성 중분류 소분류 체크박스+전체선택)+칩+외부클릭 닫기. props(categoryMap {mid:[name]}, modelValue 이름배열), v-model.
+- `ReportServicesView`: 중/소분류 콤보박스 2개 → `CategoryTreeSelect` 1개. **필터 의미 전환**: 중분류는 네비게이션, 실제 필터는 선택 소분류 이름 CSV(`publicProcurementCategory`)만 전송, `publicProcurementCategoryMid` 미전송. 기존 midCategories/filteredSubCategories/mid-watch 제거. categoryMap(filter-options 동적 로드)은 유지.
+- **MultiSelectCombobox.vue 삭제**(G2B-45에서 신설했으나 이번에 대체되어 고아 → 제거).
+- 백엔드/마이그레이션 무변경(FIND_IN_SET(name)이 단일/CSV 처리, 전체선택=그 중분류 모든 이름).
+- 검증: `npm run build` PASS. 런타임(패널·전체선택·조회/엑셀)은 배포 후 도메인 확인.
+- 남은 일: 커밋/PR/배포(프론트만).
