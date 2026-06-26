@@ -40,18 +40,17 @@
 
       <!-- 2줄: 공공조달분류 중분류 / 소분류 필터 -->
       <div class="search-filter-row search-category-row">
-        <span class="category-row-label">공공조달분류 <small>(Ctrl/⌘+클릭 다중선택)</small></span>
-        <select
+        <span class="category-row-label">공공조달분류</span>
+        <MultiSelectCombobox
           v-model="filters.publicProcurementCategoryMid"
-          class="date-select multi-select"
-          multiple
-          @change="onMidCategoryChange"
-        >
-          <option v-for="mid in midCategories" :key="mid" :value="mid">{{ mid }}</option>
-        </select>
-        <select v-model="filters.publicProcurementCategory" class="date-select multi-select" multiple>
-          <option v-for="sub in filteredSubCategories" :key="sub" :value="sub">{{ sub }}</option>
-        </select>
+          :options="midCategories"
+          placeholder="중분류 검색 (다중선택)"
+        />
+        <MultiSelectCombobox
+          v-model="filters.publicProcurementCategory"
+          :options="filteredSubCategories"
+          placeholder="소분류 검색 (다중선택)"
+        />
       </div>
 
       <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 -->
@@ -235,6 +234,7 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
+import MultiSelectCombobox from './components/MultiSelectCombobox.vue'
 
 const API_BASE = '/api/report/market-contracts'
 const CONTRACT_TYPE = 'service'
@@ -289,11 +289,15 @@ const filteredSubCategories = computed(() => {
   return mids.flatMap((m) => categoryMap.value[m] ?? [])
 })
 
-function onMidCategoryChange() {
-  // 중분류가 바뀌면, 더 이상 유효하지 않은 소분류 선택을 제거
-  const valid = new Set(filteredSubCategories.value)
-  filters.publicProcurementCategory = filters.publicProcurementCategory.filter((s) => valid.has(s))
-}
+// 중분류가 바뀌면, 더 이상 유효하지 않은(선택된 중분류에 속하지 않는) 소분류 칩을 정리
+watch(
+  () => filters.publicProcurementCategoryMid,
+  () => {
+    const valid = new Set(filteredSubCategories.value)
+    filters.publicProcurementCategory = filters.publicProcurementCategory.filter((s) => valid.has(s))
+  },
+  { deep: true },
+)
 
 /** grouped PK: (group_key, vendor_biz_reg_no) */
 function groupedRowKey(item) {
@@ -521,16 +525,6 @@ onMounted(() => {
   color: #475569;
   white-space: nowrap;
   align-self: center;
-}
-.category-row-label small {
-  color: #94a3b8;
-  font-weight: 400;
-}
-.multi-select {
-  min-height: 70px;
-  min-width: 150px;
-  vertical-align: top;
-  padding: 2px;
 }
 .search-actions-row {
   display: flex;
