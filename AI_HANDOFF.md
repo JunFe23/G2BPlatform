@@ -539,3 +539,20 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 티켓: G2B-40 (Task, 에픽 G2B-25, G2B-39 후속). 브랜치: `feature/G2B-40-page-title-mulpum`. 프론트 1줄.
 - `ReportSpecificItemView.vue` h1 `특정품목 조달내역 (물품 · 쇼핑몰 통합)` → `물품`.
 - 검증: `npm run build` PASS. DB/Flyway 영향 없음.
+
+> G2B-40 배포 완료(2026-06-26): PR #28 머지(bd2f533) → EC2 deploy → build/up. 페이지 제목 '물품'. 도메인 200, 구 제목 0건.
+
+---
+
+## 18. G2B-41 — 시장데이터-용역 UI 개편 (제목/필터/CSS) (2026-06-26)
+
+- 티켓: G2B-41 (Task, 에픽 G2B-25, 용역 개편 1/3). 브랜치: `feature/G2B-41-services-ui-revamp`.
+- #1 제목: `ReportServicesView` `시장데이터 - 용역`, `ReportSpecificItemView` `시장데이터 - 물품`.
+- #2 필터:
+  - 입찰계약방법(cntctCnclsMthdNm)·조달업무영역(procurementWorkArea) → **select**. 옵션은 신설 `GET /api/report/market-contracts/filter-options?contractType=`(distinct) 에서 최초 1회 로드(`loadFilterOptions`).
+  - **계약명(contractName) LIKE 필터 추가**: 매퍼 `commonFilters`에 `contract_name LIKE`, 6개 쿼리 메서드(@Param)·`ReportMarketService`(getList/getCount/streamForExcel 시그니처+호출)·`MarketContractController`(목록+엑셀 param) 경유.
+  - 공공조달분류 중/소분류 유지. 최초계약일자 텍스트 필터 유지.
+- #3 CSS: `data-table` 물품 양식(padding 6/8, font .82em, td max-width 180+ellipsis+nowrap, sticky th, 스크롤바 상시) 이식 + hover 전체값 title(`tableRef`+`watch(items)`→refreshCellTitles).
+- 신규 백엔드: `MarketContractMapper.selectDistinctContractMethods/selectDistinctWorkAreas` + xml, `ReportMarketService.getFilterOptions`, 컨트롤러 `/filter-options`.
+- 검증: `compileJava` PASS, `npm run build` PASS. ⚠️ 런타임(필터옵션 응답·계약명 조회)은 배포 후 도메인 확인 예정.
+- 남은 일: 커밋/PR/배포 승인 후. 이후 G2B-42(데이터·합계·ETL), G2B-43(튜닝).

@@ -15,6 +15,9 @@
         <if test="detailItemName != null and detailItemName != ''">
             AND public_procurement_name LIKE CONCAT('%', #{detailItemName}, '%')
         </if>
+        <if test="contractName != null and contractName != ''">
+            AND contract_name LIKE CONCAT('%', #{contractName}, '%')
+        </if>
         <if test="contractMethod != null and contractMethod != ''">
             AND contract_method LIKE CONCAT('%', #{contractMethod}, '%')
         </if>
@@ -198,5 +201,24 @@
           AND vendor_biz_reg_no = #{vendorBizRegNo}
         </if>
     </update>
+
+    <!-- 검색 필터 select 옵션: contract_type별 distinct (입찰계약방법 / 조달업무영역) -->
+    <select id="selectDistinctContractMethods" resultType="string">
+        SELECT DISTINCT contract_method
+        FROM market_contract_flat
+        WHERE contract_type = #{contractType}
+          AND is_active = 'Y'
+          AND contract_method IS NOT NULL AND contract_method &lt;&gt; ''
+        ORDER BY contract_method
+    </select>
+
+    <select id="selectDistinctWorkAreas" resultType="string">
+        SELECT DISTINCT public_procurement_major
+        FROM market_contract_flat
+        WHERE contract_type = #{contractType}
+          AND is_active = 'Y'
+          AND public_procurement_major IS NOT NULL AND public_procurement_major &lt;&gt; ''
+        ORDER BY public_procurement_major
+    </select>
 
 </mapper>

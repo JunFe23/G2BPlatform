@@ -17,6 +17,7 @@ public interface MarketContractMapper {
             @Param("demandAgencyName") String demandAgencyName,
             @Param("demandAgencyRegion") String demandAgencyRegion,
             @Param("detailItemName") String detailItemName,
+            @Param("contractName") String contractName,
             @Param("contractMethod") String contractMethod,
             @Param("procurementWorkArea") String procurementWorkArea,
             @Param("publicProcurementCategoryMid") String publicProcurementCategoryMid,
@@ -34,6 +35,7 @@ public interface MarketContractMapper {
             @Param("demandAgencyName") String demandAgencyName,
             @Param("demandAgencyRegion") String demandAgencyRegion,
             @Param("detailItemName") String detailItemName,
+            @Param("contractName") String contractName,
             @Param("contractMethod") String contractMethod,
             @Param("procurementWorkArea") String procurementWorkArea,
             @Param("publicProcurementCategoryMid") String publicProcurementCategoryMid,
@@ -51,6 +53,7 @@ public interface MarketContractMapper {
             @Param("demandAgencyName") String demandAgencyName,
             @Param("demandAgencyRegion") String demandAgencyRegion,
             @Param("detailItemName") String detailItemName,
+            @Param("contractName") String contractName,
             @Param("contractMethod") String contractMethod,
             @Param("procurementWorkArea") String procurementWorkArea,
             @Param("publicProcurementCategoryMid") String publicProcurementCategoryMid,
@@ -77,6 +80,7 @@ public interface MarketContractMapper {
             @Param("demandAgencyName") String demandAgencyName,
             @Param("demandAgencyRegion") String demandAgencyRegion,
             @Param("detailItemName") String detailItemName,
+            @Param("contractName") String contractName,
             @Param("contractMethod") String contractMethod,
             @Param("procurementWorkArea") String procurementWorkArea,
             @Param("publicProcurementCategoryMid") String publicProcurementCategoryMid,
@@ -94,6 +98,7 @@ public interface MarketContractMapper {
             @Param("demandAgencyName") String demandAgencyName,
             @Param("demandAgencyRegion") String demandAgencyRegion,
             @Param("detailItemName") String detailItemName,
+            @Param("contractName") String contractName,
             @Param("contractMethod") String contractMethod,
             @Param("procurementWorkArea") String procurementWorkArea,
             @Param("publicProcurementCategoryMid") String publicProcurementCategoryMid,
@@ -111,6 +116,7 @@ public interface MarketContractMapper {
             @Param("demandAgencyName") String demandAgencyName,
             @Param("demandAgencyRegion") String demandAgencyRegion,
             @Param("detailItemName") String detailItemName,
+            @Param("contractName") String contractName,
             @Param("contractMethod") String contractMethod,
             @Param("procurementWorkArea") String procurementWorkArea,
             @Param("publicProcurementCategoryMid") String publicProcurementCategoryMid,
@@ -130,4 +136,9 @@ public interface MarketContractMapper {
             @Param("vendorBizRegNo") String vendorBizRegNo,
             @Param("saved") String saved
     );
+
+    // 검색 필터 select 옵션 (contract_type별 distinct)
+    List<String> selectDistinctContractMethods(@Param("contractType") String contractType);
+
+    List<String> selectDistinctWorkAreas(@Param("contractType") String contractType);
 }

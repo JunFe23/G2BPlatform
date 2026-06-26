@@ -1,6 +1,6 @@
 <template>
   <LegacySidebarLayout>
-    <h1 class="services">보고서 데이터 - 용역</h1>
+    <h1 class="services">시장데이터 - 용역</h1>
 
     <!-- 검색 필드 -->
     <div class="search-container">
@@ -8,8 +8,15 @@
       <div class="search-filter-row">
         <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
         <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역 검색" />
-        <input type="text" v-model="filters.procurementWorkArea" placeholder="조달업무영역 (일반용역/기술용역)" />
-        <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="계약방법 검색" />
+        <input type="text" v-model="filters.contractName" placeholder="계약명 검색" />
+        <select v-model="filters.procurementWorkArea" class="date-select">
+          <option value="">조달업무영역 (전체)</option>
+          <option v-for="w in workAreaOptions" :key="w" :value="w">{{ w }}</option>
+        </select>
+        <select v-model="filters.cntctCnclsMthdNm" class="date-select">
+          <option value="">입찰계약방법 (전체)</option>
+          <option v-for="m in contractMethodOptions" :key="m" :value="m">{{ m }}</option>
+        </select>
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
 
         <select v-model="filters.dateType" class="date-select">
@@ -90,7 +97,7 @@
     </div>
 
     <div class="table-container">
-      <div class="table-wrapper">
+      <div class="table-wrapper" ref="tableRef">
         <!-- 합쳐서 보기 (grouped) -->
         <table v-if="grouped" class="data-table">
           <thead>
@@ -215,7 +222,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 
@@ -228,6 +235,7 @@ const isLoadingExcel = ref(false)
 const items = ref([])
 const recordsFiltered = ref(0)
 const currentPage = ref(1)
+const tableRef = ref(null)
 
 /** true: 합쳐서 보기 (grouped), false: 풀어서 보기 (flat) */
 const grouped = ref(true)
@@ -240,6 +248,7 @@ function onGroupedToggleClick() {
 const filters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
+  contractName: '',
   procurementWorkArea: '',
   cntctCnclsMthdNm: '',
   publicProcurementCategoryMid: '',
@@ -252,6 +261,10 @@ const filters = reactive({
   rangeEnd: '',
   showSavedOnly: false,
 })
+
+// 입찰계약방법 / 조달업무영역 select 옵션 (서버 distinct, 최초 1회 로드)
+const contractMethodOptions = ref([])
+const workAreaOptions = ref([])
 
 const years = ['2025', '2024', '2023', '2022', '2021', '2020']
 
@@ -290,6 +303,7 @@ function buildParams(includePaging = true) {
     grouped: grouped.value,
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
+    contractName: filters.contractName || undefined,
     procurementWorkArea: filters.procurementWorkArea || undefined,
     cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
     publicProcurementCategoryMid: filters.publicProcurementCategoryMid || undefined,
@@ -407,7 +421,35 @@ watch(
   () => fetchData(true),
 )
 
-onMounted(() => fetchData())
+// 표 셀 말줄임(...) 시 hover로 전체값 표시 — 물품 페이지와 동일
+function refreshCellTitles() {
+  const root = tableRef.value
+  if (!root) return
+  root.querySelectorAll('tbody td').forEach((td) => {
+    td.title = td.scrollWidth > td.clientWidth ? td.textContent.trim() : ''
+  })
+}
+watch(items, () => nextTick(refreshCellTitles))
+
+// 입찰계약방법 / 조달업무영역 select 옵션 로드 (contract_type별 distinct)
+async function loadFilterOptions() {
+  try {
+    const { data } = await axios.get(API_BASE + '/filter-options', {
+      params: { contractType: CONTRACT_TYPE },
+    })
+    contractMethodOptions.value = Array.isArray(data.contractMethods) ? data.contractMethods : []
+    workAreaOptions.value = Array.isArray(data.workAreas) ? data.workAreas : []
+  } catch (e) {
+    console.error('필터 옵션 조회 실패', e)
+    contractMethodOptions.value = []
+    workAreaOptions.value = []
+  }
+}
+
+onMounted(() => {
+  fetchData()
+  loadFilterOptions()
+})
 </script>
 
 <style scoped>
@@ -652,15 +694,26 @@ input[type='month']:focus {
 }
 .data-table th,
 .data-table td {
-  padding: 12px 10px;
+  padding: 6px 8px;
   border: 1px solid #e2e8f0;
   text-align: center;
-  font-size: 0.9em;
+  font-size: 0.82em;
+}
+/* 긴 텍스트 말줄임 — 물품 페이지와 동일 양식 (hover 시 전체값 title) */
+.data-table td {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .data-table th {
   background: #f1f5f9;
   font-weight: 600;
   color: #334155;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 .data-table tbody tr:nth-child(even) {
   background-color: #fafbfc;
@@ -677,20 +730,24 @@ input[type='month']:focus {
 }
 .table-wrapper {
   max-height: 70vh;
-  overflow: auto;
+  overflow: scroll;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  scrollbar-width: auto;
 }
-.data-table th {
-  position: sticky;
-  top: 0;
+.table-wrapper::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: #b0b8c4;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+.table-wrapper::-webkit-scrollbar-track {
   background: #f1f5f9;
-  z-index: 1;
-}
-.data-table th,
-.data-table td {
-  white-space: nowrap;
 }
 .pagination {
   margin-top: 16px;
