@@ -633,3 +633,14 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 백엔드/마이그레이션 무변경(FIND_IN_SET(name)이 단일/CSV 처리, 전체선택=그 중분류 모든 이름).
 - 검증: `npm run build` PASS. 런타임(패널·전체선택·조회/엑셀)은 배포 후 도메인 확인.
 - 남은 일: 커밋/PR/배포(프론트만).
+
+> G2B-46 배포 완료(2026-06-27): PR #34+#35 머지(66960d3) → EC2 deploy. 용역 공공조달분류 2단 패널(CategoryTreeSelect). ⚠️PR #34 git add 사고로 신규파일 누락→#35 복구.
+
+---
+
+## 24. G2B-47 — 공공조달분류 2단 패널 화면 밖 잘림 수정 (2026-06-27)
+
+- 티켓: G2B-47 (Task, 에픽 G2B-25). 브랜치: `feature/G2B-47-category-panel-overflow`. 프론트 CSS만.
+- 원인: `CategoryTreeSelect`의 `.cts-panel`이 `left:0`(트리거 왼쪽 기준 460px)인데 필터가 우측 정렬이라 화면 우측으로 넘쳐 잘림.
+- 수정: `.cts-panel` → `right:0; left:auto`(우측 기준 펼침), `max-width:80vw→90vw`.
+- 검증: npm run build PASS. 런타임은 배포 후 도메인 확인.
