@@ -571,3 +571,19 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 검증: compileJava PASS, npm build PASS. **로컬 grouped 재적재 검증**: 2,623,994행, 샘플 initial=그룹 first합·last=MAX(contract_date) 일치, flat·grouped totals 동일.
 - ⚠️ **운영 반영**: 코드 변경만으로는 기존 prod grouped가 구 로직 → 배포 후 **grouped 재적재 필요**(EC2에서 TRUNCATE market_contract_grouped + 신 로직 INSERT, saved 백업/복원; flat은 불변이라 재적재 불요). 현재 RDS t4g.large.
 - 남은 일: 커밋/PR/배포 + prod grouped 재적재. 이후 G2B-43(튜닝, totals/정렬 인덱스 EXPLAIN).
+
+> G2B-42 배포 완료(2026-06-26): PR #30 머지(9760d08) → EC2 deploy → build/up. ⚠️운영 grouped 재적재 중 in-DB GROUP BY가 RDS를 2회 크래시(각 2m08s 'Server shutdown')→ §8-2 원칙대로 로컬 계산본 mysqldump→EC2→벌크 import로 복구(4m44s, 2,623,994행, totals 로컬 일치). grouped saved 플래그는 초기화됨(flat 무영향).
+
+---
+
+## 20. G2B-43 — 시장데이터 조회·엑셀 쿼리 튜닝 (V25 인덱스) (2026-06-26)
+
+- 티켓: G2B-43 (Task, 에픽 G2B-25, 용역 개편 3/3). 브랜치: `feature/G2B-43-market-query-tuning`. 마이그레이션 전용(코드 무변경).
+- 문제(EXPLAIN): flat 목록 `ORDER BY contract_date DESC` vs idx_mcf_order(first_contract_date)→**filesort**, grouped 목록 `ORDER BY first_contract_date` vs idx_mcg_last(last_contract_date)→**filesort**, totals는 contract_type 파티션(1.3M) 풀스캔.
+- **V25** 인덱스 4종:
+  - `idx_mcf_cdate (contract_type, contract_date DESC, contract_no)` — flat 목록 정렬·기간 정합
+  - `idx_mcg_first (contract_type, first_contract_date DESC, group_key, vendor_biz_reg_no)` — grouped 목록 정렬
+  - `idx_mcf_totals (contract_type, is_active, first_contract_amount, total_contract_amount)` — flat 합계 커버링
+  - `idx_mcg_totals (contract_type, initial_contract_amount, total_contract_amount_sum)` — grouped 합계 커버링
+- 검증(로컬 EXPLAIN): 목록 filesort 제거(idx_mcf_cdate/idx_mcg_first 사용), totals Using index(index-only). 엑셀(Cursor export)도 동일 WHERE/ORDER라 함께 개선. 로컬 인덱스는 드롭(Flyway V25 정식 적용).
+- ⚠️ 배포: V25 = 운영 RDS flat(2.67M)·grouped(2.62M)에 CREATE INDEX 4종(Flyway 자동). CREATE INDEX는 §8-2 크래시(GROUP BY 집계)와 다른 경량 DDL이며 V24(885만행 1종 16s) 선례 있음 — 수십초~1분 예상이나 Flyway 로그 모니터 권장.
