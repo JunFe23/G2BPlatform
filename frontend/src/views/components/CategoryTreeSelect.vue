@@ -146,11 +146,13 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
 .cts-panel {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  /* 필터가 우측 정렬이라 left 기준이면 화면 밖으로 잘림 → 우측 기준으로 펼침 */
+  right: 0;
+  left: auto;
   z-index: 30;
   display: flex;
   width: 460px;
-  max-width: 80vw;
+  max-width: 90vw;
   max-height: 320px;
   background: #fff;
   border: 1px solid #cbd5e1;
