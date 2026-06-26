@@ -1,6 +1,6 @@
 <template>
   <LegacySidebarLayout>
-    <h1 class="page-title">특정품목 조달내역 (물품 · 쇼핑몰 통합)</h1>
+    <h1 class="page-title">물품</h1>
 
     <!-- 검색 필드 -->
     <div class="search-container">

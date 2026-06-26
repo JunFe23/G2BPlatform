@@ -529,3 +529,13 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - `LegacySidebarLayout.vue`: 시장데이터 메뉴 라벨 `특정품목 (물품·쇼핑몰 통합)` → `물품`.
 - `ReportSpecificItemView.vue`: 엑셀 `a.download`를 `물품_${excelStamp()}.xlsx`로. `excelStamp()`=yyyyMMddHHmm. (백엔드 Content-Disposition은 blob a.download가 덮어써 실제 파일명 지배 → 백엔드 무변경.)
 - 검증: `npm run build` PASS. 배포는 사용자 승인 후(코드만, DB/Flyway 영향 없음).
+
+> G2B-39 배포 완료(2026-06-26): PR #27 머지(572a3b7) → EC2 deploy → build/up. 메뉴 '물품', 엑셀 '물품_yyyyMMddHHmm'. 도메인 200, 구 라벨 0건 확인.
+
+---
+
+## 17. G2B-40 — 특정품목 페이지 제목 '물품' (2026-06-26)
+
+- 티켓: G2B-40 (Task, 에픽 G2B-25, G2B-39 후속). 브랜치: `feature/G2B-40-page-title-mulpum`. 프론트 1줄.
+- `ReportSpecificItemView.vue` h1 `특정품목 조달내역 (물품 · 쇼핑몰 통합)` → `물품`.
+- 검증: `npm run build` PASS. DB/Flyway 영향 없음.
