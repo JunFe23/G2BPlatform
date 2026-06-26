@@ -487,6 +487,13 @@ function refreshCellTitles() {
   })
 }
 
+// 엑셀 파일명용 일시 스탬프 (yyyyMMddHHmm)
+function excelStamp() {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}`
+}
+
 const handleDownloadExcel = async () => {
   isLoadingExcel.value = true
   try {
@@ -501,7 +508,7 @@ const handleDownloadExcel = async () => {
     const url = URL.createObjectURL(new Blob([data]))
     const a = document.createElement('a')
     a.href = url
-    a.download = `specific_item_${Date.now()}.xlsx`
+    a.download = `물품_${excelStamp()}.xlsx`
     a.click()
     URL.revokeObjectURL(url)
   } catch (e) {
