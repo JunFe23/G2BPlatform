@@ -26,7 +26,7 @@ public class ReportMarketService {
     public List<Map<String, Object>> getList(
             String contractType, boolean grouped, int start, int length,
             String demandAgencyName, String demandAgencyRegion,
-            String detailItemName, String contractMethod,
+            String detailItemName, String contractName, String contractMethod,
             String procurementWorkArea, String publicProcurementCategoryMid, String publicProcurementCategory,
             String firstCntrctDate, Integer year, String month,
             String rangeStart, String rangeEnd, boolean showSavedOnly) {
@@ -35,13 +35,13 @@ public class ReportMarketService {
         if (grouped) {
             return marketContractMapper.selectGroupedList(
                     normalizedType, start, length, demandAgencyName, demandAgencyRegion,
-                    detailItemName, contractMethod, procurementWorkArea,
+                    detailItemName, contractName, contractMethod, procurementWorkArea,
                     publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         }
         return marketContractMapper.selectFlatList(
                 normalizedType, start, length, demandAgencyName, demandAgencyRegion,
-                detailItemName, contractMethod, procurementWorkArea,
+                detailItemName, contractName, contractMethod, procurementWorkArea,
                 publicProcurementCategoryMid, publicProcurementCategory,
                 firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
     }
@@ -49,7 +49,7 @@ public class ReportMarketService {
     public int getCount(
             String contractType, boolean grouped,
             String demandAgencyName, String demandAgencyRegion,
-            String detailItemName, String contractMethod,
+            String detailItemName, String contractName, String contractMethod,
             String procurementWorkArea, String publicProcurementCategoryMid, String publicProcurementCategory,
             String firstCntrctDate, Integer year, String month,
             String rangeStart, String rangeEnd, boolean showSavedOnly) {
@@ -58,13 +58,13 @@ public class ReportMarketService {
         if (grouped) {
             return marketContractMapper.selectGroupedCount(
                     normalizedType, demandAgencyName, demandAgencyRegion,
-                    detailItemName, contractMethod, procurementWorkArea,
+                    detailItemName, contractName, contractMethod, procurementWorkArea,
                     publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         }
         return marketContractMapper.selectFlatCount(
                 normalizedType, demandAgencyName, demandAgencyRegion,
-                detailItemName, contractMethod, procurementWorkArea,
+                detailItemName, contractName, contractMethod, procurementWorkArea,
                 publicProcurementCategoryMid, publicProcurementCategory,
                 firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
     }
@@ -72,7 +72,7 @@ public class ReportMarketService {
     public void streamForExcel(
             String contractType, boolean grouped,
             String demandAgencyName, String demandAgencyRegion,
-            String detailItemName, String contractMethod,
+            String detailItemName, String contractName, String contractMethod,
             String procurementWorkArea, String publicProcurementCategoryMid, String publicProcurementCategory,
             String firstCntrctDate, Integer year, String month,
             String rangeStart, String rangeEnd, boolean showSavedOnly,
@@ -82,16 +82,24 @@ public class ReportMarketService {
         if (grouped) {
             marketContractMapper.selectGroupedListForExport(
                     normalizedType, demandAgencyName, demandAgencyRegion,
-                    detailItemName, contractMethod, procurementWorkArea,
+                    detailItemName, contractName, contractMethod, procurementWorkArea,
                     publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly, handler);
             return;
         }
         marketContractMapper.selectFlatListForExport(
                 normalizedType, demandAgencyName, demandAgencyRegion,
-                detailItemName, contractMethod, procurementWorkArea,
+                detailItemName, contractName, contractMethod, procurementWorkArea,
                 publicProcurementCategoryMid, publicProcurementCategory,
                 firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly, handler);
+    }
+
+    /** 검색 필터 select 옵션 (입찰계약방법 / 조달업무영역) — contract_type별 distinct */
+    public Map<String, Object> getFilterOptions(String contractType) {
+        String normalizedType = normalizeContractType(contractType);
+        return Map.of(
+                "contractMethods", marketContractMapper.selectDistinctContractMethods(normalizedType),
+                "workAreas", marketContractMapper.selectDistinctWorkAreas(normalizedType));
     }
 
     public int updateSaved(String contractType, boolean grouped, String key, String vendorBizRegNo, String saved) {

@@ -1,6 +1,6 @@
 <template>
   <LegacySidebarLayout>
-    <h1 class="page-title">물품</h1>
+    <h1 class="page-title">시장데이터 - 물품</h1>
 
     <!-- 검색 필드 -->
     <div class="search-container">

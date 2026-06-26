@@ -61,6 +61,7 @@ public class MarketContractController {
             @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
             @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
             @Parameter(description = "공공조달분류명") @RequestParam(required = false) String prdctClsfcNo,
+            @Parameter(description = "계약명") @RequestParam(required = false) String contractName,
             @Parameter(description = "계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
             @Parameter(description = "조달업무영역/대분류") @RequestParam(required = false) String procurementWorkArea,
             @Parameter(description = "공공조달분류 중분류") @RequestParam(required = false) String publicProcurementCategoryMid,
@@ -76,18 +77,32 @@ public class MarketContractController {
             String detailFilter = firstNonBlank(prdctClsfcNo, publicProcurementCategory);
             List<Map<String, Object>> list = reportMarketService.getList(
                     contractType, grouped, start, length,
-                    dminsttNm, dminsttNmDetail, detailFilter, cntctCnclsMthdNm,
+                    dminsttNm, dminsttNmDetail, detailFilter, contractName, cntctCnclsMthdNm,
                     procurementWorkArea, publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
             int filtered = reportMarketService.getCount(
                     contractType, grouped,
-                    dminsttNm, dminsttNmDetail, detailFilter, cntctCnclsMthdNm,
+                    dminsttNm, dminsttNmDetail, detailFilter, contractName, cntctCnclsMthdNm,
                     procurementWorkArea, publicProcurementCategoryMid, publicProcurementCategory,
                     firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
             Map<String, Object> body = new HashMap<>();
             body.put("success", true);
             body.put("data", list);
             body.put("recordsFiltered", filtered);
+            return ResponseEntity.ok(body);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(error(e.getMessage()));
+        }
+    }
+
+    @Operation(summary = "시장데이터 검색 필터 옵션 (입찰계약방법/조달업무영역 distinct)")
+    @GetMapping("/api/report/market-contracts/filter-options")
+    public ResponseEntity<Map<String, Object>> getFilterOptions(
+            @Parameter(description = "계약 유형: construction | service") @RequestParam String contractType
+    ) {
+        try {
+            Map<String, Object> body = new HashMap<>(reportMarketService.getFilterOptions(contractType));
+            body.put("success", true);
             return ResponseEntity.ok(body);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(error(e.getMessage()));
@@ -102,6 +117,7 @@ public class MarketContractController {
             @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
             @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
             @Parameter(description = "공공조달분류명") @RequestParam(required = false) String prdctClsfcNo,
+            @Parameter(description = "계약명") @RequestParam(required = false) String contractName,
             @Parameter(description = "계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
             @Parameter(description = "조달업무영역/대분류") @RequestParam(required = false) String procurementWorkArea,
             @Parameter(description = "공공조달분류 중분류") @RequestParam(required = false) String publicProcurementCategoryMid,
@@ -142,7 +158,7 @@ public class MarketContractController {
                 String detailFilter = firstNonBlank(prdctClsfcNo, publicProcurementCategory);
                 reportMarketService.streamForExcel(
                         normalizedType, grouped,
-                        dminsttNm, dminsttNmDetail, detailFilter, cntctCnclsMthdNm,
+                        dminsttNm, dminsttNmDetail, detailFilter, contractName, cntctCnclsMthdNm,
                         procurementWorkArea, publicProcurementCategoryMid, publicProcurementCategory,
                         firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly,
                         resultContext -> {
