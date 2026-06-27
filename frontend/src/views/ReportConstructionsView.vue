@@ -1,15 +1,18 @@
 <template>
   <LegacySidebarLayout>
-    <h1 class="construction">보고서 데이터 - 공사</h1>
+    <h1 class="construction">시장데이터 - 공사</h1>
 
     <!-- 검색 필드 -->
     <div class="search-container">
-      <!-- 1줄: 필터만 -->
+      <!-- 1줄: 기본 필터 -->
       <div class="search-filter-row">
         <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
-        <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색" />
-        <input type="text" v-model="filters.prdctClsfcNo" placeholder="품명내용 검색" />
-        <input type="text" v-model="filters.cntctCnclsMthdNm" placeholder="입찰계약방법 검색" />
+        <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역 검색" />
+        <input type="text" v-model="filters.contractName" placeholder="계약명 검색" />
+        <select v-model="filters.cntctCnclsMthdNm" class="date-select">
+          <option value="">입찰계약방법 (전체)</option>
+          <option v-for="m in contractMethodOptions" :key="m" :value="m">{{ m }}</option>
+        </select>
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
 
         <select v-model="filters.dateType" class="date-select">
@@ -31,7 +34,17 @@
         </template>
       </div>
 
-      <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 (오른쪽 정렬) -->
+      <!-- 2줄: 공공조달분류 중분류 / 소분류 필터 -->
+      <div class="search-filter-row search-category-row">
+        <span class="category-row-label">공공조달분류</span>
+        <CategoryTreeSelect
+          v-model="filters.publicProcurementCategory"
+          :category-map="categoryMap"
+          placeholder="공공조달분류 선택"
+        />
+      </div>
+
+      <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 -->
       <div class="search-actions-row">
         <label class="checkbox-label">
           <input type="checkbox" v-model="filters.showSavedOnly" />
@@ -39,19 +52,19 @@
         </label>
         <span class="actions-sep" aria-hidden="true"></span>
         <div class="long-term-toggle-wrap">
-        <span class="long-term-toggle-label">장기계약 건</span>
-        <button
-          type="button"
-          role="switch"
-          :aria-checked="longTermViewMerged"
-          :title="longTermViewMerged ? '합쳐서 보기' : '풀어서 보기'"
-          class="long-term-toggle-switch"
-          :class="{ on: longTermViewMerged }"
-          @click="onLongTermToggleClick"
-        >
-          <span class="long-term-toggle-slider"></span>
-        </button>
-        <span class="long-term-toggle-caption">{{ longTermViewMerged ? '합쳐서 보기' : '풀어서 보기' }}</span>
+          <span class="long-term-toggle-label">장기계약 건</span>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="grouped"
+            :title="grouped ? '합쳐서 보기' : '풀어서 보기'"
+            class="long-term-toggle-switch"
+            :class="{ on: grouped }"
+            @click="onGroupedToggleClick"
+          >
+            <span class="long-term-toggle-slider"></span>
+          </button>
+          <span class="long-term-toggle-caption">{{ grouped ? '합쳐서 보기' : '풀어서 보기' }}</span>
         </div>
 
         <button @click="handleSearch" class="search-btn">검색</button>
@@ -74,55 +87,112 @@
           <p class="excel-progress-hint">창을 닫지 마세요.</p>
         </div>
       </div>
+    </div>
 
+    <!-- 상단 합계 (풀어서/합쳐서 공통) -->
+    <div v-if="totals" class="grouped-totals">
+      <span class="total-item">최초계약금액 합계 <strong>{{ formatNumber(totals.firstAmountTotal) }}원</strong></span>
+      <span class="total-sep">|</span>
+      <span class="total-item">최종계약금액 합계 <strong>{{ formatNumber(totals.finalAmountTotal) }}원</strong></span>
     </div>
 
     <div class="table-container">
-      <div class="table-wrapper">
-        <table class="data-table">
+      <div class="table-wrapper" ref="tableRef">
+        <!-- 합쳐서 보기 (grouped) -->
+        <table v-if="grouped" class="data-table">
           <thead>
             <tr>
               <th>업체명</th>
-              <th>계약건명</th>
+              <th>계약명</th>
               <th>수요기관명</th>
-              <th>수요기관지역명</th>
-              <th>품명내용</th>
-              <th>입찰계약방법</th>
-              <th>입찰공고번호</th>
+              <th>수요기관지역</th>
+              <th>조달업무영역</th>
+              <th>계약방법</th>
               <th>최초계약일자</th>
-              <th>최초계약금액</th>
+              <th>최초계약금액(합계)</th>
               <th>최종계약일자</th>
-              <th>최종계약금액</th>
-              <th>착수일자</th>
-              <th>완수일자</th>
-              <th>계약변경차수</th>
-              <th>장기계약여부</th>
+              <th>최종계약금액(합계)</th>
+              <th>계약건수</th>
+              <th>장기여부</th>
               <th>저장</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td :colspan="COL_SPAN" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td colspan="13" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td :colspan="COL_SPAN" class="no-data">데이터가 없습니다.</td>
+              <td colspan="13" class="no-data">데이터가 없습니다.</td>
             </tr>
-            <tr v-else v-for="item in items" :key="rowKey(item)">
+            <tr v-else v-for="item in items" :key="groupedRowKey(item)">
               <td>{{ item.vendorName }}</td>
               <td>{{ item.contractTitle }}</td>
-              <td>{{ item.demandAgencyName }}</td>
+              <td>{{ item.demandAgency }}</td>
               <td>{{ item.demandAgencyRegion }}</td>
-              <td>{{ item.detailItemName }}</td>
+              <td>{{ item.procurementWorkArea }}</td>
               <td>{{ item.contractMethod }}</td>
-              <td>{{ item.bidNoticeNo }}</td>
-              <td>{{ item.firstContractDate }}</td>
-              <td>{{ formatNumber(item.firstContractAmount) }}</td>
+              <td>{{ item.initialContractDate }}</td>
+              <td>{{ formatNumber(item.initialContractAmount) }}</td>
               <td>{{ item.finalContractDate }}</td>
-              <td>{{ formatNumber(item.finalContractAmount) }}</td>
+              <td>{{ formatNumber(item.finalContractAmountSum) }}</td>
+              <td>{{ item.contractCount }}</td>
+              <td>{{ item.isLongTerm }}</td>
+              <td>
+                <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 풀어서 보기 (flat) -->
+        <table v-else class="data-table">
+          <thead>
+            <tr>
+              <th>업체명</th>
+              <th>계약명</th>
+              <th>수요기관명</th>
+              <th>수요기관지역</th>
+              <th>조달업무영역</th>
+              <th>계약방법</th>
+              <th>계약유형</th>
+              <th>입찰공고번호</th>
+              <th>공공조달분류(중)</th>
+              <th>공공조달분류(소)</th>
+              <th>최초계약일자</th>
+              <th>최종계약일자</th>
+              <th>착수일자</th>
+              <th>완수일자</th>
+              <th>최초계약금액</th>
+              <th>최종계약금액</th>
+              <th>장기여부</th>
+              <th>저장</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="isLoading">
+              <td colspan="18" class="loading-text">데이터를 불러오는 중입니다...</td>
+            </tr>
+            <tr v-else-if="items.length === 0">
+              <td colspan="18" class="no-data">데이터가 없습니다.</td>
+            </tr>
+            <tr v-else v-for="item in items" :key="flatRowKey(item)">
+              <td>{{ item.vendorName }}</td>
+              <td>{{ item.contractTitle }}</td>
+              <td>{{ item.demandAgency }}</td>
+              <td>{{ item.demandAgencyRegion }}</td>
+              <td>{{ item.procurementWorkArea }}</td>
+              <td>{{ item.contractMethod }}</td>
+              <td>{{ item.contractType }}</td>
+              <td>{{ item.bidNoticeNo }}</td>
+              <td>{{ item.publicProcurementCategoryMid }}</td>
+              <td>{{ item.publicProcurementCategory }}</td>
+              <td>{{ item.firstContractDate }}</td>
+              <td>{{ item.finalContractDate }}</td>
               <td>{{ item.startDate }}</td>
               <td>{{ item.endDate }}</td>
-              <td>{{ item.contractCount ?? '-' }}</td>
-              <td>{{ item.isLongTerm === 'Y' ? 'Y' : 'N' }}</td>
+              <td>{{ formatNumber(item.firstContractAmount) }}</td>
+              <td>{{ formatNumber(item.finalContractAmount) }}</td>
+              <td>{{ item.isLongTerm }}</td>
               <td>
                 <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
               </td>
@@ -130,13 +200,12 @@
           </tbody>
         </table>
       </div>
+
       <div v-if="recordsFiltered > 0" class="pagination">
-        <span class="pagination-info"
-          >{{ formatNumber(startDisplay) }}-{{ formatNumber(endDisplay) }} / {{ formatNumber(recordsFiltered) }}건</span
-        >
-        <button class="page-btn" :disabled="currentPage <= 1" @click="goPage(currentPage - 1)">
-          이전
-        </button>
+        <span class="pagination-info">
+          {{ formatNumber(startDisplay) }}-{{ formatNumber(endDisplay) }} / {{ formatNumber(recordsFiltered) }}건
+        </span>
+        <button class="page-btn" :disabled="currentPage <= 1" @click="goPage(currentPage - 1)">이전</button>
         <button
           v-for="p in pageNumbers"
           :key="p"
@@ -146,26 +215,20 @@
         >
           {{ p }}
         </button>
-        <button
-          class="page-btn"
-          :disabled="currentPage >= totalPages"
-          @click="goPage(currentPage + 1)"
-        >
-          다음
-        </button>
+        <button class="page-btn" :disabled="currentPage >= totalPages" @click="goPage(currentPage + 1)">다음</button>
       </div>
     </div>
   </LegacySidebarLayout>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import axios from 'axios'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
+import CategoryTreeSelect from './components/CategoryTreeSelect.vue'
 
 const API_BASE = '/api/report/market-contracts'
 const CONTRACT_TYPE = 'construction'
-const COL_SPAN = 16
 const PAGE_SIZE = 100
 
 const isLoading = ref(false)
@@ -173,20 +236,24 @@ const isLoadingExcel = ref(false)
 const items = ref([])
 const recordsFiltered = ref(0)
 const currentPage = ref(1)
+const tableRef = ref(null)
+const totals = ref(null)
 
-/** true: 합쳐서 보기(grouped), false: 풀어서 보기(flat) */
-const longTermViewMerged = ref(true)
+/** true: 합쳐서 보기 (grouped), false: 풀어서 보기 (flat) */
+const grouped = ref(true)
 
-function onLongTermToggleClick() {
-  longTermViewMerged.value = !longTermViewMerged.value
+function onGroupedToggleClick() {
+  grouped.value = !grouped.value
   fetchData(true)
 }
 
 const filters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
-  prdctClsfcNo: '',
+  contractName: '',
+  procurementWorkArea: '',
   cntctCnclsMthdNm: '',
+  publicProcurementCategory: [],
   firstCntrctDate: '',
   dateType: 'year',
   year: '',
@@ -196,21 +263,38 @@ const filters = reactive({
   showSavedOnly: false,
 })
 
+// 입찰계약방법 / 조달업무영역 select 옵션 (서버 distinct, 최초 1회 로드)
+const contractMethodOptions = ref([])
+const workAreaOptions = ref([])
+
 const years = ['2025', '2024', '2023', '2022', '2021', '2020']
 
-function rowKey(item) {
-  // grouped → group_key, flat → contract_no
-  return item.groupKey || item.contractNo || (item.bidNoticeNo || '') + '_' + (item.vendorBizRegNo || '')
+/** 공공조달분류 계층 { 중분류: [소분류] } (market_target_category 기준, filter-options에서 동적 로드) */
+const categoryMap = ref({})
+
+/** grouped PK: (group_key, vendor_biz_reg_no) */
+function groupedRowKey(item) {
+  return (item.groupKey || '') + '_' + (item.vendorBizRegNo || '')
+}
+
+/** flat PK: (contract_delivery_integrated_no, vendor_biz_reg_no) */
+function flatRowKey(item) {
+  return (item.contractDeliveryIntegratedNo || '') + '_' + (item.vendorBizRegNo || '')
 }
 
 function buildParams(includePaging = true) {
   const p = {
     contractType: CONTRACT_TYPE,
-    grouped: longTermViewMerged.value,
+    grouped: grouped.value,
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
-    prdctClsfcNo: filters.prdctClsfcNo || undefined,
+    contractName: filters.contractName || undefined,
+    procurementWorkArea: filters.procurementWorkArea || undefined,
     cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
+    // 공공조달분류: 중분류는 UI 네비게이션, 실제 필터는 선택된 소분류 이름(CSV) — 백엔드 FIND_IN_SET(name)
+    publicProcurementCategory: filters.publicProcurementCategory.length
+      ? filters.publicProcurementCategory.join(',')
+      : undefined,
     firstCntrctDate: filters.firstCntrctDate || undefined,
     year: filters.dateType === 'year' && filters.year ? parseInt(filters.year, 10) : undefined,
     month: filters.dateType === 'month' ? filters.month || undefined : undefined,
@@ -247,10 +331,13 @@ const fetchData = async (resetPage = false) => {
     const { data } = await axios.get(API_BASE, { params: buildParams(true) })
     items.value = Array.isArray(data.data) ? data.data : []
     recordsFiltered.value = data.recordsFiltered ?? items.value.length
+    // 합계는 첫 페이지(start=0)에서만 내려옴 — 페이지네이션 중엔 기존 값 유지
+    if (data.totals != null) totals.value = data.totals
   } catch (e) {
     console.error('보고서 공사 조회 실패', e)
     items.value = []
     recordsFiltered.value = 0
+    totals.value = null
   } finally {
     isLoading.value = false
   }
@@ -297,12 +384,13 @@ const handleDownloadExcel = async () => {
 const toggleSave = async (item) => {
   const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
   try {
-    const payload = { contractType: CONTRACT_TYPE, grouped: longTermViewMerged.value, saved: nextSaved }
-    if (longTermViewMerged.value) {
+    const payload = { contractType: CONTRACT_TYPE, grouped: grouped.value, saved: nextSaved }
+    if (grouped.value) {
       payload.groupKey = item.groupKey
       payload.vendorBizRegNo = item.vendorBizRegNo
     } else {
-      payload.contractNo = item.contractNo
+      payload.contractDeliveryIntegratedNo = item.contractDeliveryIntegratedNo
+      payload.vendorBizRegNo = item.vendorBizRegNo
     }
     await axios.patch(API_BASE + '/saved', payload)
     item.saved = nextSaved
@@ -323,7 +411,48 @@ watch(
   () => fetchData(true),
 )
 
-onMounted(() => fetchData())
+// 표 셀 말줄임(...) 시 hover로 전체값 표시 — 물품 페이지와 동일
+function refreshCellTitles() {
+  const root = tableRef.value
+  if (!root) return
+  root.querySelectorAll('tbody td').forEach((td) => {
+    td.title = td.scrollWidth > td.clientWidth ? td.textContent.trim() : ''
+  })
+}
+watch(items, () => nextTick(refreshCellTitles))
+
+// 입찰계약방법 / 조달업무영역 select 옵션 로드 (contract_type별 distinct)
+async function loadFilterOptions() {
+  try {
+    const { data } = await axios.get(API_BASE + '/filter-options', {
+      params: { contractType: CONTRACT_TYPE },
+    })
+    contractMethodOptions.value = Array.isArray(data.contractMethods) ? data.contractMethods : []
+    workAreaOptions.value = Array.isArray(data.workAreas) ? data.workAreas : []
+    // 공공조달분류 계층 동적 구성: [{mid, name}] → { mid: [name, ...] } (mid/name 순서 유지)
+    const map = {}
+    if (Array.isArray(data.categories)) {
+      for (const row of data.categories) {
+        const mid = row.mid
+        const name = row.name
+        if (!mid || !name) continue
+        if (!map[mid]) map[mid] = []
+        if (!map[mid].includes(name)) map[mid].push(name)
+      }
+    }
+    categoryMap.value = map
+  } catch (e) {
+    console.error('필터 옵션 조회 실패', e)
+    contractMethodOptions.value = []
+    workAreaOptions.value = []
+    categoryMap.value = {}
+  }
+}
+
+onMounted(() => {
+  fetchData()
+  loadFilterOptions()
+})
 </script>
 
 <style scoped>
@@ -355,6 +484,18 @@ onMounted(() => fetchData())
 .search-filter-row select,
 .search-filter-row input[type='month'] {
   min-width: 100px;
+}
+.search-category-row {
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+  justify-content: flex-end;
+}
+.category-row-label {
+  font-size: 0.875em;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+  align-self: center;
 }
 .search-actions-row {
   display: flex;
@@ -556,15 +697,26 @@ input[type='month']:focus {
 }
 .data-table th,
 .data-table td {
-  padding: 12px 10px;
+  padding: 6px 8px;
   border: 1px solid #e2e8f0;
   text-align: center;
-  font-size: 0.9em;
+  font-size: 0.82em;
+}
+/* 긴 텍스트 말줄임 — 물품 페이지와 동일 양식 (hover 시 전체값 title) */
+.data-table td {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .data-table th {
   background: #f1f5f9;
   font-weight: 600;
   color: #334155;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 .data-table tbody tr:nth-child(even) {
   background-color: #fafbfc;
@@ -581,21 +733,40 @@ input[type='month']:focus {
 }
 .table-wrapper {
   max-height: 70vh;
-  overflow: auto;
+  overflow: scroll;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  scrollbar-width: auto;
 }
-.data-table th {
-  position: sticky;
-  top: 0;
+.table-wrapper::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: #b0b8c4;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+.table-wrapper::-webkit-scrollbar-track {
   background: #f1f5f9;
-  z-index: 1;
 }
-.data-table th,
-.data-table td {
-  white-space: nowrap;
+/* 상단 합계 밴드 — 물품 페이지와 동일 */
+.grouped-totals {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  background: #eef2f7;
+  border: 1px solid #d6dee8;
+  border-radius: 8px;
+  font-size: 0.92em;
+  color: #334155;
 }
+.grouped-totals strong { color: #1d4ed8; margin-left: 4px; }
+.grouped-totals .total-sep { color: #94a3b8; }
 .pagination {
   margin-top: 16px;
   padding: 14px 0;
