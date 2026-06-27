@@ -644,3 +644,20 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 원인: `CategoryTreeSelect`의 `.cts-panel`이 `left:0`(트리거 왼쪽 기준 460px)인데 필터가 우측 정렬이라 화면 우측으로 넘쳐 잘림.
 - 수정: `.cts-panel` → `right:0; left:auto`(우측 기준 펼침), `max-width:80vw→90vw`.
 - 검증: npm run build PASS. 런타임은 배포 후 도메인 확인.
+
+> G2B-47 배포 완료(2026-06-27): PR #36 머지(75ac580) → EC2 deploy. CategoryTreeSelect 패널 우측 기준(right:0)으로 화면 밖 잘림 해소. 도메인 200.
+
+---
+
+## 25. G2B-48 — 시장데이터-공사 페이지 용역 패리티 (2026-06-27)
+
+- 티켓: G2B-48 (에픽 G2B-25). 브랜치: `feature/G2B-48-constructions-services-parity`. **프론트 전용**.
+  - ⚠️ Jira MCP 연결 끊김으로 티켓 미생성 — 재연결 시 G2B-48로 생성 필요(브랜치/커밋은 G2B-48 사용).
+- 배경: 공사 데이터/백엔드는 용역과 공유돼 이미 완비(market_contract flat 1,489,972/grouped 1,473,667, 최초/최종 raw 동일 기준 적재, FIND_IN_SET·filter-options·totals·V25/V26 인덱스). 따라서 공사 페이지 = **프론트 표기/필터/디자인만**.
+- 구현: `ReportConstructionsView.vue`를 완성된 `ReportServicesView.vue` 복사 후 공사 적응:
+  - 제목 `시장데이터 - 공사`(h1 class construction), `CONTRACT_TYPE='construction'`
+  - 조달업무영역 select 제거(공사 major 단일 '시설공사'라 불필요; 컬럼은 디자인 유지 위해 잔존)
+  - 그 외 용역과 동일: 계약명 필터, 입찰계약방법 select(filter-options), 공공조달분류 CategoryTreeSelect(2단 패널), 합쳐서/풀어서 최초·최종(합계) 컬럼, 상단 합계 밴드, data-table 양식+hover title, 엑셀 파일명 report_constructions_
+  - console.error 문구 '공사'
+- 요구 7개 매핑: #1 제목 ✓ / #2 품명내용 제거+2단 패널 ✓ / #3 입찰계약방법 select+V26 최적화(기존) ✓ / #4 계약명 ✓ / #5 flat·grouped 최초/최종(데이터 기존 적재) ✓ / #6 상단 합계 ✓ / #7 디자인 통일 ✓
+- 백엔드/마이그레이션 0건. 검증: npm run build PASS. 런타임은 배포 후 도메인 확인.
