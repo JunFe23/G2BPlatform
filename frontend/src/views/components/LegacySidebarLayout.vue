@@ -50,7 +50,7 @@
             <span class="menu-label">공사</span>
           </li>
           <li class="menu-item" @click="$router.push('/top-contracts-report')">
-            <span class="menu-label">탑인더스트리 & 탑정보통신 수주현황</span>
+            <span class="menu-label">탑 수주 현황</span>
           </li>
           <li class="menu-item" @click="$router.push('/report-target-projects')">
             <span class="menu-label">수주대상 사업탐색</span>

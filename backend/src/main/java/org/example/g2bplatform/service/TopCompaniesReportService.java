@@ -16,40 +16,32 @@ public class TopCompaniesReportService {
         this.mapper = mapper;
     }
 
-    public List<Map<String, Object>> getList(
-            String type, String dminsttNm, String dminsttNmDetail,
-            String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate,
-            Integer year, String month, String rangeStart, String rangeEnd,
-            boolean showSavedOnly, int start, int length) {
-        return mapper.selectList(type, dminsttNm, dminsttNmDetail,
-                prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate,
-                year, month, rangeStart, rangeEnd, showSavedOnly, start, length);
+    public List<Map<String, Object>> getList(Map<String, Object> p, boolean grouped) {
+        return grouped ? mapper.selectGroupedList(p) : mapper.selectFlatList(p);
     }
 
-    public int getCount(
-            String type, String dminsttNm, String dminsttNmDetail,
-            String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate,
-            Integer year, String month, String rangeStart, String rangeEnd,
-            boolean showSavedOnly) {
-        return mapper.selectCount(type, dminsttNm, dminsttNmDetail,
-                prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate,
-                year, month, rangeStart, rangeEnd, showSavedOnly);
+    public int getCount(Map<String, Object> p, boolean grouped) {
+        return grouped ? mapper.selectGroupedCount(p) : mapper.selectFlatCount(p);
     }
 
-    public void streamForExcel(
-            String type, String dminsttNm, String dminsttNmDetail,
-            String prdctClsfcNo, String cntctCnclsMthdNm, String firstCntrctDate,
-            Integer year, String month, String rangeStart, String rangeEnd,
-            boolean showSavedOnly, ResultHandler<Map<String, Object>> handler) {
-        mapper.selectForExport(type, dminsttNm, dminsttNmDetail,
-                prdctClsfcNo, cntctCnclsMthdNm, firstCntrctDate,
-                year, month, rangeStart, rangeEnd, showSavedOnly, handler);
+    public Map<String, Object> getTotals(Map<String, Object> p, boolean grouped) {
+        return grouped ? mapper.selectGroupedTotals(p) : mapper.selectFlatTotals(p);
     }
 
-    public int updateShoppingMallSaved(
-            String deliveryContractNo, Long deliveryContractChangeSeq,
-            Long deliveryItemSeq, String saved) {
-        return mapper.updateShoppingMallSaved(
-                deliveryContractNo, deliveryContractChangeSeq, deliveryItemSeq, saved);
+    public void streamForExcel(Map<String, Object> p, boolean grouped,
+                               ResultHandler<Map<String, Object>> handler) {
+        if (grouped) {
+            mapper.selectGroupedExport(p, handler);
+        } else {
+            mapper.selectFlatExport(p, handler);
+        }
+    }
+
+    public List<Map<String, Object>> getCategoryHierarchy() {
+        return mapper.selectCategoryHierarchy();
+    }
+
+    public List<String> getDistinctContractMethods() {
+        return mapper.selectDistinctContractMethods();
     }
 }
