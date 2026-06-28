@@ -6,427 +6,229 @@
 <mapper namespace="org.example.g2bplatform.mapper.TopCompaniesReportMapper">
 
     <!--
-      대상 업체 사업자번호
-        탑인더스트리       : 1188117437
-        탑정보통신주식회사 : 1188119624
+      탑인더스트리(1188117437)/탑정보통신(1188119624) 2社 한정 통합 조회.
+      소스: specific_item_flat/grouped(물품·쇼핑몰) ∪ market_contract_flat/grouped(공사·용역).
+      (구 procurement/construction/service/shopping_mall_flat → 폐기. ADR-0005)
+      공통 alias로 UNION 후 외부 where에서 필터(2社라 소량이라 충분히 빠름).
+      민수(top_manual_contract)는 티켓 B에서 UNION 추가 — dataOrigin 컬럼으로 구분.
     -->
 
-    <!-- ============================================================ -->
-    <!-- 소스별 SELECT 조각                                             -->
-    <!-- ============================================================ -->
-
-    <sql id="procurementSelect">
+    <!-- ===== flat 소스 ===== -->
+    <sql id="specificFlatSelect">
         SELECT
-            '물품'                                              AS type,
+            CASE WHEN data_type='shopping_mall' THEN '쇼핑몰' ELSE '물품' END AS type,
+            '관급'                                              AS dataOrigin,
             contract_no                                         AS pk1,
             CAST(item_seq AS CHAR)                              AS pk2,
-            NULL                                                AS pk3,
+            change_seq                                          AS pk3,
             vendor_name                                         AS cmpNm,
-            contract_title                                      AS cntrctNm,
+            contract_name                                       AS cntrctNm,
             demand_agency_name                                  AS dminsttNm,
             demand_agency_region                                AS dminsttNmDetail,
+            item_category_name                                  AS midCategory,
             detail_item_name                                    AS prdctClsfcNo,
             contract_method                                     AS cntctCnclsMthdNm,
             bid_notice_no                                       AS ntceNo,
-            DATE_FORMAT(first_contract_date, '%Y-%m-%d')       AS firstCntrctDate,
-            NULL                                                AS firstCntrctAmt,
-            DATE_FORMAT(contract_date, '%Y-%m-%d')             AS cntrctDate,
-            contract_amount                                     AS thtmCntrctAmt,
-            latest_change_seq                                   AS cntrctCnt,
-            IFNULL(saved, 'N')                                  AS saved
-        FROM procurement_contract_flat
-        WHERE is_active = 'Y'
-          AND vendor_biz_reg_no IN ('1188117437', '1188119624')
-        <if test="dminsttNm != null and dminsttNm != ''">
-            AND demand_agency_name LIKE CONCAT('%', #{dminsttNm}, '%')
-        </if>
-        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
-            AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')
-        </if>
-        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
-            AND detail_item_name LIKE CONCAT('%', #{prdctClsfcNo}, '%')
-        </if>
-        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
-            AND contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
-        </if>
-        <if test="firstCntrctDate != null and firstCntrctDate != ''">
-            AND first_contract_date = #{firstCntrctDate}
-        </if>
-        <if test="year != null">
-            AND contract_date &gt;= CONCAT(#{year}, '-01-01')
-            AND contract_date &lt;  DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
-        </if>
-        <if test="month != null and month != ''">
-            AND contract_date &gt;= CONCAT(#{month}, '-01')
-            AND contract_date &lt;  DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
-        </if>
-        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
-            AND contract_date &gt;= CONCAT(#{rangeStart}, '-01')
-            AND contract_date &lt;  DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
-        </if>
-        <if test="showSavedOnly == true">
-            AND saved = 'Y'
-        </if>
-    </sql>
-
-    <sql id="constructionSelect">
-        SELECT
-            '공사'                                              AS type,
-            contract_no                                         AS pk1,
-            NULL                                                AS pk2,
-            NULL                                                AS pk3,
-            vendor_name                                         AS cmpNm,
-            contract_title                                      AS cntrctNm,
-            demand_agency_name                                  AS dminsttNm,
-            demand_agency_region                                AS dminsttNmDetail,
-            public_procurement_category_name                    AS prdctClsfcNo,
-            bid_contract_method                                 AS cntctCnclsMthdNm,
-            bid_notice_no                                       AS ntceNo,
-            DATE_FORMAT(first_contract_date, '%Y-%m-%d')       AS firstCntrctDate,
-            first_contract_amount                               AS firstCntrctAmt,
-            DATE_FORMAT(contract_date, '%Y-%m-%d')             AS cntrctDate,
-            contract_amount                                     AS thtmCntrctAmt,
-            latest_change_seq                                   AS cntrctCnt,
-            IFNULL(saved, 'N')                                  AS saved
-        FROM construction_contract_flat
-        WHERE is_active = 'Y'
-          AND vendor_biz_reg_no IN ('1188117437', '1188119624')
-        <if test="dminsttNm != null and dminsttNm != ''">
-            AND demand_agency_name LIKE CONCAT('%', #{dminsttNm}, '%')
-        </if>
-        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
-            AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')
-        </if>
-        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
-            AND public_procurement_category_name LIKE CONCAT('%', #{prdctClsfcNo}, '%')
-        </if>
-        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
-            AND bid_contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
-        </if>
-        <if test="firstCntrctDate != null and firstCntrctDate != ''">
-            AND first_contract_date = #{firstCntrctDate}
-        </if>
-        <if test="year != null">
-            AND contract_date &gt;= CONCAT(#{year}, '-01-01')
-            AND contract_date &lt;  DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
-        </if>
-        <if test="month != null and month != ''">
-            AND contract_date &gt;= CONCAT(#{month}, '-01')
-            AND contract_date &lt;  DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
-        </if>
-        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
-            AND contract_date &gt;= CONCAT(#{rangeStart}, '-01')
-            AND contract_date &lt;  DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
-        </if>
-        <if test="showSavedOnly == true">
-            AND saved = 'Y'
-        </if>
-    </sql>
-
-    <sql id="serviceSelect">
-        SELECT
-            '용역'                                              AS type,
-            contract_delivery_integrated_no                     AS pk1,
-            vendor_biz_reg_no                                   AS pk2,
-            NULL                                                AS pk3,
-            vendor_name                                         AS cmpNm,
-            contract_title                                      AS cntrctNm,
-            demand_agency                                       AS dminsttNm,
-            demand_agency_region                                AS dminsttNmDetail,
-            public_procurement_category                         AS prdctClsfcNo,
-            contract_method                                     AS cntctCnclsMthdNm,
-            bid_notice_no                                       AS ntceNo,
-            DATE_FORMAT(first_contract_date, '%Y-%m-%d')       AS firstCntrctDate,
-            first_contract_amount                               AS firstCntrctAmt,
-            DATE_FORMAT(contract_date, '%Y-%m-%d')             AS cntrctDate,
-            contract_amount                                     AS thtmCntrctAmt,
-            latest_change_seq                                   AS cntrctCnt,
-            IFNULL(saved, 'N')                                  AS saved
-        FROM service_contract_flat
-        WHERE is_active = 'Y'
-          AND vendor_biz_reg_no IN ('1188117437', '1188119624')
-        <if test="dminsttNm != null and dminsttNm != ''">
-            AND demand_agency LIKE CONCAT('%', #{dminsttNm}, '%')
-        </if>
-        <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
-            AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')
-        </if>
-        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
-            AND public_procurement_category LIKE CONCAT('%', #{prdctClsfcNo}, '%')
-        </if>
-        <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
-            AND contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
-        </if>
-        <if test="firstCntrctDate != null and firstCntrctDate != ''">
-            AND first_contract_date = #{firstCntrctDate}
-        </if>
-        <if test="year != null">
-            AND contract_date &gt;= CONCAT(#{year}, '-01-01')
-            AND contract_date &lt;  DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
-        </if>
-        <if test="month != null and month != ''">
-            AND contract_date &gt;= CONCAT(#{month}, '-01')
-            AND contract_date &lt;  DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
-        </if>
-        <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
-            AND contract_date &gt;= CONCAT(#{rangeStart}, '-01')
-            AND contract_date &lt;  DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
-        </if>
-        <if test="showSavedOnly == true">
-            AND saved = 'Y'
-        </if>
-    </sql>
-
-    <sql id="shoppingMallSelect">
-        SELECT
-            '쇼핑몰'                                            AS type,
-            delivery_contract_no                                AS pk1,
-            CAST(delivery_contract_change_seq AS CHAR)         AS pk2,
-            CAST(delivery_item_seq AS CHAR)                    AS pk3,
-            vendor_name                                         AS cmpNm,
-            contract_title                                      AS cntrctNm,
-            demand_agency_name                                  AS dminsttNm,
-            demand_agency_region                                AS dminsttNmDetail,
-            detail_item_name                                    AS prdctClsfcNo,
-            contract_method                                     AS cntctCnclsMthdNm,
-            contract_no                                         AS ntceNo,
-            DATE_FORMAT(first_ref_date, '%Y-%m-%d')            AS firstCntrctDate,
-            NULL                                                AS firstCntrctAmt,
-            DATE_FORMAT(ref_date, '%Y-%m-%d')                  AS cntrctDate,
+            DATE_FORMAT(first_item_contract_date, '%Y-%m-%d')   AS firstCntrctDate,
+            first_item_contract_amount                          AS firstCntrctAmt,
+            DATE_FORMAT(contract_date, '%Y-%m-%d')              AS cntrctDate,
             supply_amount                                       AS thtmCntrctAmt,
-            NULL                                                AS cntrctCnt,
+            latest_change_seq                                   AS cntrctCnt,
             IFNULL(saved, 'N')                                  AS saved
-        FROM shopping_mall_flat
-        WHERE is_active = 'Y'
-          AND vendor_biz_reg_no IN ('1188117437', '1188119624')
+        FROM specific_item_flat
+        WHERE is_active = 'Y' AND vendor_biz_reg_no IN ('1188117437','1188119624')
+    </sql>
+
+    <sql id="marketFlatSelect">
+        SELECT
+            CASE WHEN contract_type='construction' THEN '공사' ELSE '용역' END AS type,
+            '관급'                                              AS dataOrigin,
+            contract_no                                         AS pk1,
+            ''                                                  AS pk2,
+            change_seq                                          AS pk3,
+            vendor_name                                         AS cmpNm,
+            contract_name                                       AS cntrctNm,
+            demand_agency_name                                  AS dminsttNm,
+            demand_agency_region                                AS dminsttNmDetail,
+            public_procurement_mid                              AS midCategory,
+            public_procurement_name                             AS prdctClsfcNo,
+            contract_method                                     AS cntctCnclsMthdNm,
+            bid_notice_no                                       AS ntceNo,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstCntrctDate,
+            first_contract_amount                               AS firstCntrctAmt,
+            DATE_FORMAT(contract_date, '%Y-%m-%d')              AS cntrctDate,
+            total_contract_amount                               AS thtmCntrctAmt,
+            change_seq                                          AS cntrctCnt,
+            IFNULL(saved, 'N')                                  AS saved
+        FROM market_contract_flat
+        WHERE is_active = 'Y' AND vendor_biz_reg_no IN ('1188117437','1188119624')
+    </sql>
+
+    <!-- ===== grouped 소스 (합쳐서 보기) ===== -->
+    <sql id="specificGroupedSelect">
+        SELECT
+            CASE WHEN data_type='shopping_mall' THEN '쇼핑몰' ELSE '물품' END AS type,
+            '관급'                                              AS dataOrigin,
+            group_key                                           AS pk1,
+            vendor_biz_reg_no                                   AS pk2,
+            ''                                                  AS pk3,
+            vendor_name                                         AS cmpNm,
+            contract_name                                       AS cntrctNm,
+            demand_agency_name                                  AS dminsttNm,
+            demand_agency_region                                AS dminsttNmDetail,
+            item_category_name                                  AS midCategory,
+            detail_item_name                                    AS prdctClsfcNo,
+            contract_method                                     AS cntctCnclsMthdNm,
+            ''                                                  AS ntceNo,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstCntrctDate,
+            initial_contract_amount                             AS firstCntrctAmt,
+            DATE_FORMAT(last_contract_date, '%Y-%m-%d')         AS cntrctDate,
+            total_supply_amount                                 AS thtmCntrctAmt,
+            contract_count                                      AS cntrctCnt,
+            IFNULL(saved, 'N')                                  AS saved
+        FROM specific_item_grouped
+        WHERE vendor_biz_reg_no IN ('1188117437','1188119624')
+    </sql>
+
+    <sql id="marketGroupedSelect">
+        SELECT
+            CASE WHEN contract_type='construction' THEN '공사' ELSE '용역' END AS type,
+            '관급'                                              AS dataOrigin,
+            group_key                                           AS pk1,
+            vendor_biz_reg_no                                   AS pk2,
+            ''                                                  AS pk3,
+            vendor_name                                         AS cmpNm,
+            contract_name                                       AS cntrctNm,
+            demand_agency_name                                  AS dminsttNm,
+            demand_agency_region                                AS dminsttNmDetail,
+            public_procurement_mid                              AS midCategory,
+            public_procurement_name                             AS prdctClsfcNo,
+            contract_method                                     AS cntctCnclsMthdNm,
+            ''                                                  AS ntceNo,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstCntrctDate,
+            initial_contract_amount                             AS firstCntrctAmt,
+            DATE_FORMAT(last_contract_date, '%Y-%m-%d')         AS cntrctDate,
+            total_contract_amount_sum                           AS thtmCntrctAmt,
+            contract_count                                      AS cntrctCnt,
+            IFNULL(saved, 'N')                                  AS saved
+        FROM market_contract_grouped
+        WHERE vendor_biz_reg_no IN ('1188117437','1188119624')
+    </sql>
+
+    <!-- 통합 UNION 결과에 적용하는 공통 필터 (공통 alias 기준) -->
+    <sql id="topOuterWhere">
+        WHERE 1 = 1
+        <if test="type != null and type != ''">
+            AND type = #{type}
+        </if>
+        <if test="dataOrigin != null and dataOrigin != ''">
+            AND dataOrigin = #{dataOrigin}
+        </if>
         <if test="dminsttNm != null and dminsttNm != ''">
-            AND demand_agency_name LIKE CONCAT('%', #{dminsttNm}, '%')
+            AND dminsttNm LIKE CONCAT('%', #{dminsttNm}, '%')
         </if>
         <if test="dminsttNmDetail != null and dminsttNmDetail != ''">
-            AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')
+            AND dminsttNmDetail LIKE CONCAT('%', #{dminsttNmDetail}, '%')
         </if>
-        <if test="prdctClsfcNo != null and prdctClsfcNo != ''">
-            AND detail_item_name LIKE CONCAT('%', #{prdctClsfcNo}, '%')
+        <if test="contractName != null and contractName != ''">
+            AND cntrctNm LIKE CONCAT('%', #{contractName}, '%')
+        </if>
+        <if test="categoryNames != null and categoryNames != ''">
+            AND FIND_IN_SET(prdctClsfcNo, #{categoryNames}) &gt; 0
         </if>
         <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
-            AND contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')
+            AND cntctCnclsMthdNm = #{cntctCnclsMthdNm}
+        </if>
+        <if test="firstCntrctDate != null and firstCntrctDate != ''">
+            AND firstCntrctDate = #{firstCntrctDate}
         </if>
         <if test="year != null">
-            AND ref_date &gt;= CONCAT(#{year}, '-01-01')
-            AND ref_date &lt;  DATE_ADD(CONCAT(#{year}, '-01-01'), INTERVAL 1 YEAR)
+            AND cntrctDate &gt;= CONCAT(#{year}, '-01-01')
+            AND cntrctDate &lt;  CONCAT(#{year} + 1, '-01-01')
         </if>
         <if test="month != null and month != ''">
-            AND ref_date &gt;= CONCAT(#{month}, '-01')
-            AND ref_date &lt;  DATE_ADD(CONCAT(#{month}, '-01'), INTERVAL 1 MONTH)
+            AND cntrctDate LIKE CONCAT(#{month}, '%')
         </if>
         <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">
-            AND ref_date &gt;= CONCAT(#{rangeStart}, '-01')
-            AND ref_date &lt;  DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH)
+            AND cntrctDate &gt;= CONCAT(#{rangeStart}, '-01')
+            AND cntrctDate &lt;  DATE_FORMAT(DATE_ADD(CONCAT(#{rangeEnd}, '-01'), INTERVAL 1 MONTH), '%Y-%m-%d')
         </if>
         <if test="showSavedOnly == true">
             AND saved = 'Y'
         </if>
     </sql>
 
-    <!-- ============================================================ -->
-    <!-- selectList: 페이지네이션 조회                                  -->
-    <!-- ============================================================ -->
-    <select id="selectList" resultType="map">
-        <choose>
-            <when test="type == '물품'">
-                <include refid="procurementSelect"/>
-                ORDER BY cntrctDate DESC, pk1
-                LIMIT #{start}, #{length}
-            </when>
-            <when test="type == '공사'">
-                <include refid="constructionSelect"/>
-                ORDER BY cntrctDate DESC, pk1
-                LIMIT #{start}, #{length}
-            </when>
-            <when test="type == '용역'">
-                <include refid="serviceSelect"/>
-                ORDER BY cntrctDate DESC, pk1
-                LIMIT #{start}, #{length}
-            </when>
-            <when test="type == '쇼핑몰'">
-                <include refid="shoppingMallSelect"/>
-                ORDER BY cntrctDate DESC, pk1
-                LIMIT #{start}, #{length}
-            </when>
-            <otherwise>
-                SELECT * FROM (
-                    <include refid="procurementSelect"/>
-                    UNION ALL
-                    <include refid="constructionSelect"/>
-                    UNION ALL
-                    <include refid="serviceSelect"/>
-                    UNION ALL
-                    <include refid="shoppingMallSelect"/>
-                ) AS combined
-                ORDER BY cntrctDate DESC, pk1
-                LIMIT #{start}, #{length}
-            </otherwise>
-        </choose>
+    <sql id="flatUnion">
+        <include refid="specificFlatSelect"/>
+        UNION ALL
+        <include refid="marketFlatSelect"/>
+    </sql>
+    <sql id="groupedUnion">
+        <include refid="specificGroupedSelect"/>
+        UNION ALL
+        <include refid="marketGroupedSelect"/>
+    </sql>
+
+    <!-- ===== 목록 ===== -->
+    <select id="selectFlatList" resultType="map">
+        SELECT * FROM ( <include refid="flatUnion"/> ) u
+        <include refid="topOuterWhere"/>
+        ORDER BY cntrctDate DESC, type, pk1
+        LIMIT #{start}, #{length}
+    </select>
+    <select id="selectFlatCount" resultType="int">
+        SELECT COUNT(*) FROM ( <include refid="flatUnion"/> ) u
+        <include refid="topOuterWhere"/>
+    </select>
+    <select id="selectFlatExport" fetchSize="1000" resultType="map">
+        SELECT * FROM ( <include refid="flatUnion"/> ) u
+        <include refid="topOuterWhere"/>
+        ORDER BY cntrctDate DESC, type, pk1
+    </select>
+    <select id="selectFlatTotals" resultType="map">
+        SELECT COALESCE(SUM(firstCntrctAmt),0) AS firstAmountTotal,
+               COALESCE(SUM(thtmCntrctAmt),0)  AS finalAmountTotal
+        FROM ( <include refid="flatUnion"/> ) u
+        <include refid="topOuterWhere"/>
     </select>
 
-    <!-- ============================================================ -->
-    <!-- selectCount: 전체 건수                                        -->
-    <!-- ============================================================ -->
-    <select id="selectCount" resultType="int">
-        <choose>
-            <when test="type == '물품'">
-                SELECT COUNT(*) FROM procurement_contract_flat
-                WHERE is_active = 'Y'
-                  AND vendor_biz_reg_no IN ('1188117437', '1188119624')
-                <if test="dminsttNm != null and dminsttNm != ''">AND demand_agency_name LIKE CONCAT('%', #{dminsttNm}, '%')</if>
-                <if test="dminsttNmDetail != null and dminsttNmDetail != ''">AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')</if>
-                <if test="prdctClsfcNo != null and prdctClsfcNo != ''">AND detail_item_name LIKE CONCAT('%', #{prdctClsfcNo}, '%')</if>
-                <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">AND contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')</if>
-                <if test="firstCntrctDate != null and firstCntrctDate != ''">AND first_contract_date = #{firstCntrctDate}</if>
-                <if test="year != null">AND contract_date &gt;= CONCAT(#{year},'-01-01') AND contract_date &lt; DATE_ADD(CONCAT(#{year},'-01-01'),INTERVAL 1 YEAR)</if>
-                <if test="month != null and month != ''">AND contract_date &gt;= CONCAT(#{month},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{month},'-01'),INTERVAL 1 MONTH)</if>
-                <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">AND contract_date &gt;= CONCAT(#{rangeStart},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd},'-01'),INTERVAL 1 MONTH)</if>
-                <if test="showSavedOnly == true">AND saved = 'Y'</if>
-            </when>
-            <when test="type == '공사'">
-                SELECT COUNT(*) FROM construction_contract_flat
-                WHERE is_active = 'Y'
-                  AND vendor_biz_reg_no IN ('1188117437', '1188119624')
-                <if test="dminsttNm != null and dminsttNm != ''">AND demand_agency_name LIKE CONCAT('%', #{dminsttNm}, '%')</if>
-                <if test="dminsttNmDetail != null and dminsttNmDetail != ''">AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')</if>
-                <if test="prdctClsfcNo != null and prdctClsfcNo != ''">AND public_procurement_category_name LIKE CONCAT('%', #{prdctClsfcNo}, '%')</if>
-                <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">AND bid_contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')</if>
-                <if test="firstCntrctDate != null and firstCntrctDate != ''">AND first_contract_date = #{firstCntrctDate}</if>
-                <if test="year != null">AND contract_date &gt;= CONCAT(#{year},'-01-01') AND contract_date &lt; DATE_ADD(CONCAT(#{year},'-01-01'),INTERVAL 1 YEAR)</if>
-                <if test="month != null and month != ''">AND contract_date &gt;= CONCAT(#{month},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{month},'-01'),INTERVAL 1 MONTH)</if>
-                <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">AND contract_date &gt;= CONCAT(#{rangeStart},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd},'-01'),INTERVAL 1 MONTH)</if>
-                <if test="showSavedOnly == true">AND saved = 'Y'</if>
-            </when>
-            <when test="type == '용역'">
-                SELECT COUNT(*) FROM service_contract_flat
-                WHERE is_active = 'Y'
-                  AND vendor_biz_reg_no IN ('1188117437', '1188119624')
-                <if test="dminsttNm != null and dminsttNm != ''">AND demand_agency LIKE CONCAT('%', #{dminsttNm}, '%')</if>
-                <if test="dminsttNmDetail != null and dminsttNmDetail != ''">AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')</if>
-                <if test="prdctClsfcNo != null and prdctClsfcNo != ''">AND public_procurement_category LIKE CONCAT('%', #{prdctClsfcNo}, '%')</if>
-                <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">AND contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')</if>
-                <if test="firstCntrctDate != null and firstCntrctDate != ''">AND first_contract_date = #{firstCntrctDate}</if>
-                <if test="year != null">AND contract_date &gt;= CONCAT(#{year},'-01-01') AND contract_date &lt; DATE_ADD(CONCAT(#{year},'-01-01'),INTERVAL 1 YEAR)</if>
-                <if test="month != null and month != ''">AND contract_date &gt;= CONCAT(#{month},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{month},'-01'),INTERVAL 1 MONTH)</if>
-                <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">AND contract_date &gt;= CONCAT(#{rangeStart},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd},'-01'),INTERVAL 1 MONTH)</if>
-                <if test="showSavedOnly == true">AND saved = 'Y'</if>
-            </when>
-            <when test="type == '쇼핑몰'">
-                SELECT COUNT(*) FROM shopping_mall_flat
-                WHERE is_active = 'Y'
-                  AND vendor_biz_reg_no IN ('1188117437', '1188119624')
-                <if test="dminsttNm != null and dminsttNm != ''">AND demand_agency_name LIKE CONCAT('%', #{dminsttNm}, '%')</if>
-                <if test="dminsttNmDetail != null and dminsttNmDetail != ''">AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')</if>
-                <if test="prdctClsfcNo != null and prdctClsfcNo != ''">AND detail_item_name LIKE CONCAT('%', #{prdctClsfcNo}, '%')</if>
-                <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">AND contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')</if>
-                <if test="year != null">AND ref_date &gt;= CONCAT(#{year},'-01-01') AND ref_date &lt; DATE_ADD(CONCAT(#{year},'-01-01'),INTERVAL 1 YEAR)</if>
-                <if test="month != null and month != ''">AND ref_date &gt;= CONCAT(#{month},'-01') AND ref_date &lt; DATE_ADD(CONCAT(#{month},'-01'),INTERVAL 1 MONTH)</if>
-                <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">AND ref_date &gt;= CONCAT(#{rangeStart},'-01') AND ref_date &lt; DATE_ADD(CONCAT(#{rangeEnd},'-01'),INTERVAL 1 MONTH)</if>
-                <if test="showSavedOnly == true">AND saved = 'Y'</if>
-            </when>
-            <otherwise>
-                SELECT COUNT(*) FROM (
-                    SELECT contract_no AS id FROM procurement_contract_flat
-                    WHERE is_active = 'Y' AND vendor_biz_reg_no IN ('1188117437','1188119624')
-                    <if test="dminsttNm != null and dminsttNm != ''">AND demand_agency_name LIKE CONCAT('%', #{dminsttNm}, '%')</if>
-                    <if test="dminsttNmDetail != null and dminsttNmDetail != ''">AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')</if>
-                    <if test="prdctClsfcNo != null and prdctClsfcNo != ''">AND detail_item_name LIKE CONCAT('%', #{prdctClsfcNo}, '%')</if>
-                    <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">AND contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')</if>
-                    <if test="firstCntrctDate != null and firstCntrctDate != ''">AND first_contract_date = #{firstCntrctDate}</if>
-                    <if test="year != null">AND contract_date &gt;= CONCAT(#{year},'-01-01') AND contract_date &lt; DATE_ADD(CONCAT(#{year},'-01-01'),INTERVAL 1 YEAR)</if>
-                    <if test="month != null and month != ''">AND contract_date &gt;= CONCAT(#{month},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{month},'-01'),INTERVAL 1 MONTH)</if>
-                    <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">AND contract_date &gt;= CONCAT(#{rangeStart},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd},'-01'),INTERVAL 1 MONTH)</if>
-                    <if test="showSavedOnly == true">AND saved = 'Y'</if>
-                    UNION ALL
-                    SELECT contract_no AS id FROM construction_contract_flat
-                    WHERE is_active = 'Y' AND vendor_biz_reg_no IN ('1188117437','1188119624')
-                    <if test="dminsttNm != null and dminsttNm != ''">AND demand_agency_name LIKE CONCAT('%', #{dminsttNm}, '%')</if>
-                    <if test="dminsttNmDetail != null and dminsttNmDetail != ''">AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')</if>
-                    <if test="prdctClsfcNo != null and prdctClsfcNo != ''">AND public_procurement_category_name LIKE CONCAT('%', #{prdctClsfcNo}, '%')</if>
-                    <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">AND bid_contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')</if>
-                    <if test="firstCntrctDate != null and firstCntrctDate != ''">AND first_contract_date = #{firstCntrctDate}</if>
-                    <if test="year != null">AND contract_date &gt;= CONCAT(#{year},'-01-01') AND contract_date &lt; DATE_ADD(CONCAT(#{year},'-01-01'),INTERVAL 1 YEAR)</if>
-                    <if test="month != null and month != ''">AND contract_date &gt;= CONCAT(#{month},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{month},'-01'),INTERVAL 1 MONTH)</if>
-                    <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">AND contract_date &gt;= CONCAT(#{rangeStart},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd},'-01'),INTERVAL 1 MONTH)</if>
-                    <if test="showSavedOnly == true">AND saved = 'Y'</if>
-                    UNION ALL
-                    SELECT contract_delivery_integrated_no AS id FROM service_contract_flat
-                    WHERE is_active = 'Y' AND vendor_biz_reg_no IN ('1188117437','1188119624')
-                    <if test="dminsttNm != null and dminsttNm != ''">AND demand_agency LIKE CONCAT('%', #{dminsttNm}, '%')</if>
-                    <if test="dminsttNmDetail != null and dminsttNmDetail != ''">AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')</if>
-                    <if test="prdctClsfcNo != null and prdctClsfcNo != ''">AND public_procurement_category LIKE CONCAT('%', #{prdctClsfcNo}, '%')</if>
-                    <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">AND contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')</if>
-                    <if test="firstCntrctDate != null and firstCntrctDate != ''">AND first_contract_date = #{firstCntrctDate}</if>
-                    <if test="year != null">AND contract_date &gt;= CONCAT(#{year},'-01-01') AND contract_date &lt; DATE_ADD(CONCAT(#{year},'-01-01'),INTERVAL 1 YEAR)</if>
-                    <if test="month != null and month != ''">AND contract_date &gt;= CONCAT(#{month},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{month},'-01'),INTERVAL 1 MONTH)</if>
-                    <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">AND contract_date &gt;= CONCAT(#{rangeStart},'-01') AND contract_date &lt; DATE_ADD(CONCAT(#{rangeEnd},'-01'),INTERVAL 1 MONTH)</if>
-                    <if test="showSavedOnly == true">AND saved = 'Y'</if>
-                    UNION ALL
-                    SELECT delivery_contract_no AS id FROM shopping_mall_flat
-                    WHERE is_active = 'Y' AND vendor_biz_reg_no IN ('1188117437','1188119624')
-                    <if test="dminsttNm != null and dminsttNm != ''">AND demand_agency_name LIKE CONCAT('%', #{dminsttNm}, '%')</if>
-                    <if test="dminsttNmDetail != null and dminsttNmDetail != ''">AND demand_agency_region LIKE CONCAT('%', #{dminsttNmDetail}, '%')</if>
-                    <if test="prdctClsfcNo != null and prdctClsfcNo != ''">AND detail_item_name LIKE CONCAT('%', #{prdctClsfcNo}, '%')</if>
-                    <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">AND contract_method LIKE CONCAT('%', #{cntctCnclsMthdNm}, '%')</if>
-                    <if test="year != null">AND ref_date &gt;= CONCAT(#{year},'-01-01') AND ref_date &lt; DATE_ADD(CONCAT(#{year},'-01-01'),INTERVAL 1 YEAR)</if>
-                    <if test="month != null and month != ''">AND ref_date &gt;= CONCAT(#{month},'-01') AND ref_date &lt; DATE_ADD(CONCAT(#{month},'-01'),INTERVAL 1 MONTH)</if>
-                    <if test="rangeStart != null and rangeStart != '' and rangeEnd != null and rangeEnd != ''">AND ref_date &gt;= CONCAT(#{rangeStart},'-01') AND ref_date &lt; DATE_ADD(CONCAT(#{rangeEnd},'-01'),INTERVAL 1 MONTH)</if>
-                    <if test="showSavedOnly == true">AND saved = 'Y'</if>
-                ) AS total_count
-            </otherwise>
-        </choose>
+    <select id="selectGroupedList" resultType="map">
+        SELECT * FROM ( <include refid="groupedUnion"/> ) u
+        <include refid="topOuterWhere"/>
+        ORDER BY cntrctDate DESC, type, pk1
+        LIMIT #{start}, #{length}
+    </select>
+    <select id="selectGroupedCount" resultType="int">
+        SELECT COUNT(*) FROM ( <include refid="groupedUnion"/> ) u
+        <include refid="topOuterWhere"/>
+    </select>
+    <select id="selectGroupedExport" fetchSize="1000" resultType="map">
+        SELECT * FROM ( <include refid="groupedUnion"/> ) u
+        <include refid="topOuterWhere"/>
+        ORDER BY cntrctDate DESC, type, pk1
+    </select>
+    <select id="selectGroupedTotals" resultType="map">
+        SELECT COALESCE(SUM(firstCntrctAmt),0) AS firstAmountTotal,
+               COALESCE(SUM(thtmCntrctAmt),0)  AS finalAmountTotal
+        FROM ( <include refid="groupedUnion"/> ) u
+        <include refid="topOuterWhere"/>
     </select>
 
-    <!-- ============================================================ -->
-    <!-- selectForExport: 엑셀용 스트리밍 (ResultHandler)              -->
-    <!-- ============================================================ -->
-    <select id="selectForExport" fetchSize="1000" resultType="map">
-        <choose>
-            <when test="type == '물품'">
-                <include refid="procurementSelect"/>
-                ORDER BY cntrctDate DESC, pk1
-            </when>
-            <when test="type == '공사'">
-                <include refid="constructionSelect"/>
-                ORDER BY cntrctDate DESC, pk1
-            </when>
-            <when test="type == '용역'">
-                <include refid="serviceSelect"/>
-                ORDER BY cntrctDate DESC, pk1
-            </when>
-            <when test="type == '쇼핑몰'">
-                <include refid="shoppingMallSelect"/>
-                ORDER BY cntrctDate DESC, pk1
-            </when>
-            <otherwise>
-                SELECT * FROM (
-                    <include refid="procurementSelect"/>
-                    UNION ALL
-                    <include refid="constructionSelect"/>
-                    UNION ALL
-                    <include refid="serviceSelect"/>
-                    UNION ALL
-                    <include refid="shoppingMallSelect"/>
-                ) AS combined
-                ORDER BY cntrctDate DESC, pk1
-            </otherwise>
-        </choose>
+    <!-- ===== 통합 분류 계층 (중분류 → 품명내용), 2社 실제 데이터 기준 ===== -->
+    <select id="selectCategoryHierarchy" resultType="map">
+        SELECT DISTINCT midCategory AS mid, prdctClsfcNo AS name
+        FROM ( <include refid="flatUnion"/> ) u
+        WHERE midCategory IS NOT NULL AND midCategory &lt;&gt; ''
+          AND prdctClsfcNo IS NOT NULL AND prdctClsfcNo &lt;&gt; ''
+        ORDER BY mid, name
     </select>
 
-    <!-- ============================================================ -->
-    <!-- 쇼핑몰 saved 갱신                                             -->
-    <!-- ============================================================ -->
-    <update id="updateShoppingMallSaved">
-        UPDATE shopping_mall_flat
-        SET saved = #{saved}
-        WHERE delivery_contract_no        = #{deliveryContractNo}
-          AND delivery_contract_change_seq = #{deliveryContractChangeSeq}
-          AND delivery_item_seq            = #{deliveryItemSeq}
-    </update>
+    <!-- ===== 입찰계약방법 distinct (select 옵션) ===== -->
+    <select id="selectDistinctContractMethods" resultType="string">
+        SELECT DISTINCT cntctCnclsMthdNm
+        FROM ( <include refid="flatUnion"/> ) u
+        WHERE cntctCnclsMthdNm IS NOT NULL AND cntctCnclsMthdNm &lt;&gt; ''
+        ORDER BY cntctCnclsMthdNm
+    </select>
 
 </mapper>

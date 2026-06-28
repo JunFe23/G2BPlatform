@@ -675,3 +675,20 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 배포 완료(2026-06-27): PR #38 머지(4af1d3d) → EC2 deploy → 도메인 200.
 - **Jira**: 작업 중 MCP 끊겼다가 Claude Code 재시작으로 재연결 → **G2B-48 생성(에픽 G2B-25 하위, 담당 Jun Fe) + 완료 처리** 완료. PR #37/#38·배포 내역 코멘트 기록. (G2B-48은 공사 패리티 + 본 후속 tweaks 모두 포함)
 - MCP 끊김 재발 시 점검: `/mcp` → `claude mcp list` → command 단독 실행으로 에러 확인(대개 JIRA_API_TOKEN 만료/URL).
+
+> 후속 정리(2026-06-27~29): 공사 페이지 마무리 + Jira/handoff 동기화(§24~26). MCP 재연결.
+
+---
+
+## 27. G2B-49 [티켓A] 탑 수주 현황 — 신 통합테이블 재소싱 (2026-06-29)
+
+- 티켓: G2B-49(에픽 G2B-25). 브랜치: `feature/G2B-49-top-companies-resourcing`. 결정근거 **ADR-0005**.
+- 배경: TOP 리포트가 구 4테이블(construction/service_contract_flat=V21 DROP) UNION → 깨짐. 시장데이터 페이지가 쓰는 신 테이블(specific_item_flat ∪ market_contract_flat)로 재소싱.
+- 백엔드:
+  - `TopCompaniesReportMapper.xml` 전면 재작성: specificFlat/marketFlat·specificGrouped/marketGrouped 4소스 → 공통 alias UNION 후 외부 where(2社 소량). selectFlat/Grouped List·Count·Export·Totals, selectCategoryHierarchy(통합 중→품명), selectDistinctContractMethods.
+  - `TopCompaniesReportMapper.java`/`Service`: 단일 Map 파라미터 + grouped 분기.
+  - `ReportDataController`: /top-companies(Map·grouped·totals start=0), 신설 /top-companies/filter-options(categories+contractMethods). 구 /shopping-mall/saved 제거(saved는 프론트가 specific-item/market-contracts saved 직접 호출).
+  - **V27**: market_contract_flat/grouped에 vendor_biz_reg_no 인덱스(2社 필터 최적화).
+- 프론트(`TopContractsReportView` 전면 재작성): 제목/메뉴 '탑 수주 현황', 분류 select, 통합 CategoryTreeSelect, 계약명, 입찰계약방법 select, 합쳐서/풀어서 토글, 상단 합계, saved 재배선(물품/쇼핑몰→/api/specific-item/saved, 공사/용역→market-contracts/saved), data-table 디자인·hover·스크롤 통일. 컬럼 alias는 신 매퍼와 동일(cmpNm/cntrctNm/prdctClsfcNo/firstCntrctAmt/thtmCntrctAmt/cntrctCnt).
+- 검증: compileJava PASS, npm build PASS, 로컬 SQL(물품418·쇼핑몰334·용역5·공사59=816, 합계·계층37 정상). V27 로컬 적용 후 드롭(Flyway 정식 적용).
+- 남은 일: 티켓B(민수 입력 top_manual_contract+CRUD 관리자+관급/민수 필터), 티켓C/G2B-29(시장현황 재소싱 후 procurement_contract_flat 등 정리).

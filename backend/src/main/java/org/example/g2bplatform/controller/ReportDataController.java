@@ -451,13 +451,37 @@ public class ReportDataController {
     // 탑인더스트리 & 탑정보통신 수주현황 (top-companies)
     // ================================================================
 
-    @Operation(summary = "탑 수주현황 목록", description = "탑인더스트리+탑정보통신 물품/공사/용역/쇼핑몰 통합 조회")
+    /** 탑 수주현황 공통 필터 파라미터 맵 구성 (specific_item ∪ market_contract 통합 alias 기준) */
+    private Map<String, Object> topParams(
+            String type, String dataOrigin, String dminsttNm, String dminsttNmDetail, String contractName,
+            String categoryNames, String cntctCnclsMthdNm, String firstCntrctDate,
+            Integer year, String month, String rangeStart, String rangeEnd, boolean showSavedOnly) {
+        Map<String, Object> p = new HashMap<>();
+        p.put("type", type);
+        p.put("dataOrigin", dataOrigin);
+        p.put("dminsttNm", dminsttNm);
+        p.put("dminsttNmDetail", dminsttNmDetail);
+        p.put("contractName", contractName);
+        p.put("categoryNames", categoryNames);
+        p.put("cntctCnclsMthdNm", cntctCnclsMthdNm);
+        p.put("firstCntrctDate", firstCntrctDate);
+        p.put("year", year);
+        p.put("month", month);
+        p.put("rangeStart", rangeStart);
+        p.put("rangeEnd", rangeEnd);
+        p.put("showSavedOnly", showSavedOnly);
+        return p;
+    }
+
+    @Operation(summary = "탑 수주현황 목록", description = "탑인더스트리+탑정보통신 물품/공사/용역/쇼핑몰 통합 조회(신 테이블)")
     @GetMapping("/top-companies")
     public ResponseEntity<Map<String, Object>> getTopCompanies(
-            @Parameter(description = "분류 (물품|공사|용역|쇼핑몰|빈값=전체)") @RequestParam(required = false, defaultValue = "") String type,
+            @Parameter(description = "분류 (물품|쇼핑몰|공사|용역|빈값=전체)") @RequestParam(required = false, defaultValue = "") String type,
+            @Parameter(description = "데이터구분 (관급|민수|빈값=전체)") @RequestParam(required = false, defaultValue = "") String dataOrigin,
             @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
             @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
-            @Parameter(description = "품명내용") @RequestParam(required = false) String prdctClsfcNo,
+            @Parameter(description = "계약명") @RequestParam(required = false) String contractName,
+            @Parameter(description = "공공조달분류명(품명) CSV") @RequestParam(required = false) String categoryNames,
             @Parameter(description = "입찰계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
             @Parameter(description = "최초계약일자 (YYYY-MM-DD)") @RequestParam(required = false) String firstCntrctDate,
             @Parameter(description = "연도") @RequestParam(required = false) Integer year,
@@ -465,36 +489,51 @@ public class ReportDataController {
             @Parameter(description = "기간 시작 (YYYY-MM)") @RequestParam(required = false) String rangeStart,
             @Parameter(description = "기간 종료 (YYYY-MM)") @RequestParam(required = false) String rangeEnd,
             @Parameter(description = "저장된 데이터만") @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly,
+            @Parameter(description = "합쳐서 보기") @RequestParam(required = false, defaultValue = "false") boolean grouped,
             @Parameter(description = "시작 행") @RequestParam(defaultValue = "0") int start,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "100") int length
     ) {
-        List<Map<String, Object>> list = topCompaniesReportService.getList(
-                type, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
-                firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly, start, length);
-        int filtered = topCompaniesReportService.getCount(
-                type, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
-                firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+        Map<String, Object> p = topParams(type, dataOrigin, dminsttNm, dminsttNmDetail, contractName,
+                categoryNames, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+        p.put("start", start);
+        p.put("length", length);
         Map<String, Object> body = new HashMap<>();
         body.put("success", true);
-        body.put("data", list);
-        body.put("recordsFiltered", filtered);
+        body.put("data", topCompaniesReportService.getList(p, grouped));
+        body.put("recordsFiltered", topCompaniesReportService.getCount(p, grouped));
+        if (start == 0) {
+            body.put("totals", topCompaniesReportService.getTotals(p, grouped));
+        }
+        return ResponseEntity.ok(body);
+    }
+
+    @Operation(summary = "탑 수주현황 분류 계층/입찰계약방법 옵션")
+    @GetMapping("/top-companies/filter-options")
+    public ResponseEntity<Map<String, Object>> getTopCompaniesFilterOptions() {
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("categories", topCompaniesReportService.getCategoryHierarchy());
+        body.put("contractMethods", topCompaniesReportService.getDistinctContractMethods());
         return ResponseEntity.ok(body);
     }
 
     @Operation(summary = "탑 수주현황 엑셀 다운로드")
     @GetMapping("/top-companies/excel")
     public ResponseEntity<Resource> getTopCompaniesExcel(
-            @Parameter(description = "분류 (물품|공사|용역|쇼핑몰|빈값=전체)") @RequestParam(required = false, defaultValue = "") String type,
-            @Parameter(description = "수요기관명") @RequestParam(required = false) String dminsttNm,
-            @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
-            @Parameter(description = "품명내용") @RequestParam(required = false) String prdctClsfcNo,
-            @Parameter(description = "입찰계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
-            @Parameter(description = "최초계약일자 (YYYY-MM-DD)") @RequestParam(required = false) String firstCntrctDate,
-            @Parameter(description = "연도") @RequestParam(required = false) Integer year,
-            @Parameter(description = "월 (YYYY-MM)") @RequestParam(required = false) String month,
-            @Parameter(description = "기간 시작 (YYYY-MM)") @RequestParam(required = false) String rangeStart,
-            @Parameter(description = "기간 종료 (YYYY-MM)") @RequestParam(required = false) String rangeEnd,
-            @Parameter(description = "저장된 데이터만") @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly
+            @RequestParam(required = false, defaultValue = "") String type,
+            @RequestParam(required = false, defaultValue = "") String dataOrigin,
+            @RequestParam(required = false) String dminsttNm,
+            @RequestParam(required = false) String dminsttNmDetail,
+            @RequestParam(required = false) String contractName,
+            @RequestParam(required = false) String categoryNames,
+            @RequestParam(required = false) String cntctCnclsMthdNm,
+            @RequestParam(required = false) String firstCntrctDate,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String rangeStart,
+            @RequestParam(required = false) String rangeEnd,
+            @RequestParam(required = false, defaultValue = "false") boolean showSavedOnly,
+            @RequestParam(required = false, defaultValue = "false") boolean grouped
     ) throws IOException {
         final String[] headerNames = new String[]{
                 "분류", "업체명", "계약건명", "수요기관명", "수요기관지역명",
@@ -522,9 +561,10 @@ public class ReportDataController {
                     headerRow.createCell(i).setCellValue(headerNames[i]);
                 }
                 final int[] rowNumRef = {1};
+                Map<String, Object> p = topParams(type, dataOrigin, dminsttNm, dminsttNmDetail, contractName,
+                        categoryNames, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
                 topCompaniesReportService.streamForExcel(
-                        type, dminsttNm, dminsttNmDetail, prdctClsfcNo, cntctCnclsMthdNm,
-                        firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly,
+                        p, grouped,
                         resultContext -> {
                             Map<String, Object> row = resultContext.getResultObject();
                             Row excelRow = sheet.createRow(rowNumRef[0]++);
@@ -572,38 +612,8 @@ public class ReportDataController {
         }
     }
 
-    @Operation(summary = "쇼핑몰 saved 업데이트", description = "shopping_mall_flat saved 컬럼 갱신")
-    @PatchMapping("/shopping-mall/saved")
-    public ResponseEntity<Map<String, Object>> updateShoppingMallSaved(@RequestBody Map<String, Object> body) {
-        if (body == null) {
-            Map<String, Object> err = new HashMap<>();
-            err.put("success", false);
-            err.put("message", "요청 본문이 없습니다.");
-            return ResponseEntity.badRequest().body(err);
-        }
-        String deliveryContractNo = body.get("deliveryContractNo") != null
-                ? body.get("deliveryContractNo").toString() : null;
-        Object changeSeqObj = body.get("deliveryContractChangeSeq");
-        Object itemSeqObj   = body.get("deliveryItemSeq");
-        String saved = body.get("saved") != null
-                ? ("Y".equalsIgnoreCase(body.get("saved").toString()) ? "Y" : "N") : "N";
-
-        if (deliveryContractNo == null || changeSeqObj == null || itemSeqObj == null) {
-            Map<String, Object> err = new HashMap<>();
-            err.put("success", false);
-            err.put("message", "deliveryContractNo, deliveryContractChangeSeq, deliveryItemSeq 필요");
-            return ResponseEntity.badRequest().body(err);
-        }
-        int updated = topCompaniesReportService.updateShoppingMallSaved(
-                deliveryContractNo,
-                Long.parseLong(changeSeqObj.toString()),
-                Long.parseLong(itemSeqObj.toString()),
-                saved);
-        Map<String, Object> res = new HashMap<>();
-        res.put("success", updated > 0);
-        res.put("updated", updated);
-        return ResponseEntity.ok(res);
-    }
+    // (구 /shopping-mall/saved 제거 — 탑 수주현황 saved는 프론트가 분류에 따라
+    //  /api/specific-item/saved · /api/report/market-contracts/saved 로 직접 호출. ADR-0005)
 
     // ================================================================
     // 보고서 공사 (construction_contract_flat / construction_contract_grouped)
