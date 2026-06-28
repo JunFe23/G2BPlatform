@@ -672,4 +672,6 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 조달업무영역(public_procurement_major) 컬럼/필터 제거 — 공사는 단일값('시설공사')라 무의미. grouped colspan 13→12, flat 18→17. procurementWorkArea/workAreaOptions 스크립트 정리.
 - 풀어서(flat) 컬럼 순서 변경: 최초계약일자·최초계약금액·최종계약일자·최종계약금액·착수일자·완수일자·장기여부 순(기존 일자묶음→금액묶음에서 일자+금액 페어로).
 - 백엔드 무변경. 검증: npm run build PASS.
-- ⚠️ Jira MCP 끊김 지속 — G2B-48 티켓 미생성 상태. 재연결 시 생성·정리 필요.
+- 배포 완료(2026-06-27): PR #38 머지(4af1d3d) → EC2 deploy → 도메인 200.
+- **Jira**: 작업 중 MCP 끊겼다가 Claude Code 재시작으로 재연결 → **G2B-48 생성(에픽 G2B-25 하위, 담당 Jun Fe) + 완료 처리** 완료. PR #37/#38·배포 내역 코멘트 기록. (G2B-48은 공사 패리티 + 본 후속 tweaks 모두 포함)
+- MCP 끊김 재발 시 점검: `/mcp` → `claude mcp list` → command 단독 실행으로 에러 확인(대개 JIRA_API_TOKEN 만료/URL).
