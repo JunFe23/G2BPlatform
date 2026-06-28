@@ -106,7 +106,6 @@
               <th>계약명</th>
               <th>수요기관명</th>
               <th>수요기관지역</th>
-              <th>조달업무영역</th>
               <th>계약방법</th>
               <th>최초계약일자</th>
               <th>최초계약금액(합계)</th>
@@ -119,17 +118,16 @@
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="13" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td colspan="12" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td colspan="13" class="no-data">데이터가 없습니다.</td>
+              <td colspan="12" class="no-data">데이터가 없습니다.</td>
             </tr>
             <tr v-else v-for="item in items" :key="groupedRowKey(item)">
               <td>{{ item.vendorName }}</td>
               <td>{{ item.contractTitle }}</td>
               <td>{{ item.demandAgency }}</td>
               <td>{{ item.demandAgencyRegion }}</td>
-              <td>{{ item.procurementWorkArea }}</td>
               <td>{{ item.contractMethod }}</td>
               <td>{{ item.initialContractDate }}</td>
               <td>{{ formatNumber(item.initialContractAmount) }}</td>
@@ -152,46 +150,44 @@
               <th>계약명</th>
               <th>수요기관명</th>
               <th>수요기관지역</th>
-              <th>조달업무영역</th>
               <th>계약방법</th>
               <th>계약유형</th>
               <th>입찰공고번호</th>
               <th>공공조달분류(중)</th>
               <th>공공조달분류(소)</th>
               <th>최초계약일자</th>
+              <th>최초계약금액</th>
               <th>최종계약일자</th>
+              <th>최종계약금액</th>
               <th>착수일자</th>
               <th>완수일자</th>
-              <th>최초계약금액</th>
-              <th>최종계약금액</th>
               <th>장기여부</th>
               <th>저장</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="18" class="loading-text">데이터를 불러오는 중입니다...</td>
+              <td colspan="17" class="loading-text">데이터를 불러오는 중입니다...</td>
             </tr>
             <tr v-else-if="items.length === 0">
-              <td colspan="18" class="no-data">데이터가 없습니다.</td>
+              <td colspan="17" class="no-data">데이터가 없습니다.</td>
             </tr>
             <tr v-else v-for="item in items" :key="flatRowKey(item)">
               <td>{{ item.vendorName }}</td>
               <td>{{ item.contractTitle }}</td>
               <td>{{ item.demandAgency }}</td>
               <td>{{ item.demandAgencyRegion }}</td>
-              <td>{{ item.procurementWorkArea }}</td>
               <td>{{ item.contractMethod }}</td>
               <td>{{ item.contractType }}</td>
               <td>{{ item.bidNoticeNo }}</td>
               <td>{{ item.publicProcurementCategoryMid }}</td>
               <td>{{ item.publicProcurementCategory }}</td>
               <td>{{ item.firstContractDate }}</td>
+              <td>{{ formatNumber(item.firstContractAmount) }}</td>
               <td>{{ item.finalContractDate }}</td>
+              <td>{{ formatNumber(item.finalContractAmount) }}</td>
               <td>{{ item.startDate }}</td>
               <td>{{ item.endDate }}</td>
-              <td>{{ formatNumber(item.firstContractAmount) }}</td>
-              <td>{{ formatNumber(item.finalContractAmount) }}</td>
               <td>{{ item.isLongTerm }}</td>
               <td>
                 <input type="checkbox" :checked="item.saved === 'Y'" @change="toggleSave(item)" />
@@ -251,7 +247,6 @@ const filters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
   contractName: '',
-  procurementWorkArea: '',
   cntctCnclsMthdNm: '',
   publicProcurementCategory: [],
   firstCntrctDate: '',
@@ -263,9 +258,8 @@ const filters = reactive({
   showSavedOnly: false,
 })
 
-// 입찰계약방법 / 조달업무영역 select 옵션 (서버 distinct, 최초 1회 로드)
+// 입찰계약방법 select 옵션 (서버 distinct, 최초 1회 로드)
 const contractMethodOptions = ref([])
-const workAreaOptions = ref([])
 
 const years = ['2025', '2024', '2023', '2022', '2021', '2020']
 
@@ -289,7 +283,6 @@ function buildParams(includePaging = true) {
     dminsttNm: filters.dminsttNm || undefined,
     dminsttNmDetail: filters.dminsttNmDetail || undefined,
     contractName: filters.contractName || undefined,
-    procurementWorkArea: filters.procurementWorkArea || undefined,
     cntctCnclsMthdNm: filters.cntctCnclsMthdNm || undefined,
     // 공공조달분류: 중분류는 UI 네비게이션, 실제 필터는 선택된 소분류 이름(CSV) — 백엔드 FIND_IN_SET(name)
     publicProcurementCategory: filters.publicProcurementCategory.length
@@ -421,14 +414,13 @@ function refreshCellTitles() {
 }
 watch(items, () => nextTick(refreshCellTitles))
 
-// 입찰계약방법 / 조달업무영역 select 옵션 로드 (contract_type별 distinct)
+// 입찰계약방법 select 옵션 + 공공조달분류 계층 로드 (contract_type별)
 async function loadFilterOptions() {
   try {
     const { data } = await axios.get(API_BASE + '/filter-options', {
       params: { contractType: CONTRACT_TYPE },
     })
     contractMethodOptions.value = Array.isArray(data.contractMethods) ? data.contractMethods : []
-    workAreaOptions.value = Array.isArray(data.workAreas) ? data.workAreas : []
     // 공공조달분류 계층 동적 구성: [{mid, name}] → { mid: [name, ...] } (mid/name 순서 유지)
     const map = {}
     if (Array.isArray(data.categories)) {
@@ -444,7 +436,6 @@ async function loadFilterOptions() {
   } catch (e) {
     console.error('필터 옵션 조회 실패', e)
     contractMethodOptions.value = []
-    workAreaOptions.value = []
     categoryMap.value = {}
   }
 }

@@ -661,3 +661,15 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - console.error 문구 '공사'
 - 요구 7개 매핑: #1 제목 ✓ / #2 품명내용 제거+2단 패널 ✓ / #3 입찰계약방법 select+V26 최적화(기존) ✓ / #4 계약명 ✓ / #5 flat·grouped 최초/최종(데이터 기존 적재) ✓ / #6 상단 합계 ✓ / #7 디자인 통일 ✓
 - 백엔드/마이그레이션 0건. 검증: npm run build PASS. 런타임은 배포 후 도메인 확인.
+
+> G2B-48 배포 완료(2026-06-27): PR #37 머지(3cc4b34) → EC2 deploy. 시장데이터-공사 페이지 용역 패리티. 도메인 200.
+
+---
+
+## 26. G2B-48 후속 — 공사 조달업무영역 제거 + 풀어서 컬럼 순서 (2026-06-27)
+
+- 브랜치: `feature/G2B-48-constructions-tweaks` (G2B-48 후속, 프론트 전용).
+- 조달업무영역(public_procurement_major) 컬럼/필터 제거 — 공사는 단일값('시설공사')라 무의미. grouped colspan 13→12, flat 18→17. procurementWorkArea/workAreaOptions 스크립트 정리.
+- 풀어서(flat) 컬럼 순서 변경: 최초계약일자·최초계약금액·최종계약일자·최종계약금액·착수일자·완수일자·장기여부 순(기존 일자묶음→금액묶음에서 일자+금액 페어로).
+- 백엔드 무변경. 검증: npm run build PASS.
+- ⚠️ Jira MCP 끊김 지속 — G2B-48 티켓 미생성 상태. 재연결 시 생성·정리 필요.
