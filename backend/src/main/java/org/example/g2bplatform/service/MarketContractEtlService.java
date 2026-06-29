@@ -71,14 +71,14 @@ public class MarketContractEtlService {
                 "INSERT IGNORE INTO market_contract_flat (" +
                 "  contract_type, contract_no, change_seq, is_final_contract, first_year_contract_no, is_long_term," +
                 "  vendor_name, vendor_biz_reg_no, contract_name, demand_agency_name, demand_agency_region," +
-                "  public_procurement_major, public_procurement_mid, public_procurement_name, contract_method," +
+                "  public_procurement_major, public_procurement_mid, public_procurement_name, contract_method, bid_notice_no," +
                 "  first_contract_date, contract_date, first_contract_amount, total_contract_amount, current_contract_amount," +
                 "  start_date, end_date, saved" +
                 ") SELECT" +
                 "  r.contract_type, r.contract_no, r.change_seq, r.is_final_contract, NULLIF(r.first_year_contract_no,'')," +
                 "  CASE WHEN r.new_long_term_type IN ('신규(장기)','장기','계속비') THEN 'Y' ELSE 'N' END," +
                 "  r.vendor_name, r.vendor_biz_reg_no, r.contract_name, r.demand_agency_name, r.demand_agency_region," +
-                "  r.public_procurement_major, r.public_procurement_minor, r.public_procurement_type, r.contract_method," +
+                "  r.public_procurement_major, r.public_procurement_minor, r.public_procurement_type, r.contract_method, NULLIF(r.bid_notice_no,'')," +
                 "  STR_TO_DATE(r.first_contract_date,'%Y%m%d'), STR_TO_DATE(r.contract_date,'%Y%m%d')," +
                 "  CAST(NULLIF(REPLACE(r.first_contract_amount_raw,',',''),'') AS UNSIGNED)," +
                 "  CAST(NULLIF(REPLACE(r.total_contract_amount_raw,',',''),'') AS UNSIGNED)," +

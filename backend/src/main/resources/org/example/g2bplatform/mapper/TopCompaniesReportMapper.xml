@@ -53,7 +53,7 @@
             public_procurement_mid                              AS midCategory,
             public_procurement_name                             AS prdctClsfcNo,
             contract_method                                     AS cntctCnclsMthdNm,
-            ''                                                  AS ntceNo,
+            bid_notice_no                                       AS ntceNo,
             DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstCntrctDate,
             first_contract_amount                               AS firstCntrctAmt,
             DATE_FORMAT(contract_date, '%Y-%m-%d')              AS cntrctDate,

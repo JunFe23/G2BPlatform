@@ -694,3 +694,14 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 남은 일: 티켓B(민수 입력 top_manual_contract+CRUD 관리자+관급/민수 필터), 티켓C/G2B-29(시장현황 재소싱 후 procurement_contract_flat 등 정리).
 
 > G2B-49 핫픽스(2026-06-29): 첫 배포 후 탑수주현황 500 — specific_item_flat에 없는 `latest_change_seq`→`change_seq`, market_contract_flat에 없는 `bid_notice_no`(ntceNo)→`''` 수정. 로컬 전체 projection(flat 816/grouped) 실행 검증 후 재배포.
+
+---
+
+## 28. G2B-50 — market_contract_flat 입찰공고번호 적재 (G2B-49 보완) (2026-06-29)
+
+- 티켓: G2B-50(에픽 G2B-25). 브랜치: `feature/G2B-50-market-bid-notice`. 백엔드 전용(프론트 무변경 — 입찰공고번호 컬럼은 이미 bidNoticeNo/ntceNo에 바인딩).
+- 배경: market_contract_flat에 bid_notice_no 컬럼이 없어 공사/용역·탑 화면 입찰공고번호가 항상 빈값(매퍼 NULL 하드코딩). task_member_contract_raw.bid_notice_no(varchar30) 존재 → ETL 적재.
+- 변경: V28(ALTER ADD bid_notice_no), MarketContractEtlService flat INSERT에 NULLIF(r.bid_notice_no,'') 매핑, MarketContractMapper(NULL AS bidNoticeNo → bid_notice_no), TopCompaniesReportMapper marketFlatSelect('' AS ntceNo → bid_notice_no).
+- **백필**(V28는 컬럼만 추가, 데이터는 별도 UPDATE): `UPDATE market_contract_flat f JOIN task_member_contract_raw r ON r.contract_no=f.contract_no AND r.change_seq=f.change_seq AND r.contract_type=f.contract_type SET f.bid_notice_no=NULLIF(r.bid_notice_no,'')` — raw uq(contract_no,change_seq,contract_type) 인덱스 조인이라 안전(GROUP BY temp 아님), saved 보존. 로컬 검증: 752,348행 채움.
+- 검증: 로컬 ALTER+백필+샘플 확인 후 드롭(Flyway V28 정식 적용), compileJava PASS.
+- 배포: Flyway V28(컬럼) → 운영 백필 UPDATE → 탑/공사/용역 입찰공고번호 표기.
