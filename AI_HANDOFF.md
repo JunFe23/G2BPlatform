@@ -792,3 +792,23 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
     - service `/api/report/market-contracts?contractType=service&grouped=true&start=0&length=1` → 200, `recordsFiltered=1150327`.
   - 도메인 `https://g2btop.duckdns.org/` → 200 OK.
   - `docker logs g2b-api-1`에서 `Unknown column 'bid_notice_no' in 'field list'` 재발 없음.
+
+---
+
+## 32. G2B-53 — 시장데이터·탑 수주 현황 필터 배치 및 관급/민수 구분 컬럼 (2026-06-29)
+
+- 티켓: G2B-53(에픽 G2B-25). 브랜치: `feature/G2B-53-market-top-filter-layout`.
+- 범위: 프론트 전용. 백엔드/API/DB 변경 없음.
+- 변경:
+  - `frontend/src/views/ReportConstructionsView.vue`
+    - 시장데이터-공사 검색필터에서 기간 필터(`연도 검색`/`선택`, 월, 기간)를 1줄 기본 필터에서 제거하고 2줄(`search-category-row`)로 이동.
+    - 공공조달분류와 기간 필터가 같은 2줄에서 오른쪽 정렬되도록 기존 `search-category-row` 스타일 재사용.
+  - `frontend/src/views/TopContractsReportView.vue`
+    - 탑 수주 현황 검색필터에서 기간 필터를 1줄에서 제거하고 공공조달분류와 같은 2줄로 이동.
+    - 2줄을 오른쪽 정렬(`justify-content: flex-end`)로 고정.
+    - 데이터 테이블에 `분류` 다음 `구분` 컬럼 추가. `item.dataOrigin || '관급'` 값을 표시하고, 민수는 별도 배지 색상으로 구분.
+    - 컬럼 추가에 맞춰 loading/no-data `colspan` 14→15 정정.
+- 검증:
+  - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
+  - npm 로그 파일 생성 권한 경고는 있었지만 Vite 빌드는 성공.
+- 배포 상태: 미배포. 커밋/푸시/PR/서버 배포는 사용자 승인 후 진행.
