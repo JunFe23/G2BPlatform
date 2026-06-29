@@ -710,3 +710,37 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - 결과: 전체 752,348행, 공사/용역 2社 35행 채움(나머지 수의계약 등 raw에 공고번호 없음).
   - **교훈**: 운영 대량 백필은 거대 raw 직접 조인 금지 → **소형 임시테이블 조인**([[reference-prod-rds-bulk-load]] 패턴). 운영 옵티마이저가 인덱스를 거부하면 무한정 느려짐.
 - 검증: 로컬 ALTER+백필+샘플 확인 후 드롭(Flyway V28 정식 적용), compileJava PASS. 운영 채움 752,348행·2社 샘플 확인.
+
+---
+
+## 29. 🔖 Codex 이어받기 핸드오프 (2026-06-29 기준)
+
+### A. 지금까지 완료 (master = 62b73e2 이후)
+- **탑 수주 현황(G2B-49)** = 깨졌던 TOP 리포트를 신 통합테이블로 재소싱 완료·배포. 설계근거 **ADR-0005**(반드시 읽을 것).
+  - 데이터 소스: `specific_item_flat/grouped`(물품·쇼핑몰) ∪ `market_contract_flat/grouped`(공사·용역), 2社(탑인더스트리 1188117437 / 탑정보통신 1188119624) 필터.
+  - 백엔드: `TopCompaniesReportMapper.xml`(공통 alias UNION→외부 where, flat/grouped·totals·통합 분류계층·입찰계약방법 distinct), `TopCompaniesReportMapper.java`/`TopCompaniesReportService`(단일 Map 파라미터+grouped), `ReportDataController` `/api/report/top-companies`(totals)·`/top-companies/filter-options`. 구 `/shopping-mall/saved` 제거(저장은 프론트가 `/api/specific-item/saved`·`/api/report/market-contracts/saved` 직접 호출).
+  - 프론트: `TopContractsReportView.vue` 전면 재작성(제목/메뉴 '탑 수주 현황', 분류 select, **통합 CategoryTreeSelect**(물품 item_category→detail_item을 중→소로 + 공사/용역 mid→name 합본), 계약명, 입찰계약방법 select, 합쳐서/풀어서, 상단 합계, saved 재배선, 디자인 통일).
+  - 인덱스 V27(market vendor), V28(market `bid_notice_no` 컬럼).
+- **입찰공고번호(G2B-50)** = `market_contract_flat.bid_notice_no` 추가·ETL·매퍼 반영 + 운영 백필 752,348행 완료(§28). 공사/용역·탑 화면 입찰공고번호 표기됨.
+
+### B. 운영 인프라 현황 (중요)
+- 사용자가 RDS를 **db.t4g.micro + gp3 로 변경 중**(2026-06-29). 
+  - gp3 = IOPS 3000 고정(I/O 병목 해소). 단 **micro는 RAM 1GB(버퍼풀 ~27MB)·버스터블 CPU**라 대량 in-DB 연산은 여전히 위험.
+  - ⚠️ **운영 대량 작업 원칙(§8-2, §28, [[reference-prod-rds-bulk-load]])**: (1) market_contract ETL 같은 GROUP BY/INSERT...SELECT를 운영 DB에서 직접 돌리지 말 것(micro에서 크래시/초장시간). (2) 백필은 **로컬 계산 → 임시테이블/덤프 → EC2 경유 벌크 적재**. raw(11.7M) 직접 조인 UPDATE 금지(옵티마이저가 풀스캔 드라이빙해 무한정 느려짐 — §28 사례).
+- 배포 절차(변경 없음): `ssh -i ~/Desktop/G2B/ssh/g2b_prod.pem ubuntu@3.37.169.101` → `cd ~/g2b && git fetch && git merge origin/master && docker compose build && docker compose up -d`. Flyway는 api 기동 시 자동. 배포 전 `deploy/g2b.conf`(서버 로컬수정) 머지 대상 아닌지 확인.
+
+### C. 다음 작업 (순서)
+1. **티켓 B — 민수 데이터 입력** (ADR-0005의 민수 설계)
+   - 신규 테이블 `top_manual_contract`(Flyway V29): 컬럼 = 분류(물품/공사/용역), vendor_biz_reg_no(2社), + 통합컬럼(업체명·계약건명·수요기관명·지역·품명내용·입찰계약방법·입찰공고번호·최초계약일자/금액·최종계약일자/금액·계약변경차수), data_origin='민수', created_at/updated_at.
+   - CRUD API `POST/PUT/DELETE /api/report/top-companies/manual` — **ROLE_ADMIN 전용**(권한 체크).
+   - `TopCompaniesReportMapper`의 flat UNION에 민수 소스 추가(dataOrigin='민수'). grouped는 민수 미포함(또는 단건=그대로) — 단순화: 민수는 flat에만, 합쳐서보기엔 관급만 또는 동일 표기(결정 필요).
+   - 프론트 `TopContractsReportView`: **관급/민수 필터**(현재 dataOrigin 파라미터·alias는 이미 백엔드에 있음 — `topOuterWhere`의 `dataOrigin` if, 소스에 dataOrigin='관급'), 민수 입력 폼(분류 선택→#3 컬럼 입력, 관리자만 노출).
+   - 민수는 현재 이 페이지에서만(대시보드 미반영).
+2. **티켓 C / G2B-29 — 구 테이블 정리** (선행: 시장현황 대시보드 재소싱)
+   - `ProcurementContractSummaryMapper`(→`ReportDataService` 시장현황 대시보드)가 아직 `procurement_contract_flat`·드롭된 construction/service_contract_flat 참조 → **시장현황도 신 테이블로 재소싱 필요**(TOP과 동일 패턴). 이게 끝나야 구 테이블 드롭 가능.
+   - 그 후 `procurement_contract_flat`·`shopping_mall_flat`·`ProcurementContractMapper`·구 saved 엔드포인트(`/procurements,/constructions,/services,/shopping-mall/saved`) 제거.
+3. (인프라) G2B-30 — RDS 적정 스펙 최종 결정. 현재 micro+gp3 전환 중. 근무시간만 사용 패턴이면 스케줄 기동 검토.
+
+### D. 작업 규칙 리마인더 (메모리 반영됨)
+- 작업 단위 Jira 티켓 먼저 생성(담당 Jun Fe, 에픽 G2B-25), 진행 중 전환. 설계 결정 시 **docs/adr 갱신**. 종료 시 **AI_HANDOFF.md 갱신**. 커밋·푸시·PR·배포는 사용자 승인 후. 커밋 전 비밀값 스캔 + `git show --stat`로 의도 파일 포함 확인. `.codex/config.toml`엔 Jira 토큰 평문 → 절대 커밋 금지(.gitignore 등록됨).
+- 컬럼 projection/매퍼 변경 시 **부분 아닌 전체 쿼리를 실제 DB로 실행 검증**(§27 latest_change_seq/bid_notice_no 누락 사례).
