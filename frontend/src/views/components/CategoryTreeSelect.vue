@@ -30,18 +30,22 @@
           />
           <strong>{{ activeMid }} 전체선택</strong>
         </label>
-        <label v-for="name in subsOf(activeMid)" :key="name" class="cts-sub">
-          <input type="checkbox" :checked="isSelected(name)" @change="toggleName(name)" />
-          <span>{{ name }}</span>
+        <label v-for="option in optionsOf(activeMid)" :key="optionValue(option)" class="cts-sub">
+          <input
+            type="checkbox"
+            :checked="isSelected(optionValue(option))"
+            @change="toggleName(optionValue(option))"
+          />
+          <span>{{ optionLabel(option) }}</span>
         </label>
       </div>
     </div>
 
     <!-- 선택 요약 칩 -->
     <div v-if="modelValue.length > 0" class="cts-chips">
-      <span v-for="name in modelValue" :key="name" class="cts-chip">
-        <span class="cts-chip-label">{{ name }}</span>
-        <button type="button" class="cts-chip-x" @click="toggleName(name)" aria-label="제거">×</button>
+      <span v-for="value in modelValue" :key="value" class="cts-chip">
+        <span class="cts-chip-label">{{ selectedLabel(value) }}</span>
+        <button type="button" class="cts-chip-x" @click="toggleName(value)" aria-label="제거">×</button>
       </span>
     </div>
   </div>
@@ -51,9 +55,9 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
-  // { 중분류: [소분류, ...] }
+  // { 중분류: [소분류, ...] } 또는 { 중분류: [{ value, label }, ...] }
   categoryMap: { type: Object, default: () => ({}) },
-  // 선택된 소분류 이름 배열
+  // 선택된 소분류 값 배열
   modelValue: { type: Array, default: () => [] },
   placeholder: { type: String, default: '공공조달분류 선택' },
 })
@@ -74,33 +78,49 @@ watch(
   { immediate: true },
 )
 
-function subsOf(mid) {
+function optionsOf(mid) {
   return props.categoryMap[mid] || []
 }
-function isSelected(name) {
-  return props.modelValue.includes(name)
+function optionValue(option) {
+  return typeof option === 'string' ? option : option.value
+}
+function optionLabel(option) {
+  return typeof option === 'string' ? option : option.label
+}
+const labelByValue = computed(() => {
+  const map = new Map()
+  Object.values(props.categoryMap).forEach((options) => {
+    options.forEach((option) => map.set(optionValue(option), optionLabel(option)))
+  })
+  return map
+})
+function selectedLabel(value) {
+  return labelByValue.value.get(value) || value
+}
+function isSelected(value) {
+  return props.modelValue.includes(value)
 }
 function midSelectedCount(mid) {
-  return subsOf(mid).filter((n) => isSelected(n)).length
+  return optionsOf(mid).filter((option) => isSelected(optionValue(option))).length
 }
 function isAllSelected(mid) {
-  const s = subsOf(mid)
-  return s.length > 0 && s.every((n) => isSelected(n))
+  const values = optionsOf(mid).map(optionValue)
+  return values.length > 0 && values.every((value) => isSelected(value))
 }
-function toggleName(name) {
-  if (isSelected(name)) {
-    emit('update:modelValue', props.modelValue.filter((n) => n !== name))
+function toggleName(value) {
+  if (isSelected(value)) {
+    emit('update:modelValue', props.modelValue.filter((n) => n !== value))
   } else {
-    emit('update:modelValue', [...props.modelValue, name])
+    emit('update:modelValue', [...props.modelValue, value])
   }
 }
 function toggleAll(mid) {
-  const s = subsOf(mid)
+  const values = optionsOf(mid).map(optionValue)
   if (isAllSelected(mid)) {
-    emit('update:modelValue', props.modelValue.filter((n) => !s.includes(n)))
+    emit('update:modelValue', props.modelValue.filter((n) => !values.includes(n)))
   } else {
     const set = new Set(props.modelValue)
-    s.forEach((n) => set.add(n))
+    values.forEach((value) => set.add(value))
     emit('update:modelValue', [...set])
   }
 }

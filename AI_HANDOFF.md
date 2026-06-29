@@ -818,3 +818,48 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - `https://g2btop.duckdns.org/` → 200 OK.
   - 운영 web 컨테이너 정적 번들에 `origin-badge`, `구분`, `공공조달분류` 반영 확인.
   - 서버 로컬수정 `deploy/g2b.conf` 보존 확인(`client_max_body_size 500M` 유지).
+
+---
+
+## 33. G2B-54 — 시장데이터·탑 수주 현황 필터 4줄 통일 및 탑 분류 복합키 구분 (2026-06-29)
+
+- 티켓: G2B-54(에픽 G2B-25). 브랜치: `feature/G2B-54-unified-filter-layout-category-key`.
+- 상태: 구현 및 로컬 빌드 검증 완료. **커밋/푸시/PR/배포는 아직 안 함**(사용자 명시 요청 대기).
+- 요구:
+  - 시장데이터-물품/용역/공사, 탑 수주 현황 검색필터를 공통 4줄 양식으로 통일:
+    1. 기본필터
+    2. 연도/월/기간 검색
+    3. 공공조달분류
+    4. 저장/장기계약/검색/엑셀
+  - 탑 수주 현황의 공공조달분류는 물품/쇼핑몰/공사/용역이 섞여도 구분되도록 더 안전한 방식 적용.
+  - 탑 수주 현황 데이터테이블의 `분류` 컬럼도 배지 색상으로 표시. `물품`/`쇼핑몰`은 시장데이터-물품 페이지의 구분 배지 색상과 동일하게 사용.
+- 변경:
+  - `frontend/src/views/ReportSpecificItemView.vue`
+    - 기존 한 줄에 섞여 있던 계약명/분류/기간 필터를 4줄 구조로 재배치.
+    - 2줄 기간 필터를 우측 정렬, 3줄 물품분류 row에 라벨/구분선을 추가.
+  - `frontend/src/views/ReportServicesView.vue`, `frontend/src/views/ReportConstructionsView.vue`
+    - 기간 필터를 독립 2줄로 분리하고 공공조달분류를 3줄로 고정.
+    - 액션 row 주석/구조를 4줄 양식에 맞춰 정리.
+  - `frontend/src/views/TopContractsReportView.vue`
+    - 기간 필터 2줄, 공공조달분류 3줄, 액션 4줄로 분리.
+    - `filters.categoryNames` 대신 `filters.categoryKeys`를 사용.
+    - 분류 옵션 중분류 라벨을 `[물품]`, `[쇼핑몰]`, `[공사]`, `[용역]` prefix로 구분.
+    - 테이블 `분류` 컬럼을 `type-badge`로 표시. 색상: 물품 `#dbeafe/#1d4ed8`, 쇼핑몰 `#dcfce7/#15803d`, 공사 `#ede9fe/#6d28d9`, 용역 `#ffedd5/#c2410c`.
+  - `frontend/src/views/components/CategoryTreeSelect.vue`
+    - 기존 `{ 중분류: [문자열] }` 형태와 신규 `{ 중분류: [{ value, label }] }` 형태를 모두 지원.
+    - 칩 표시에는 label을 쓰고 실제 선택/전송값은 value를 쓰도록 개선. 기존 시장데이터 공사/용역 문자열 방식과 호환 유지.
+  - `backend/src/main/java/org/example/g2bplatform/controller/ReportDataController.java`
+    - `/api/report/top-companies`, `/api/report/top-companies/excel`에 `categoryKeys` 파라미터 추가.
+    - 기존 `categoryNames`는 fallback 호환용으로 유지.
+  - `backend/src/main/resources/org/example/g2bplatform/mapper/TopCompaniesReportMapper.xml`
+    - `selectCategoryHierarchy`가 `type`, `mid`, `name`, `categoryKey`를 반환하도록 변경.
+    - `categoryKey = MD5(CONCAT(type, '\t', prdctClsfcNo))`.
+    - 조회 필터는 `categoryKeys`가 있으면 `MD5(type+품명)`으로 필터하고, 없을 때만 기존 `categoryNames`로 fallback.
+    - 이름이 같거나 comma가 포함된 분류명도 안전하게 처리하기 위한 복합키 방식.
+- 검증:
+  - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew compileJava` PASS.
+  - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
+  - npm 로그 파일 생성 권한 경고(`~/.npm/_logs` EPERM)와 Vite chunk size 경고는 있었지만 빌드 성공.
+- 남은 일:
+  - 사용자 승인 시 커밋/푸시/PR 생성.
+  - 배포 요청 시 PR 머지 후 서버 배포 및 운영 화면 확인.

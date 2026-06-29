@@ -456,7 +456,7 @@ public class ReportDataController {
     /** 탑 수주현황 공통 필터 파라미터 맵 구성 (specific_item ∪ market_contract 통합 alias 기준) */
     private Map<String, Object> topParams(
             String type, String dataOrigin, String dminsttNm, String dminsttNmDetail, String contractName,
-            String categoryNames, String cntctCnclsMthdNm, String firstCntrctDate,
+            String categoryNames, String categoryKeys, String cntctCnclsMthdNm, String firstCntrctDate,
             Integer year, String month, String rangeStart, String rangeEnd, boolean showSavedOnly) {
         Map<String, Object> p = new HashMap<>();
         p.put("type", type);
@@ -465,6 +465,7 @@ public class ReportDataController {
         p.put("dminsttNmDetail", dminsttNmDetail);
         p.put("contractName", contractName);
         p.put("categoryNames", categoryNames);
+        p.put("categoryKeys", categoryKeys);
         p.put("cntctCnclsMthdNm", cntctCnclsMthdNm);
         p.put("firstCntrctDate", firstCntrctDate);
         p.put("year", year);
@@ -484,6 +485,7 @@ public class ReportDataController {
             @Parameter(description = "수요기관지역명") @RequestParam(required = false) String dminsttNmDetail,
             @Parameter(description = "계약명") @RequestParam(required = false) String contractName,
             @Parameter(description = "공공조달분류명(품명) CSV") @RequestParam(required = false) String categoryNames,
+            @Parameter(description = "공공조달분류 복합키 CSV") @RequestParam(required = false) String categoryKeys,
             @Parameter(description = "입찰계약방법") @RequestParam(required = false) String cntctCnclsMthdNm,
             @Parameter(description = "최초계약일자 (YYYY-MM-DD)") @RequestParam(required = false) String firstCntrctDate,
             @Parameter(description = "연도") @RequestParam(required = false) Integer year,
@@ -496,7 +498,7 @@ public class ReportDataController {
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "100") int length
     ) {
         Map<String, Object> p = topParams(type, dataOrigin, dminsttNm, dminsttNmDetail, contractName,
-                categoryNames, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+                categoryNames, categoryKeys, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
         p.put("start", start);
         p.put("length", length);
         Map<String, Object> body = new HashMap<>();
@@ -570,6 +572,7 @@ public class ReportDataController {
             @RequestParam(required = false) String dminsttNmDetail,
             @RequestParam(required = false) String contractName,
             @RequestParam(required = false) String categoryNames,
+            @RequestParam(required = false) String categoryKeys,
             @RequestParam(required = false) String cntctCnclsMthdNm,
             @RequestParam(required = false) String firstCntrctDate,
             @RequestParam(required = false) Integer year,
@@ -606,7 +609,7 @@ public class ReportDataController {
                 }
                 final int[] rowNumRef = {1};
                 Map<String, Object> p = topParams(type, dataOrigin, dminsttNm, dminsttNmDetail, contractName,
-                        categoryNames, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
+                        categoryNames, categoryKeys, cntctCnclsMthdNm, firstCntrctDate, year, month, rangeStart, rangeEnd, showSavedOnly);
                 topCompaniesReportService.streamForExcel(
                         p, grouped,
                         resultContext -> {

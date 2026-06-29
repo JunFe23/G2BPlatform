@@ -4,6 +4,7 @@
 
     <!-- 검색 필드 -->
     <div class="search-container">
+      <!-- 1줄: 기본 필터 -->
       <div class="search-filter-row">
         <!-- 데이터 구분 -->
         <select v-model="filters.dataType" class="date-select">
@@ -22,6 +23,33 @@
 
         <input type="text" v-model="filters.demandAgencyName" placeholder="수요기관명 검색" />
         <input type="text" v-model="filters.demandAgencyRegion" placeholder="수요기관지역 검색" />
+        <input type="text" v-model="filters.contractName" placeholder="계약명 검색" />
+      </div>
+
+      <!-- 2줄: 기간 필터 -->
+      <div class="search-filter-row search-date-row">
+        <select v-model="filters.dateType" class="date-select">
+          <option value="year">연도 검색</option>
+          <option value="month">특정 월 검색</option>
+          <option value="range">기간 검색</option>
+        </select>
+
+        <select v-if="filters.dateType === 'year'" v-model="filters.year" class="date-select">
+          <option value="">연도 선택</option>
+          <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+        </select>
+
+        <input v-if="filters.dateType === 'month'" type="month" v-model="filters.month" />
+
+        <template v-if="filters.dateType === 'range'">
+          <input type="month" v-model="filters.rangeStart" placeholder="시작월" />
+          <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
+        </template>
+      </div>
+
+      <!-- 3줄: 공공조달분류 필터 -->
+      <div class="search-filter-row search-category-row">
+        <span class="category-row-label">물품분류</span>
         <div class="category-combobox">
           <div class="category-input-wrap">
             <input
@@ -58,27 +86,9 @@
             </span>
           </div>
         </div>
-        <input type="text" v-model="filters.contractName" placeholder="계약명 검색" />
-
-        <select v-model="filters.dateType" class="date-select">
-          <option value="year">연도 검색</option>
-          <option value="month">특정 월 검색</option>
-          <option value="range">기간 검색</option>
-        </select>
-
-        <select v-if="filters.dateType === 'year'" v-model="filters.year" class="date-select">
-          <option value="">연도 선택</option>
-          <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
-        </select>
-
-        <input v-if="filters.dateType === 'month'" type="month" v-model="filters.month" />
-
-        <template v-if="filters.dateType === 'range'">
-          <input type="month" v-model="filters.rangeStart" placeholder="시작월" />
-          <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
-        </template>
       </div>
 
+      <!-- 4줄: 저장/장기계약/검색/엑셀 -->
       <div class="search-actions-row">
         <label class="checkbox-label">
           <input type="checkbox" v-model="filters.showSavedOnly" />
@@ -603,6 +613,22 @@ onUnmounted(() => {
 .search-filter-row select,
 .search-filter-row input[type='month'] {
   min-width: 100px;
+}
+.search-date-row {
+  align-items: center;
+  justify-content: flex-end;
+}
+.search-category-row {
+  align-items: flex-start;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+}
+.category-row-label {
+  font-size: 0.875em;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+  align-self: center;
 }
 .category-combobox {
   min-width: 180px;

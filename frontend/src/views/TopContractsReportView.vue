@@ -27,7 +27,8 @@
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
       </div>
 
-      <div class="search-filter-row search-category-row">
+      <!-- 2줄: 기간 필터 -->
+      <div class="search-filter-row search-date-row">
         <select v-model="filters.dateType" class="date-select">
           <option value="year">연도 검색</option>
           <option value="month">특정 월 검색</option>
@@ -42,14 +43,19 @@
           <input type="month" v-model="filters.rangeStart" placeholder="시작월" />
           <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
         </template>
+      </div>
+
+      <!-- 3줄: 공공조달분류 필터 -->
+      <div class="search-filter-row search-category-row">
         <span class="category-row-label">공공조달분류</span>
         <CategoryTreeSelect
-          v-model="filters.categoryNames"
+          v-model="filters.categoryKeys"
           :category-map="categoryMap"
           placeholder="공공조달분류 선택"
         />
       </div>
 
+      <!-- 4줄: 저장/장기계약/검색/엑셀 -->
       <div class="search-actions-row">
         <label class="checkbox-label">
           <input type="checkbox" v-model="filters.showSavedOnly" />
@@ -189,7 +195,9 @@
             <tr v-if="isLoading"><td colspan="15" class="loading-text">데이터를 불러오는 중입니다...</td></tr>
             <tr v-else-if="items.length === 0"><td colspan="15" class="no-data">데이터가 없습니다.</td></tr>
             <tr v-else v-for="item in items" :key="rowKey(item)">
-              <td>{{ item.type }}</td>
+              <td>
+                <span class="type-badge" :class="typeBadgeClass(item.type)">{{ item.type }}</span>
+              </td>
               <td>
                 <span class="origin-badge" :class="{ manual: (item.dataOrigin || '관급') === '민수' }">
                   {{ item.dataOrigin || '관급' }}
@@ -262,7 +270,7 @@ const filters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
   contractName: '',
-  categoryNames: [],
+  categoryKeys: [],
   cntctCnclsMthdNm: '',
   firstCntrctDate: '',
   dateType: 'year',
@@ -273,7 +281,7 @@ const filters = reactive({
   showSavedOnly: false,
 })
 
-let applied = { ...filters, categoryNames: [] }
+let applied = { ...filters, categoryKeys: [] }
 
 const totalPages = computed(() => Math.ceil(recordsFiltered.value / PAGE_SIZE) || 1)
 const startDisplay = computed(() => (recordsFiltered.value === 0 ? 0 : (currentPage.value - 1) * PAGE_SIZE + 1))
@@ -290,6 +298,13 @@ function rowKey(item) {
   return [item.type, item.pk1, item.pk2, item.pk3].join('_')
 }
 
+function typeBadgeClass(type) {
+  if (type === '쇼핑몰') return 'badge-shopping'
+  if (type === '공사') return 'badge-construction'
+  if (type === '용역') return 'badge-service'
+  return 'badge-general'
+}
+
 function buildParams(page) {
   const f = applied
   const p = {
@@ -299,7 +314,7 @@ function buildParams(page) {
     dminsttNm: f.dminsttNm || undefined,
     dminsttNmDetail: f.dminsttNmDetail || undefined,
     contractName: f.contractName || undefined,
-    categoryNames: f.categoryNames && f.categoryNames.length ? f.categoryNames.join(',') : undefined,
+    categoryKeys: f.categoryKeys && f.categoryKeys.length ? f.categoryKeys.join(',') : undefined,
     cntctCnclsMthdNm: f.cntctCnclsMthdNm || undefined,
     firstCntrctDate: f.firstCntrctDate || undefined,
     showSavedOnly: f.showSavedOnly,
@@ -336,7 +351,7 @@ async function fetchPage(page) {
 }
 
 function handleSearch() {
-  applied = { ...filters, categoryNames: [...filters.categoryNames] }
+  applied = { ...filters, categoryKeys: [...filters.categoryKeys] }
   fetchPage(1)
 }
 
@@ -427,9 +442,12 @@ async function loadFilterOptions() {
     const map = {}
     if (Array.isArray(data.categories)) {
       for (const row of data.categories) {
-        if (!row.mid || !row.name) continue
-        if (!map[row.mid]) map[row.mid] = []
-        if (!map[row.mid].includes(row.name)) map[row.mid].push(row.name)
+        if (!row.type || !row.mid || !row.name || !row.categoryKey) continue
+        const midLabel = `[${row.type}] ${row.mid}`
+        if (!map[midLabel]) map[midLabel] = []
+        if (!map[midLabel].some((option) => option.value === row.categoryKey)) {
+          map[midLabel].push({ value: row.categoryKey, label: row.name })
+        }
       }
     }
     categoryMap.value = map
@@ -599,6 +617,9 @@ onMounted(() => {
   color: #2c3e50;
   min-width: 120px;
   box-sizing: border-box;
+}
+.search-date-row {
+  justify-content: flex-end;
 }
 .search-category-row {
   padding-top: 8px;
@@ -790,6 +811,33 @@ onMounted(() => {
 .origin-badge.manual {
   background: #fef3c7;
   color: #92400e;
+}
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-general {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.badge-shopping {
+  background: #dcfce7;
+  color: #15803d;
+}
+.badge-construction {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+.badge-service {
+  background: #ffedd5;
+  color: #c2410c;
 }
 .loading-text,
 .no-data {

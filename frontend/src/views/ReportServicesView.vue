@@ -18,7 +18,10 @@
           <option v-for="m in contractMethodOptions" :key="m" :value="m">{{ m }}</option>
         </select>
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
+      </div>
 
+      <!-- 2줄: 기간 필터 -->
+      <div class="search-filter-row search-date-row">
         <select v-model="filters.dateType" class="date-select">
           <option value="year">연도 검색</option>
           <option value="month">특정 월 검색</option>
@@ -38,7 +41,7 @@
         </template>
       </div>
 
-      <!-- 2줄: 공공조달분류 중분류 / 소분류 필터 -->
+      <!-- 3줄: 공공조달분류 중분류 / 소분류 필터 -->
       <div class="search-filter-row search-category-row">
         <span class="category-row-label">공공조달분류</span>
         <CategoryTreeSelect
@@ -48,7 +51,7 @@
         />
       </div>
 
-      <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 -->
+      <!-- 4줄: 저장/장기계약/검색/엑셀 -->
       <div class="search-actions-row">
         <label class="checkbox-label">
           <input type="checkbox" v-model="filters.showSavedOnly" />
@@ -488,6 +491,9 @@ onMounted(() => {
 .search-filter-row select,
 .search-filter-row input[type='month'] {
   min-width: 100px;
+}
+.search-date-row {
+  justify-content: flex-end;
 }
 .search-category-row {
   padding-top: 8px;
