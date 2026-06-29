@@ -824,7 +824,7 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 ## 33. G2B-54 — 시장데이터·탑 수주 현황 필터 4줄 통일 및 탑 분류 복합키 구분 (2026-06-29)
 
 - 티켓: G2B-54(에픽 G2B-25). 브랜치: `feature/G2B-54-unified-filter-layout-category-key`.
-- 상태: 구현 및 로컬 빌드 검증 완료. **커밋/푸시/PR/배포는 아직 안 함**(사용자 명시 요청 대기).
+- 상태: **배포 완료**. PR #51 머지 후 운영 서버 Docker 재빌드/재기동 완료.
 - 요구:
   - 시장데이터-물품/용역/공사, 탑 수주 현황 검색필터를 공통 4줄 양식으로 통일:
     1. 기본필터
@@ -860,6 +860,15 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew compileJava` PASS.
   - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
   - npm 로그 파일 생성 권한 경고(`~/.npm/_logs` EPERM)와 Vite chunk size 경고는 있었지만 빌드 성공.
-- 남은 일:
-  - 사용자 승인 시 커밋/푸시/PR 생성.
-  - 배포 요청 시 PR 머지 후 서버 배포 및 운영 화면 확인.
+- 배포 완료(2026-06-29):
+  - 커밋: `09406cc` (`G2B-54 feat: 필터 4줄 통일과 탑 분류 복합키 적용`).
+  - PR #51 머지: master merge commit `36123f2`.
+  - 서버 `~/g2b`에서 `git fetch && git merge origin/master && docker compose build && docker compose up -d` 실행 완료.
+  - 서버 로컬수정 `deploy/g2b.conf` 보존 확인(`git status --short deploy/g2b.conf` = `M deploy/g2b.conf`).
+  - Docker build 성공: web `npm run build` PASS, api `gradle build -x test --no-daemon` BUILD SUCCESSFUL.
+  - `g2b-api-1`/`g2b-web-1` 재기동 완료.
+  - 운영 웹 `https://g2btop.duckdns.org/` 200 OK, 신규 번들 `index-Pg0qn_uS.js`/`index-Cor6KwcP.css` 응답 확인.
+  - 운영 API 보호 경로 확인:
+    - `/api/report/top-companies?grouped=true&start=0&length=1` → 401(인증 전 라우팅 정상, 500 아님).
+    - `/api/report/top-companies/filter-options` → 401(인증 전 라우팅 정상, 500 아님).
+  - API 로그: Spring Boot 정상 기동, Flyway schema version 29 / 신규 migration 없음, 배포 직후 SQL 에러 없음.
