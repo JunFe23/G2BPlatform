@@ -811,4 +811,10 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 검증:
   - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
   - npm 로그 파일 생성 권한 경고는 있었지만 Vite 빌드는 성공.
-- 배포 상태: 미배포. 커밋/푸시/PR/서버 배포는 사용자 승인 후 진행.
+- 배포 완료(2026-06-29):
+  - PR #49 머지(`6dfeacd`) 후 서버 `cd ~/g2b && git fetch && git merge origin/master && docker compose build && docker compose up -d` 실행 완료.
+  - Docker build 성공: api는 캐시 사용, web은 `npm run build` 재실행 성공.
+  - `g2b-api-1`/`g2b-web-1` 재기동 완료, Flyway schema version 29(신규 migration 없음).
+  - `https://g2btop.duckdns.org/` → 200 OK.
+  - 운영 web 컨테이너 정적 번들에 `origin-badge`, `구분`, `공공조달분류` 반영 확인.
+  - 서버 로컬수정 `deploy/g2b.conf` 보존 확인(`client_max_body_size 500M` 유지).
