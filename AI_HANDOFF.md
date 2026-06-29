@@ -713,15 +713,19 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 
 ---
 
-## 29. 🔖 Codex 이어받기 핸드오프 (2026-06-29 기준)
+## 29. 🔖 Codex 이어받기 핸드오프 (2026-06-29 갱신 — G2B-51 배포 후 기준)
 
-### A. 지금까지 완료 (master = 62b73e2 이후)
+> **현재 master = `52a0ffa`** (PR #45 머지). 탑 수주 현황(티켓 A·B) + 입찰공고번호까지 **운영 배포 완료**. 다음 작업은 아래 **C-1 = 티켓 C / G2B-29**(시장현황 대시보드 재소싱)부터.
+
+### A. 지금까지 완료 (master = 52a0ffa)
 - **탑 수주 현황(G2B-49)** = 깨졌던 TOP 리포트를 신 통합테이블로 재소싱 완료·배포. 설계근거 **ADR-0005**(반드시 읽을 것).
   - 데이터 소스: `specific_item_flat/grouped`(물품·쇼핑몰) ∪ `market_contract_flat/grouped`(공사·용역), 2社(탑인더스트리 1188117437 / 탑정보통신 1188119624) 필터.
   - 백엔드: `TopCompaniesReportMapper.xml`(공통 alias UNION→외부 where, flat/grouped·totals·통합 분류계층·입찰계약방법 distinct), `TopCompaniesReportMapper.java`/`TopCompaniesReportService`(단일 Map 파라미터+grouped), `ReportDataController` `/api/report/top-companies`(totals)·`/top-companies/filter-options`. 구 `/shopping-mall/saved` 제거(저장은 프론트가 `/api/specific-item/saved`·`/api/report/market-contracts/saved` 직접 호출).
   - 프론트: `TopContractsReportView.vue` 전면 재작성(제목/메뉴 '탑 수주 현황', 분류 select, **통합 CategoryTreeSelect**(물품 item_category→detail_item을 중→소로 + 공사/용역 mid→name 합본), 계약명, 입찰계약방법 select, 합쳐서/풀어서, 상단 합계, saved 재배선, 디자인 통일).
   - 인덱스 V27(market vendor), V28(market `bid_notice_no` 컬럼).
 - **입찰공고번호(G2B-50)** = `market_contract_flat.bid_notice_no` 추가·ETL·매퍼 반영 + 운영 백필 752,348행 완료(§28). 공사/용역·탑 화면 입찰공고번호 표기됨.
+- **민수 데이터 입력(G2B-51, 티켓 B)** = 탑 수주 현황에 직접입력(민수) 기능 추가·**배포 완료**(§30). 신규 `top_manual_contract`(V29, raw/ETL 없는 단일 테이블) → 조회 시 flat/grouped UNION에 합류. CRUD API `/api/report/top-companies/manual`(`hasAnyRole('ADMIN','SUPER_ADMIN')`). 프론트 관급/민수 필터 + 관리자 입력·관리 폼.
+  - ⚠️ 이때 **전역 커넥션 collation 보정 빈**(`config/DataSourceCollationConfig`, `SET collation_connection = utf8mb4_unicode_ci`)을 추가했다 — 통합 UNION의 `Illegal mix of collations`(1271) 근본 해결. **전 화면이 이 커넥션을 공유**하므로, 이후 작업 시 이 빈의 존재를 인지할 것(매퍼에 컬럼별 COLLATE를 또 넣을 필요 없음).
 
 ### B. 운영 인프라 현황 (중요)
 - 사용자가 RDS를 **db.t4g.micro + gp3 로 변경 중**(2026-06-29). 
@@ -730,16 +734,13 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 배포 절차(변경 없음): `ssh -i ~/Desktop/G2B/ssh/g2b_prod.pem ubuntu@3.37.169.101` → `cd ~/g2b && git fetch && git merge origin/master && docker compose build && docker compose up -d`. Flyway는 api 기동 시 자동. 배포 전 `deploy/g2b.conf`(서버 로컬수정) 머지 대상 아닌지 확인.
 
 ### C. 다음 작업 (순서)
-1. **티켓 B — 민수 데이터 입력** (ADR-0005의 민수 설계)
-   - 신규 테이블 `top_manual_contract`(Flyway V29): 컬럼 = 분류(물품/공사/용역), vendor_biz_reg_no(2社), + 통합컬럼(업체명·계약건명·수요기관명·지역·품명내용·입찰계약방법·입찰공고번호·최초계약일자/금액·최종계약일자/금액·계약변경차수), data_origin='민수', created_at/updated_at.
-   - CRUD API `POST/PUT/DELETE /api/report/top-companies/manual` — **ROLE_ADMIN 전용**(권한 체크).
-   - `TopCompaniesReportMapper`의 flat UNION에 민수 소스 추가(dataOrigin='민수'). grouped는 민수 미포함(또는 단건=그대로) — 단순화: 민수는 flat에만, 합쳐서보기엔 관급만 또는 동일 표기(결정 필요).
-   - 프론트 `TopContractsReportView`: **관급/민수 필터**(현재 dataOrigin 파라미터·alias는 이미 백엔드에 있음 — `topOuterWhere`의 `dataOrigin` if, 소스에 dataOrigin='관급'), 민수 입력 폼(분류 선택→#3 컬럼 입력, 관리자만 노출).
-   - 민수는 현재 이 페이지에서만(대시보드 미반영).
-2. **티켓 C / G2B-29 — 구 테이블 정리** (선행: 시장현황 대시보드 재소싱)
-   - `ProcurementContractSummaryMapper`(→`ReportDataService` 시장현황 대시보드)가 아직 `procurement_contract_flat`·드롭된 construction/service_contract_flat 참조 → **시장현황도 신 테이블로 재소싱 필요**(TOP과 동일 패턴). 이게 끝나야 구 테이블 드롭 가능.
-   - 그 후 `procurement_contract_flat`·`shopping_mall_flat`·`ProcurementContractMapper`·구 saved 엔드포인트(`/procurements,/constructions,/services,/shopping-mall/saved`) 제거.
-3. (인프라) G2B-30 — RDS 적정 스펙 최종 결정. 현재 micro+gp3 전환 중. 근무시간만 사용 패턴이면 스케줄 기동 검토.
+> 티켓 A(G2B-49)·티켓 B(G2B-51)는 **완료·배포**. 아래부터 착수.
+
+1. **티켓 C / G2B-29 — 구 테이블 정리** (선행: 시장현황 대시보드 재소싱) ← **다음 착수 대상**
+   - 현재 시장현황 대시보드(`ReportDataService` → `ProcurementContractSummaryMapper`)가 아직 `procurement_contract_flat`·**V21에서 DROP된 construction/service_contract_flat**을 참조 → 깨질 수 있으니 **영향범위 먼저 점검**. **시장현황도 신 테이블로 재소싱 필요**(TOP과 동일 패턴: `specific_item_flat ∪ market_contract_flat`). 이게 끝나야 구 테이블 드롭 가능.
+   - 재소싱 후 제거 대상: `procurement_contract_flat`·`shopping_mall_flat`·`ProcurementContractMapper`·구 saved 엔드포인트(`/procurements,/constructions,/services,/shopping-mall/saved`).
+   - **재소싱 시 통합 UNION을 새로 짜면** §30의 collation 교훈 적용: 전역 collation 빈(`DataSourceCollationConfig`)이 이미 커넥션을 utf8mb4_unicode_ci로 맞춰주므로 매퍼에 별도 COLLATE 불필요. 단 **컬럼 projection 전체를 실제 DB로 실행 검증**(§27/§30 누락 사례).
+2. (인프라) **G2B-30 — RDS 적정 스펙 최종 결정**. 현재 micro+gp3. 근무시간만 사용 패턴이면 스케줄 기동 검토. 운영 대량 작업 원칙은 위 B 참조.
 
 ### D. 작업 규칙 리마인더 (메모리 반영됨)
 - 작업 단위 Jira 티켓 먼저 생성(담당 Jun Fe, 에픽 G2B-25), 진행 중 전환. 설계 결정 시 **docs/adr 갱신**. 종료 시 **AI_HANDOFF.md 갱신**. 커밋·푸시·PR·배포는 사용자 승인 후. 커밋 전 비밀값 스캔 + `git show --stat`로 의도 파일 포함 확인. `.codex/config.toml`엔 Jira 토큰 평문 → 절대 커밋 금지(.gitignore 등록됨).
@@ -755,10 +756,13 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - **V29** `top_manual_contract`(통합 alias 1:1 컬럼 + `data_origin='민수'` + created/updated_at, 인덱스 vendor/type/order).
   - `TopCompaniesReportMapper.xml`: `manualSelect` sql 신설 → `flatUnion`·`groupedUnion` 양쪽에 `UNION ALL` 추가. 목록/카운트/엑셀/합계/분류계층/입찰계약방법 옵션은 union 경유라 **자동 포함**. CRUD용 `selectManualList/ById/insertManual/updateManual/deleteManual` + `manualEntityMap` resultMap 추가.
   - `TopCompaniesReportMapper.java`: 민수 CRUD 메서드. `TopManualContract` 엔티티(POJO, MyBatis 매핑). `TopCompaniesReportService`: 민수 CRUD 위임(@Transactional).
-  - `ReportDataController`: `GET/POST/PUT/DELETE /api/report/top-companies/manual` 4종, 전부 `@PreAuthorize("hasRole('ADMIN')")`.
+  - `ReportDataController`: `GET/POST/PUT/DELETE /api/report/top-companies/manual` 4종, 전부 `@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")`(아래 정정 참고).
 - 변경(프론트 `TopContractsReportView.vue`): 필터에 **관급/민수 select**(`filters.dataOrigin`), `v-if="isAdmin"` **민수 입력·관리 패널**(분류·업체 select + 나머지 자유텍스트/날짜/숫자, 추가/수정/삭제 → 목록 reload + 본 목록 재조회). `useAuthStore().isAdmin` 사용. 2社 vendor 매핑(1188117437 탑인더스트리 / 1188119624 탑정보통신).
 - ⚠️ **검증 중 발견·수정한 2건(원래 플랜 외)**:
   1. **권한**: ADR는 "ROLE_ADMIN 전용"이라 했으나 RoleHierarchy 빈이 없고 실제 관리자 계정은 `ROLE_SUPER_ADMIN`(SecurityConfig도 `hasAnyRole("ADMIN","SUPER_ADMIN")` 패턴) → `@PreAuthorize("hasRole('ADMIN')")`면 슈퍼관리자가 막힘(프론트 isAdmin은 둘 다 true라 폼은 보이는데 저장 403). → 4개 엔드포인트를 **`hasAnyRole('ADMIN','SUPER_ADMIN')`**로 정정.
   2. **collation 1271**: 통합 UNION에서 `Illegal mix of collations for operation 'UNION'`(MySQL 1271) 발생. 원인 = 전 테이블 `utf8mb4_unicode_ci`인데 JDBC 커넥션 collation이 `latin1_swedish_ci`. 한 컬럼이 한 브랜치에선 리터럴(type=CASE)·다른 브랜치에선 실제 컬럼(top_manual_contract.type)이면 충돌. 기존 2소스 union은 컬럼별 리터럴/실컬럼이 대칭이라 안 터졌음. → **신규 `config/DataSourceCollationConfig`**(Hikari `connection-init-sql = SET collation_connection = utf8mb4_unicode_ci`)로 커넥션 세션 collation을 스키마와 일치시켜 근본 해결. character_set_client/results는 불변(데이터 인코딩 영향 없음). **운영은 서버측 application.properties(비-git)를 마운트하므로 properties 수정은 자동 배포 안 됨 → 코드(빈)로 처리해 자동 반영.** ⚠️ 전역 커넥션 세션 변경이므로 배포 후 기존 화면 회귀 한 번 확인 권장.
 - 검증(§29 D 규칙대로 **전체 union 실제 실행** + 실 JDBC + 브라우저): 로컬 백엔드 재기동으로 Flyway V24~V29 자동 적용. flat 816+민수, grouped 537+민수, dataOrigin='민수' 필터 200(수정 전 500), 합계·통합 분류계층 반영. CRUD(POST/GET/PUT/DELETE) 실 JWT로 왕복, 무인증 401. 프론트(vite dev+실 백엔드): 관급/민수 필터·관리자 입력폼·민수 목록·수정/삭제·상단합계 화면 확인, 콘솔 에러 0. compileJava/npm build PASS. (검증용 임시 verify_admin 계정·테스트 민수행은 정리 완료.)
-- 남은 일: **커밋·배포 미실행**(사용자 승인 대기). 배포 시 Flyway가 운영 RDS에 V24~V29 적용(V29는 빈 테이블 생성 — 운영 백필 불필요, 민수는 운영 화면에서 직접 입력). 티켓C/G2B-29(시장현황 재소싱 후 구 테이블 정리)는 별도.
+- **배포 완료 ✅ (2026-06-29)**: PR #45 → master(`52a0ffa`) 머지 후 서버 `git merge origin/master && docker compose build && up -d`. 운영 RDS는 이미 V28까지였고 이번엔 **V29만 적용(0.148s)**, api 21s 기동. 스모크: web 200, 보호 엔드포인트(`/top-companies`,`/manual`) 401(라우팅 정상·500 아님), 컨테이너 정상. `deploy/g2b.conf` 서버 로컬수정 보존됨.
+  - ⚠️ **후속 모니터링**: `DataSourceCollationConfig`가 운영 전 커넥션의 collation을 바꿨으니, 시장데이터·특정품목 등 **기존 화면 회귀**를 한 번 확인할 것(현재까지 스모크 상 이상 없음).
+  - 민수는 운영 화면(관리자 로그인)에서 직접 입력. V29는 빈 테이블이라 백필 불필요.
+- 다음: 티켓C/G2B-29(시장현황 재소싱 후 구 테이블 정리) — §29 C-1 참조.
