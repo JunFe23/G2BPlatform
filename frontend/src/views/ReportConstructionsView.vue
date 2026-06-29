@@ -14,7 +14,16 @@
           <option v-for="m in contractMethodOptions" :key="m" :value="m">{{ m }}</option>
         </select>
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
+      </div>
 
+      <!-- 2줄: 공공조달분류 / 기간 필터 -->
+      <div class="search-filter-row search-category-row">
+        <span class="category-row-label">공공조달분류</span>
+        <CategoryTreeSelect
+          v-model="filters.publicProcurementCategory"
+          :category-map="categoryMap"
+          placeholder="공공조달분류 선택"
+        />
         <select v-model="filters.dateType" class="date-select">
           <option value="year">연도 검색</option>
           <option value="month">특정 월 검색</option>
@@ -32,16 +41,6 @@
           <input type="month" v-model="filters.rangeStart" placeholder="시작월" />
           <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
         </template>
-      </div>
-
-      <!-- 2줄: 공공조달분류 중분류 / 소분류 필터 -->
-      <div class="search-filter-row search-category-row">
-        <span class="category-row-label">공공조달분류</span>
-        <CategoryTreeSelect
-          v-model="filters.publicProcurementCategory"
-          :category-map="categoryMap"
-          placeholder="공공조달분류 선택"
-        />
       </div>
 
       <!-- 2줄: 저장된 데이터만 보기, 장기계약 토글, 검색, 엑셀 -->

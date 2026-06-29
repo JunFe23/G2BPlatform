@@ -25,7 +25,9 @@
           <option v-for="m in contractMethodOptions" :key="m" :value="m">{{ m }}</option>
         </select>
         <input type="text" v-model="filters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
+      </div>
 
+      <div class="search-filter-row search-category-row">
         <select v-model="filters.dateType" class="date-select">
           <option value="year">연도 검색</option>
           <option value="month">특정 월 검색</option>
@@ -40,9 +42,6 @@
           <input type="month" v-model="filters.rangeStart" placeholder="시작월" />
           <input type="month" v-model="filters.rangeEnd" placeholder="종료월" />
         </template>
-      </div>
-
-      <div class="search-filter-row search-category-row">
         <span class="category-row-label">공공조달분류</span>
         <CategoryTreeSelect
           v-model="filters.categoryNames"
@@ -170,6 +169,7 @@
           <thead>
             <tr>
               <th>분류</th>
+              <th>구분</th>
               <th>업체명</th>
               <th>계약건명</th>
               <th>수요기관명</th>
@@ -186,10 +186,15 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-if="isLoading"><td colspan="14" class="loading-text">데이터를 불러오는 중입니다...</td></tr>
-            <tr v-else-if="items.length === 0"><td colspan="14" class="no-data">데이터가 없습니다.</td></tr>
+            <tr v-if="isLoading"><td colspan="15" class="loading-text">데이터를 불러오는 중입니다...</td></tr>
+            <tr v-else-if="items.length === 0"><td colspan="15" class="no-data">데이터가 없습니다.</td></tr>
             <tr v-else v-for="item in items" :key="rowKey(item)">
               <td>{{ item.type }}</td>
+              <td>
+                <span class="origin-badge" :class="{ manual: (item.dataOrigin || '관급') === '민수' }">
+                  {{ item.dataOrigin || '관급' }}
+                </span>
+              </td>
               <td>{{ item.cmpNm }}</td>
               <td>{{ item.cntrctNm }}</td>
               <td>{{ item.dminsttNm }}</td>
@@ -599,6 +604,7 @@ onMounted(() => {
   padding-top: 8px;
   margin-top: 8px;
   border-top: 1px dashed #e2e8f0;
+  justify-content: flex-end;
 }
 .category-row-label {
   font-size: 0.875em;
@@ -768,6 +774,22 @@ onMounted(() => {
 }
 .data-table tbody tr:hover {
   background-color: #f1f5f9;
+}
+.origin-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 600;
+}
+.origin-badge.manual {
+  background: #fef3c7;
+  color: #92400e;
 }
 .loading-text,
 .no-data {
