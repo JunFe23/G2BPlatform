@@ -782,9 +782,13 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
     - construction: 정상 행 반환, `bidNoticeNo`는 빈 문자열.
     - service: 정상 행 반환, `bidNoticeNo`는 빈 문자열.
   - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew compileJava` PASS.
-- 배포 상태: 코드 수정과 로컬 검증 완료. **커밋/푸시/PR/배포는 아직 하지 않음**(사용자 승인 대기). 배포 후 확인할 것:
-  - PR 머지 후 서버 `cd ~/g2b && git fetch && git merge origin/master && docker compose build && docker compose up -d`.
-  - 서버 로컬수정 `deploy/g2b.conf` 보존 확인.
-  - 운영 API `/api/report/market-contracts?contractType=construction&grouped=true&start=0&length=100` 200 확인.
-  - 시장데이터-공사/용역 페이지 데이터 표시 확인.
-  - `docker logs g2b-api-1`에서 `Unknown column 'bid_notice_no' in 'field list'` 재발 없음 확인.
+- 배포 완료(2026-06-29):
+  - PR #47 머지(`b2827fa`) 후 서버 `cd ~/g2b && git fetch && git merge origin/master && docker compose build && docker compose up -d` 실행 완료.
+  - Docker build 성공(`gradle build -x test --no-daemon` BUILD SUCCESSFUL) 및 `g2b-api-1`/`g2b-web-1` 재기동 완료.
+  - Flyway: 운영 schema version 29, 신규 migration 없음.
+  - 서버 로컬수정 `deploy/g2b.conf` 보존 확인(`client_max_body_size 500M` 로컬 변경 유지).
+  - 운영 내부 인증 호출로 grouped API 검증:
+    - construction `/api/report/market-contracts?contractType=construction&grouped=true&start=0&length=1` → 200, `recordsFiltered=1473667`.
+    - service `/api/report/market-contracts?contractType=service&grouped=true&start=0&length=1` → 200, `recordsFiltered=1150327`.
+  - 도메인 `https://g2btop.duckdns.org/` → 200 OK.
+  - `docker logs g2b-api-1`에서 `Unknown column 'bid_notice_no' in 'field list'` 재발 없음.
