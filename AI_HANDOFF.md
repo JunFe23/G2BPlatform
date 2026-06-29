@@ -766,3 +766,25 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - ⚠️ **후속 모니터링**: `DataSourceCollationConfig`가 운영 전 커넥션의 collation을 바꿨으니, 시장데이터·특정품목 등 **기존 화면 회귀**를 한 번 확인할 것(현재까지 스모크 상 이상 없음).
   - 민수는 운영 화면(관리자 로그인)에서 직접 입력. V29는 빈 테이블이라 백필 불필요.
 - 다음: 티켓C/G2B-29(시장현황 재소싱 후 구 테이블 정리) — §29 C-1 참조.
+
+---
+
+## 31. G2B-52 — 시장데이터 grouped 조회 500 핫픽스 (2026-06-29)
+
+- 티켓: G2B-52(에픽 G2B-25). 브랜치: `feature/G2B-52-market-grouped-bidnotice-fix`.
+- 증상: 운영 `GET /api/report/market-contracts?contractType=construction&grouped=true&start=0&length=100` 500으로 시장데이터-공사/용역 페이지가 "데이터가 없습니다"로 표시됨.
+- 원인: `MarketContractMapper.xml`의 `groupedSelectColumns`가 `bid_notice_no AS bidNoticeNo`를 참조했으나, V28의 `bid_notice_no` 컬럼은 `market_contract_flat`에만 추가됐고 `market_contract_grouped`에는 없음. grouped는 다건 집계라 단일 입찰공고번호를 대표할 수 없음. §30의 `DataSourceCollationConfig`와 무관한 별도 SQL projection 버그.
+- 수정: `backend/src/main/resources/org/example/g2bplatform/mapper/MarketContractMapper.xml`에서 `groupedSelectColumns`의 `bid_notice_no AS bidNoticeNo`만 `'' AS bidNoticeNo`로 변경. `flatSelectColumns`의 `bid_notice_no AS bidNoticeNo`는 유지.
+- 검증:
+  - `SELECT * FROM market_contract_grouped WHERE contract_type='construction' LIMIT 1;` 로 grouped 테이블에 `bid_notice_no` 컬럼이 없음을 확인.
+  - `SHOW COLUMNS FROM market_contract_grouped LIKE 'bid_notice_no';` 결과 0행 확인.
+  - 수정 후 `selectGroupedList`와 같은 전체 SELECT projection/WHERE/ORDER/LIMIT SQL을 로컬 MySQL에서 직접 실행:
+    - construction: 정상 행 반환, `bidNoticeNo`는 빈 문자열.
+    - service: 정상 행 반환, `bidNoticeNo`는 빈 문자열.
+  - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew compileJava` PASS.
+- 배포 상태: 코드 수정과 로컬 검증 완료. **커밋/푸시/PR/배포는 아직 하지 않음**(사용자 승인 대기). 배포 후 확인할 것:
+  - PR 머지 후 서버 `cd ~/g2b && git fetch && git merge origin/master && docker compose build && docker compose up -d`.
+  - 서버 로컬수정 `deploy/g2b.conf` 보존 확인.
+  - 운영 API `/api/report/market-contracts?contractType=construction&grouped=true&start=0&length=100` 200 확인.
+  - 시장데이터-공사/용역 페이지 데이터 표시 확인.
+  - `docker logs g2b-api-1`에서 `Unknown column 'bid_notice_no' in 'field list'` 재발 없음 확인.
