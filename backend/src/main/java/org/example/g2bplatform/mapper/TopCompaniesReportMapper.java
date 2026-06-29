@@ -1,7 +1,9 @@
 package org.example.g2bplatform.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.ResultHandler;
+import org.example.g2bplatform.entity.TopManualContract;
 
 import java.util.List;
 import java.util.Map;
@@ -28,4 +30,11 @@ public interface TopCompaniesReportMapper {
     // 통합 분류 계층(중→품명) / 입찰계약방법 distinct (2社 데이터 기준)
     List<Map<String, Object>> selectCategoryHierarchy();
     List<String> selectDistinctContractMethods();
+
+    // 민수(직접입력) 데이터 CRUD (관리자)
+    List<TopManualContract> selectManualList();
+    TopManualContract selectManualById(@Param("id") Long id);
+    int insertManual(TopManualContract entity);
+    int updateManual(TopManualContract entity);
+    int deleteManual(@Param("id") Long id);
 }

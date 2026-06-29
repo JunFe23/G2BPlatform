@@ -10,6 +10,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.example.g2bplatform.DTO.ShoppingMallFlatDto;
+import org.example.g2bplatform.entity.TopManualContract;
 import org.example.g2bplatform.service.ReportConstructionService;
 import org.example.g2bplatform.service.ReportDataService;
 import org.example.g2bplatform.service.ReportProcurementService;
@@ -21,6 +22,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.FilterInputStream;
@@ -514,6 +516,48 @@ public class ReportDataController {
         body.put("success", true);
         body.put("categories", topCompaniesReportService.getCategoryHierarchy());
         body.put("contractMethods", topCompaniesReportService.getDistinctContractMethods());
+        return ResponseEntity.ok(body);
+    }
+
+    // ----- 민수(직접입력) 데이터 CRUD — ROLE_ADMIN 전용 -----
+
+    @Operation(summary = "탑 수주현황 민수 데이터 목록(관리)", description = "ROLE_ADMIN 전용")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @GetMapping("/top-companies/manual")
+    public ResponseEntity<Map<String, Object>> listManual() {
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("data", topCompaniesReportService.getManualList());
+        return ResponseEntity.ok(body);
+    }
+
+    @Operation(summary = "탑 수주현황 민수 데이터 생성", description = "ROLE_ADMIN 전용")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PostMapping("/top-companies/manual")
+    public ResponseEntity<Map<String, Object>> createManual(@RequestBody TopManualContract req) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("data", topCompaniesReportService.createManual(req));
+        return ResponseEntity.ok(body);
+    }
+
+    @Operation(summary = "탑 수주현황 민수 데이터 수정", description = "ROLE_ADMIN 전용")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PutMapping("/top-companies/manual/{id}")
+    public ResponseEntity<Map<String, Object>> updateManual(@PathVariable Long id,
+                                                            @RequestBody TopManualContract req) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("data", topCompaniesReportService.updateManual(id, req));
+        return ResponseEntity.ok(body);
+    }
+
+    @Operation(summary = "탑 수주현황 민수 데이터 삭제", description = "ROLE_ADMIN 전용")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @DeleteMapping("/top-companies/manual/{id}")
+    public ResponseEntity<Map<String, Object>> deleteManual(@PathVariable Long id) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", topCompaniesReportService.deleteManual(id));
         return ResponseEntity.ok(body);
     }
 
