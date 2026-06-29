@@ -64,6 +64,32 @@
         WHERE is_active = 'Y' AND vendor_biz_reg_no IN ('1188117437','1188119624')
     </sql>
 
+    <!-- ===== 민수(직접입력) 소스 — raw/ETL 없이 단일 테이블, flat·grouped 양쪽에 동일 SELECT ===== -->
+    <sql id="manualSelect">
+        SELECT
+            type                                                AS type,
+            '민수'                                              AS dataOrigin,
+            CAST(id AS CHAR)                                    AS pk1,
+            ''                                                  AS pk2,
+            ''                                                  AS pk3,
+            vendor_name                                         AS cmpNm,
+            contract_name                                       AS cntrctNm,
+            demand_agency_name                                  AS dminsttNm,
+            demand_agency_region                                AS dminsttNmDetail,
+            mid_category                                        AS midCategory,
+            product_classification                              AS prdctClsfcNo,
+            contract_method                                     AS cntctCnclsMthdNm,
+            bid_notice_no                                       AS ntceNo,
+            DATE_FORMAT(first_contract_date, '%Y-%m-%d')        AS firstCntrctDate,
+            first_contract_amount                               AS firstCntrctAmt,
+            DATE_FORMAT(last_contract_date, '%Y-%m-%d')         AS cntrctDate,
+            last_contract_amount                                AS thtmCntrctAmt,
+            contract_change_seq                                 AS cntrctCnt,
+            'N'                                                 AS saved
+        FROM top_manual_contract
+        WHERE vendor_biz_reg_no IN ('1188117437','1188119624')
+    </sql>
+
     <!-- ===== grouped 소스 (합쳐서 보기) ===== -->
     <sql id="specificGroupedSelect">
         SELECT
@@ -162,11 +188,15 @@
         <include refid="specificFlatSelect"/>
         UNION ALL
         <include refid="marketFlatSelect"/>
+        UNION ALL
+        <include refid="manualSelect"/>
     </sql>
     <sql id="groupedUnion">
         <include refid="specificGroupedSelect"/>
         UNION ALL
         <include refid="marketGroupedSelect"/>
+        UNION ALL
+        <include refid="manualSelect"/>
     </sql>
 
     <!-- ===== 목록 ===== -->
@@ -230,5 +260,75 @@
         WHERE cntctCnclsMthdNm IS NOT NULL AND cntctCnclsMthdNm &lt;&gt; ''
         ORDER BY cntctCnclsMthdNm
     </select>
+
+    <!-- ===== 민수 데이터 CRUD (관리자) ===== -->
+    <resultMap id="manualEntityMap" type="org.example.g2bplatform.entity.TopManualContract">
+        <id     property="id"                   column="id"/>
+        <result property="type"                 column="type"/>
+        <result property="vendorBizRegNo"       column="vendor_biz_reg_no"/>
+        <result property="vendorName"           column="vendor_name"/>
+        <result property="contractName"         column="contract_name"/>
+        <result property="demandAgencyName"     column="demand_agency_name"/>
+        <result property="demandAgencyRegion"   column="demand_agency_region"/>
+        <result property="midCategory"          column="mid_category"/>
+        <result property="productClassification" column="product_classification"/>
+        <result property="contractMethod"       column="contract_method"/>
+        <result property="bidNoticeNo"          column="bid_notice_no"/>
+        <result property="firstContractDate"    column="first_contract_date"/>
+        <result property="firstContractAmount"  column="first_contract_amount"/>
+        <result property="lastContractDate"     column="last_contract_date"/>
+        <result property="lastContractAmount"   column="last_contract_amount"/>
+        <result property="contractChangeSeq"    column="contract_change_seq"/>
+        <result property="dataOrigin"           column="data_origin"/>
+        <result property="createdAt"            column="created_at"/>
+        <result property="updatedAt"            column="updated_at"/>
+    </resultMap>
+
+    <select id="selectManualList" resultMap="manualEntityMap">
+        SELECT * FROM top_manual_contract
+        ORDER BY last_contract_date DESC, id DESC
+    </select>
+
+    <select id="selectManualById" resultMap="manualEntityMap">
+        SELECT * FROM top_manual_contract WHERE id = #{id}
+    </select>
+
+    <insert id="insertManual" parameterType="org.example.g2bplatform.entity.TopManualContract"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO top_manual_contract
+            (type, vendor_biz_reg_no, vendor_name, contract_name, demand_agency_name, demand_agency_region,
+             mid_category, product_classification, contract_method, bid_notice_no,
+             first_contract_date, first_contract_amount, last_contract_date, last_contract_amount,
+             contract_change_seq)
+        VALUES
+            (#{type}, #{vendorBizRegNo}, #{vendorName}, #{contractName}, #{demandAgencyName}, #{demandAgencyRegion},
+             #{midCategory}, #{productClassification}, #{contractMethod}, #{bidNoticeNo},
+             #{firstContractDate}, #{firstContractAmount}, #{lastContractDate}, #{lastContractAmount},
+             #{contractChangeSeq})
+    </insert>
+
+    <update id="updateManual" parameterType="org.example.g2bplatform.entity.TopManualContract">
+        UPDATE top_manual_contract SET
+            type = #{type},
+            vendor_biz_reg_no = #{vendorBizRegNo},
+            vendor_name = #{vendorName},
+            contract_name = #{contractName},
+            demand_agency_name = #{demandAgencyName},
+            demand_agency_region = #{demandAgencyRegion},
+            mid_category = #{midCategory},
+            product_classification = #{productClassification},
+            contract_method = #{contractMethod},
+            bid_notice_no = #{bidNoticeNo},
+            first_contract_date = #{firstContractDate},
+            first_contract_amount = #{firstContractAmount},
+            last_contract_date = #{lastContractDate},
+            last_contract_amount = #{lastContractAmount},
+            contract_change_seq = #{contractChangeSeq}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteManual">
+        DELETE FROM top_manual_contract WHERE id = #{id}
+    </delete>
 
 </mapper>

@@ -46,3 +46,8 @@
 - **구 테이블 유지 + DROP된 것만 복구**: V21 DROP을 되돌리는 셈, 신 파이프라인과 이중관리 → 기각.
 - **분류 필터를 분류별 동적 위젯 swap**: 물품=콤보박스/공사용역=2단패널 전환 → UI 복잡. 통합 트리로 단순화하여 기각.
 - **품명내용 단일 텍스트 검색**: 가장 단순하나 사용자 요구(트리형 선택) 미충족 → 보조(전체 선택 시 fallback)로만.
+
+## 구현 보강 (티켓 B / G2B-51, 2026-06-29)
+
+- **민수 CRUD 권한**: 본문은 "ROLE_ADMIN 전용"이라 적었으나, 이 코드베이스엔 RoleHierarchy 빈이 없고 실제 관리자 계정은 `ROLE_SUPER_ADMIN`이며 기존 보안 패턴이 `hasAnyRole("ADMIN","SUPER_ADMIN")`이다. 따라서 `@PreAuthorize`는 **`hasAnyRole('ADMIN','SUPER_ADMIN')`**로 구현(SUPER_ADMIN이 ADMIN 상위 권한이라 막을 이유 없음).
+- **UNION collation**: 전 테이블이 `utf8mb4_unicode_ci`인데 JDBC 커넥션 collation이 `latin1_swedish_ci`라, 민수 소스를 더한 통합 UNION에서 한 컬럼이 (리터럴 vs 실제 컬럼)로 갈리면 `Illegal mix of collations`(1271)이 난다. 매퍼에 컬럼별 `COLLATE`를 흩뿌리는 대신 **커넥션 세션 collation을 스키마와 일치**(`DataSourceCollationConfig`: Hikari `connection-init-sql = SET collation_connection = utf8mb4_unicode_ci`)시켜 근본 해결. 운영은 properties가 비-git이므로 코드(빈)로 둬 자동 배포되게 함.

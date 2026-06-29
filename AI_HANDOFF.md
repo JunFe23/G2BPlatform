@@ -744,3 +744,21 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 ### D. 작업 규칙 리마인더 (메모리 반영됨)
 - 작업 단위 Jira 티켓 먼저 생성(담당 Jun Fe, 에픽 G2B-25), 진행 중 전환. 설계 결정 시 **docs/adr 갱신**. 종료 시 **AI_HANDOFF.md 갱신**. 커밋·푸시·PR·배포는 사용자 승인 후. 커밋 전 비밀값 스캔 + `git show --stat`로 의도 파일 포함 확인. `.codex/config.toml`엔 Jira 토큰 평문 → 절대 커밋 금지(.gitignore 등록됨).
 - 컬럼 projection/매퍼 변경 시 **부분 아닌 전체 쿼리를 실제 DB로 실행 검증**(§27 latest_change_seq/bid_notice_no 누락 사례).
+
+---
+
+## 30. G2B-51 [티켓B] 탑 수주 현황 — 민수(직접입력) 데이터 (2026-06-29)
+
+- 티켓: G2B-51(에픽 G2B-25). 결정근거 **ADR-0005**(민수 설계). 선행: 티켓A=G2B-49.
+- 설계 결정(사용자 승인): ① 민수는 grouped(합쳐서보기)에도 **단건 그대로 포함**(1건=1그룹). ② 분류(중분류·품명내용)는 **자유 텍스트 입력**. ③ 데이터 흐름 = raw/ETL/별도 flat·grouped 없이 **`top_manual_contract` 단일 테이블**, 조회 시 flatUnion·groupedUnion에 동일 SELECT로 UNION ALL.
+- 변경(백엔드):
+  - **V29** `top_manual_contract`(통합 alias 1:1 컬럼 + `data_origin='민수'` + created/updated_at, 인덱스 vendor/type/order).
+  - `TopCompaniesReportMapper.xml`: `manualSelect` sql 신설 → `flatUnion`·`groupedUnion` 양쪽에 `UNION ALL` 추가. 목록/카운트/엑셀/합계/분류계층/입찰계약방법 옵션은 union 경유라 **자동 포함**. CRUD용 `selectManualList/ById/insertManual/updateManual/deleteManual` + `manualEntityMap` resultMap 추가.
+  - `TopCompaniesReportMapper.java`: 민수 CRUD 메서드. `TopManualContract` 엔티티(POJO, MyBatis 매핑). `TopCompaniesReportService`: 민수 CRUD 위임(@Transactional).
+  - `ReportDataController`: `GET/POST/PUT/DELETE /api/report/top-companies/manual` 4종, 전부 `@PreAuthorize("hasRole('ADMIN')")`.
+- 변경(프론트 `TopContractsReportView.vue`): 필터에 **관급/민수 select**(`filters.dataOrigin`), `v-if="isAdmin"` **민수 입력·관리 패널**(분류·업체 select + 나머지 자유텍스트/날짜/숫자, 추가/수정/삭제 → 목록 reload + 본 목록 재조회). `useAuthStore().isAdmin` 사용. 2社 vendor 매핑(1188117437 탑인더스트리 / 1188119624 탑정보통신).
+- ⚠️ **검증 중 발견·수정한 2건(원래 플랜 외)**:
+  1. **권한**: ADR는 "ROLE_ADMIN 전용"이라 했으나 RoleHierarchy 빈이 없고 실제 관리자 계정은 `ROLE_SUPER_ADMIN`(SecurityConfig도 `hasAnyRole("ADMIN","SUPER_ADMIN")` 패턴) → `@PreAuthorize("hasRole('ADMIN')")`면 슈퍼관리자가 막힘(프론트 isAdmin은 둘 다 true라 폼은 보이는데 저장 403). → 4개 엔드포인트를 **`hasAnyRole('ADMIN','SUPER_ADMIN')`**로 정정.
+  2. **collation 1271**: 통합 UNION에서 `Illegal mix of collations for operation 'UNION'`(MySQL 1271) 발생. 원인 = 전 테이블 `utf8mb4_unicode_ci`인데 JDBC 커넥션 collation이 `latin1_swedish_ci`. 한 컬럼이 한 브랜치에선 리터럴(type=CASE)·다른 브랜치에선 실제 컬럼(top_manual_contract.type)이면 충돌. 기존 2소스 union은 컬럼별 리터럴/실컬럼이 대칭이라 안 터졌음. → **신규 `config/DataSourceCollationConfig`**(Hikari `connection-init-sql = SET collation_connection = utf8mb4_unicode_ci`)로 커넥션 세션 collation을 스키마와 일치시켜 근본 해결. character_set_client/results는 불변(데이터 인코딩 영향 없음). **운영은 서버측 application.properties(비-git)를 마운트하므로 properties 수정은 자동 배포 안 됨 → 코드(빈)로 처리해 자동 반영.** ⚠️ 전역 커넥션 세션 변경이므로 배포 후 기존 화면 회귀 한 번 확인 권장.
+- 검증(§29 D 규칙대로 **전체 union 실제 실행** + 실 JDBC + 브라우저): 로컬 백엔드 재기동으로 Flyway V24~V29 자동 적용. flat 816+민수, grouped 537+민수, dataOrigin='민수' 필터 200(수정 전 500), 합계·통합 분류계층 반영. CRUD(POST/GET/PUT/DELETE) 실 JWT로 왕복, 무인증 401. 프론트(vite dev+실 백엔드): 관급/민수 필터·관리자 입력폼·민수 목록·수정/삭제·상단합계 화면 확인, 콘솔 에러 0. compileJava/npm build PASS. (검증용 임시 verify_admin 계정·테스트 민수행은 정리 완료.)
+- 남은 일: **커밋·배포 미실행**(사용자 승인 대기). 배포 시 Flyway가 운영 RDS에 V24~V29 적용(V29는 빈 테이블 생성 — 운영 백필 불필요, 민수는 운영 화면에서 직접 입력). 티켓C/G2B-29(시장현황 재소싱 후 구 테이블 정리)는 별도.

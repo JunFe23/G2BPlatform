@@ -12,6 +12,11 @@
           <option value="공사">공사</option>
           <option value="용역">용역</option>
         </select>
+        <select v-model="filters.dataOrigin" class="date-select">
+          <option value="">데이터구분 (전체)</option>
+          <option value="관급">관급</option>
+          <option value="민수">민수</option>
+        </select>
         <input type="text" v-model="filters.dminsttNm" placeholder="수요기관명 검색" />
         <input type="text" v-model="filters.dminsttNmDetail" placeholder="수요기관지역명 검색" />
         <input type="text" v-model="filters.contractName" placeholder="계약명 검색" />
@@ -71,6 +76,84 @@
           {{ isLoadingExcel ? '다운로드 중...' : '엑셀 다운로드' }}
         </button>
         <div v-if="isLoading" class="loading-spinner-container"><div class="loading-spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- 민수 데이터 관리 (관리자 전용) -->
+    <div v-if="isAdmin" class="manual-admin">
+      <div class="manual-admin-head">
+        <span class="manual-admin-title">민수 데이터 입력 · 관리</span>
+        <button type="button" class="manual-toggle-btn" @click="toggleManualPanel">
+          {{ showManualPanel ? '닫기' : '열기' }}
+        </button>
+      </div>
+
+      <div v-if="showManualPanel" class="manual-admin-body">
+        <!-- 입력/수정 폼 -->
+        <div class="manual-form">
+          <div class="manual-form-grid">
+            <label>분류
+              <select v-model="manualForm.type">
+                <option value="물품">물품</option>
+                <option value="쇼핑몰">쇼핑몰</option>
+                <option value="공사">공사</option>
+                <option value="용역">용역</option>
+              </select>
+            </label>
+            <label>업체
+              <select v-model="manualForm.vendorBizRegNo" @change="onVendorChange">
+                <option v-for="v in vendorOptions" :key="v.no" :value="v.no">{{ v.name }}</option>
+              </select>
+            </label>
+            <label>업체명<input type="text" v-model="manualForm.vendorName" /></label>
+            <label>계약건명<input type="text" v-model="manualForm.contractName" /></label>
+            <label>수요기관명<input type="text" v-model="manualForm.demandAgencyName" /></label>
+            <label>수요기관지역명<input type="text" v-model="manualForm.demandAgencyRegion" /></label>
+            <label>중분류<input type="text" v-model="manualForm.midCategory" /></label>
+            <label>품명내용<input type="text" v-model="manualForm.productClassification" /></label>
+            <label>입찰계약방법<input type="text" v-model="manualForm.contractMethod" /></label>
+            <label>입찰공고번호<input type="text" v-model="manualForm.bidNoticeNo" /></label>
+            <label>최초계약일자<input type="date" v-model="manualForm.firstContractDate" /></label>
+            <label>최초계약금액<input type="number" v-model="manualForm.firstContractAmount" /></label>
+            <label>최종계약일자<input type="date" v-model="manualForm.lastContractDate" /></label>
+            <label>최종계약금액<input type="number" v-model="manualForm.lastContractAmount" /></label>
+            <label>계약변경차수<input type="number" v-model="manualForm.contractChangeSeq" /></label>
+          </div>
+          <div class="manual-form-actions">
+            <button type="button" class="search-btn" @click="saveManual" :disabled="isSavingManual">
+              {{ manualForm.id ? '수정 저장' : '추가' }}
+            </button>
+            <button v-if="manualForm.id" type="button" class="manual-cancel-btn" @click="resetManualForm">취소</button>
+          </div>
+        </div>
+
+        <!-- 기존 민수 목록 -->
+        <div class="manual-list-wrap">
+          <table class="data-table manual-list-table">
+            <thead>
+              <tr>
+                <th>분류</th><th>업체명</th><th>계약건명</th><th>수요기관명</th>
+                <th>품명내용</th><th>최초계약일자</th><th>최종계약금액</th><th>관리</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="manualList.length === 0"><td colspan="8" class="no-data">민수 데이터가 없습니다.</td></tr>
+              <tr v-for="row in manualList" :key="row.id">
+                <td>{{ row.type }}</td>
+                <td>{{ row.vendorName }}</td>
+                <td>{{ row.contractName }}</td>
+                <td>{{ row.demandAgencyName }}</td>
+                <td>{{ row.productClassification }}</td>
+                <td>{{ row.firstContractDate }}</td>
+                <td>{{ formatNumber(row.lastContractAmount) }}</td>
+                <td class="manual-row-actions">
+                  <button type="button" @click="editManual(row)">수정</button>
+                  <button type="button" class="manual-del-btn" @click="removeManual(row)">삭제</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -139,11 +222,20 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 import LegacySidebarLayout from './components/LegacySidebarLayout.vue'
 import CategoryTreeSelect from './components/CategoryTreeSelect.vue'
 
 const API_BASE = '/api/report/top-companies'
 const PAGE_SIZE = 100
+
+const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.isAdmin)
+
+const vendorOptions = [
+  { no: '1188117437', name: '탑인더스트리' },
+  { no: '1188119624', name: '탑정보통신' },
+]
 
 const isLoading = ref(false)
 const isLoadingExcel = ref(false)
@@ -161,6 +253,7 @@ const years = Array.from({ length: currentYear - 2014 }, (_, i) => currentYear -
 
 const filters = reactive({
   type: '',
+  dataOrigin: '',
   dminsttNm: '',
   dminsttNmDetail: '',
   contractName: '',
@@ -196,6 +289,7 @@ function buildParams(page) {
   const f = applied
   const p = {
     type: f.type || '',
+    dataOrigin: f.dataOrigin || undefined,
     grouped: grouped.value,
     dminsttNm: f.dminsttNm || undefined,
     dminsttNmDetail: f.dminsttNmDetail || undefined,
@@ -338,6 +432,131 @@ async function loadFilterOptions() {
     console.error('필터 옵션 조회 실패', e)
     contractMethodOptions.value = []
     categoryMap.value = {}
+  }
+}
+
+// ===== 민수(직접입력) 데이터 관리 (관리자) =====
+const MANUAL_API = API_BASE + '/manual'
+const showManualPanel = ref(false)
+const isSavingManual = ref(false)
+const manualList = ref([])
+
+function emptyManualForm() {
+  return {
+    id: null,
+    type: '물품',
+    vendorBizRegNo: vendorOptions[0].no,
+    vendorName: vendorOptions[0].name,
+    contractName: '',
+    demandAgencyName: '',
+    demandAgencyRegion: '',
+    midCategory: '',
+    productClassification: '',
+    contractMethod: '',
+    bidNoticeNo: '',
+    firstContractDate: '',
+    firstContractAmount: '',
+    lastContractDate: '',
+    lastContractAmount: '',
+    contractChangeSeq: 0,
+  }
+}
+const manualForm = reactive(emptyManualForm())
+
+function resetManualForm() {
+  Object.assign(manualForm, emptyManualForm())
+}
+
+function onVendorChange() {
+  const v = vendorOptions.find((o) => o.no === manualForm.vendorBizRegNo)
+  if (v && !manualForm.vendorName) manualForm.vendorName = v.name
+}
+
+async function toggleManualPanel() {
+  showManualPanel.value = !showManualPanel.value
+  if (showManualPanel.value) await loadManualList()
+}
+
+async function loadManualList() {
+  try {
+    const { data } = await axios.get(MANUAL_API)
+    manualList.value = Array.isArray(data.data) ? data.data : []
+  } catch (e) {
+    console.error('민수 목록 조회 실패', e)
+    manualList.value = []
+  }
+}
+
+function toPayload() {
+  return {
+    type: manualForm.type,
+    vendorBizRegNo: manualForm.vendorBizRegNo,
+    vendorName: manualForm.vendorName || null,
+    contractName: manualForm.contractName || null,
+    demandAgencyName: manualForm.demandAgencyName || null,
+    demandAgencyRegion: manualForm.demandAgencyRegion || null,
+    midCategory: manualForm.midCategory || null,
+    productClassification: manualForm.productClassification || null,
+    contractMethod: manualForm.contractMethod || null,
+    bidNoticeNo: manualForm.bidNoticeNo || null,
+    firstContractDate: manualForm.firstContractDate || null,
+    firstContractAmount: manualForm.firstContractAmount === '' ? null : Number(manualForm.firstContractAmount),
+    lastContractDate: manualForm.lastContractDate || null,
+    lastContractAmount: manualForm.lastContractAmount === '' ? null : Number(manualForm.lastContractAmount),
+    contractChangeSeq: manualForm.contractChangeSeq === '' ? 0 : Number(manualForm.contractChangeSeq),
+  }
+}
+
+async function saveManual() {
+  isSavingManual.value = true
+  try {
+    if (manualForm.id) {
+      await axios.put(`${MANUAL_API}/${manualForm.id}`, toPayload())
+    } else {
+      await axios.post(MANUAL_API, toPayload())
+    }
+    resetManualForm()
+    await loadManualList()
+    handleSearch()
+  } catch (e) {
+    console.error('민수 저장 실패', e)
+    alert('민수 데이터 저장에 실패했습니다.')
+  } finally {
+    isSavingManual.value = false
+  }
+}
+
+function editManual(row) {
+  Object.assign(manualForm, {
+    id: row.id,
+    type: row.type,
+    vendorBizRegNo: row.vendorBizRegNo,
+    vendorName: row.vendorName || '',
+    contractName: row.contractName || '',
+    demandAgencyName: row.demandAgencyName || '',
+    demandAgencyRegion: row.demandAgencyRegion || '',
+    midCategory: row.midCategory || '',
+    productClassification: row.productClassification || '',
+    contractMethod: row.contractMethod || '',
+    bidNoticeNo: row.bidNoticeNo || '',
+    firstContractDate: row.firstContractDate || '',
+    firstContractAmount: row.firstContractAmount ?? '',
+    lastContractDate: row.lastContractDate || '',
+    lastContractAmount: row.lastContractAmount ?? '',
+    contractChangeSeq: row.contractChangeSeq ?? 0,
+  })
+}
+
+async function removeManual(row) {
+  if (!confirm('이 민수 데이터를 삭제하시겠습니까?')) return
+  try {
+    await axios.delete(`${MANUAL_API}/${row.id}`)
+    if (manualForm.id === row.id) resetManualForm()
+    await loadManualList()
+    handleSearch()
+  } catch (e) {
+    console.error('민수 삭제 실패', e)
+    alert('민수 데이터 삭제에 실패했습니다.')
   }
 }
 
@@ -588,5 +807,101 @@ onMounted(() => {
   background: linear-gradient(135deg, #3d5a73, #34495e);
   color: #fff;
   border-color: transparent;
+}
+
+/* 민수 데이터 관리 (관리자) */
+.manual-admin {
+  margin-bottom: 14px;
+  border: 1px solid #d6dee8;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+.manual-admin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #eef2f7;
+}
+.manual-admin-title {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.92em;
+}
+.manual-toggle-btn {
+  padding: 5px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #475569;
+  font-size: 13px;
+  cursor: pointer;
+}
+.manual-admin-body {
+  padding: 14px;
+}
+.manual-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px 12px;
+}
+.manual-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #475569;
+}
+.manual-form-grid input,
+.manual-form-grid select {
+  padding: 7px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  font-size: 13px;
+  background: #fff;
+  color: #2c3e50;
+  box-sizing: border-box;
+}
+.manual-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.manual-cancel-btn {
+  padding: 8px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 14px;
+  cursor: pointer;
+}
+.manual-list-wrap {
+  margin-top: 16px;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.manual-list-table {
+  margin: 0;
+}
+.manual-row-actions {
+  white-space: nowrap;
+}
+.manual-row-actions button {
+  padding: 4px 10px;
+  margin: 0 2px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  cursor: pointer;
+}
+.manual-del-btn {
+  color: #dc2626 !important;
+  border-color: #fca5a5 !important;
 }
 </style>
