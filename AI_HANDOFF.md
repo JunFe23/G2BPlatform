@@ -702,6 +702,11 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 티켓: G2B-50(에픽 G2B-25). 브랜치: `feature/G2B-50-market-bid-notice`. 백엔드 전용(프론트 무변경 — 입찰공고번호 컬럼은 이미 bidNoticeNo/ntceNo에 바인딩).
 - 배경: market_contract_flat에 bid_notice_no 컬럼이 없어 공사/용역·탑 화면 입찰공고번호가 항상 빈값(매퍼 NULL 하드코딩). task_member_contract_raw.bid_notice_no(varchar30) 존재 → ETL 적재.
 - 변경: V28(ALTER ADD bid_notice_no), MarketContractEtlService flat INSERT에 NULLIF(r.bid_notice_no,'') 매핑, MarketContractMapper(NULL AS bidNoticeNo → bid_notice_no), TopCompaniesReportMapper marketFlatSelect('' AS ntceNo → bid_notice_no).
-- **백필**(V28는 컬럼만 추가, 데이터는 별도 UPDATE): `UPDATE market_contract_flat f JOIN task_member_contract_raw r ON r.contract_no=f.contract_no AND r.change_seq=f.change_seq AND r.contract_type=f.contract_type SET f.bid_notice_no=NULLIF(r.bid_notice_no,'')` — raw uq(contract_no,change_seq,contract_type) 인덱스 조인이라 안전(GROUP BY temp 아님), saved 보존. 로컬 검증: 752,348행 채움.
-- 검증: 로컬 ALTER+백필+샘플 확인 후 드롭(Flyway V28 정식 적용), compileJava PASS.
-- 배포: Flyway V28(컬럼) → 운영 백필 UPDATE → 탑/공사/용역 입찰공고번호 표기.
+- **백필**(V28는 컬럼만 추가, 데이터는 별도 UPDATE). 로컬은 `UPDATE flat JOIN raw ON (contract_no,change_seq,contract_type)`가 인덱스 타서 즉시(752,348행).
+- ⚠️ **운영 백필 난항 → 임시테이블 방식으로 최종 해결** (2026-06-29):
+  - 운영에서 위 raw 조인 UPDATE는 옵티마이저가 **raw(11.2M)를 풀스캔 드라이빙**(타입·콜레이션 완전 일치인데도 인덱스 미사용, `possible_keys=NULL`)해 **2시간+ 무진척**. SSH가 끊겨도 서버 thread는 좀비로 계속 실행됨.
+  - RDS 스펙 상향(재부팅으로 좀비 정리)했으나 근본 병목은 **스토리지(gp2 IOPS)** + 나쁜 플랜.
+  - **최종 해결**: 로컬에서 `SELECT f.contract_type, f.contract_no, NULLIF(r.bid_notice_no,'') FROM flat f JOIN raw r ON ... WHERE 공고있음`(752K행) 추출 → gzip → EC2 scp → prod **임시테이블 `_bidtmp`(PK(contract_type,contract_no), 동일 charset)** LOAD DATA → `UPDATE flat f JOIN _bidtmp t ON (contract_type,contract_no) SET ...`(temp 드라이빙→flat eq_ref via uq_market_flat) → **수 초 완료**. temp/파일 정리.
+  - 결과: 전체 752,348행, 공사/용역 2社 35행 채움(나머지 수의계약 등 raw에 공고번호 없음).
+  - **교훈**: 운영 대량 백필은 거대 raw 직접 조인 금지 → **소형 임시테이블 조인**([[reference-prod-rds-bulk-load]] 패턴). 운영 옵티마이저가 인덱스를 거부하면 무한정 느려짐.
+- 검증: 로컬 ALTER+백필+샘플 확인 후 드롭(Flyway V28 정식 적용), compileJava PASS. 운영 채움 752,348행·2社 샘플 확인.
