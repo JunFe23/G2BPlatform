@@ -159,8 +159,13 @@
         <if test="contractName != null and contractName != ''">
             AND cntrctNm LIKE CONCAT('%', #{contractName}, '%')
         </if>
-        <if test="categoryNames != null and categoryNames != ''">
-            AND FIND_IN_SET(prdctClsfcNo, #{categoryNames}) &gt; 0
+        <if test="categoryKeys != null and categoryKeys != ''">
+            AND FIND_IN_SET(MD5(CONCAT(type, '\t', prdctClsfcNo)), #{categoryKeys}) &gt; 0
+        </if>
+        <if test="categoryKeys == null or categoryKeys == ''">
+            <if test="categoryNames != null and categoryNames != ''">
+                AND FIND_IN_SET(prdctClsfcNo, #{categoryNames}) &gt; 0
+            </if>
         </if>
         <if test="cntctCnclsMthdNm != null and cntctCnclsMthdNm != ''">
             AND cntctCnclsMthdNm = #{cntctCnclsMthdNm}
@@ -246,11 +251,15 @@
 
     <!-- ===== 통합 분류 계층 (중분류 → 품명내용), 2社 실제 데이터 기준 ===== -->
     <select id="selectCategoryHierarchy" resultType="map">
-        SELECT DISTINCT midCategory AS mid, prdctClsfcNo AS name
+        SELECT DISTINCT
+            type,
+            midCategory AS mid,
+            prdctClsfcNo AS name,
+            MD5(CONCAT(type, '\t', prdctClsfcNo)) AS categoryKey
         FROM ( <include refid="flatUnion"/> ) u
         WHERE midCategory IS NOT NULL AND midCategory &lt;&gt; ''
           AND prdctClsfcNo IS NOT NULL AND prdctClsfcNo &lt;&gt; ''
-        ORDER BY mid, name
+        ORDER BY type, mid, name
     </select>
 
     <!-- ===== 입찰계약방법 distinct (select 옵션) ===== -->
