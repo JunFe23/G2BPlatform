@@ -692,3 +692,5 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 프론트(`TopContractsReportView` 전면 재작성): 제목/메뉴 '탑 수주 현황', 분류 select, 통합 CategoryTreeSelect, 계약명, 입찰계약방법 select, 합쳐서/풀어서 토글, 상단 합계, saved 재배선(물품/쇼핑몰→/api/specific-item/saved, 공사/용역→market-contracts/saved), data-table 디자인·hover·스크롤 통일. 컬럼 alias는 신 매퍼와 동일(cmpNm/cntrctNm/prdctClsfcNo/firstCntrctAmt/thtmCntrctAmt/cntrctCnt).
 - 검증: compileJava PASS, npm build PASS, 로컬 SQL(물품418·쇼핑몰334·용역5·공사59=816, 합계·계층37 정상). V27 로컬 적용 후 드롭(Flyway 정식 적용).
 - 남은 일: 티켓B(민수 입력 top_manual_contract+CRUD 관리자+관급/민수 필터), 티켓C/G2B-29(시장현황 재소싱 후 procurement_contract_flat 등 정리).
+
+> G2B-49 핫픽스(2026-06-29): 첫 배포 후 탑수주현황 500 — specific_item_flat에 없는 `latest_change_seq`→`change_seq`, market_contract_flat에 없는 `bid_notice_no`(ntceNo)→`''` 수정. 로컬 전체 projection(flat 816/grouped) 실행 검증 후 재배포.
