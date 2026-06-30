@@ -61,7 +61,6 @@
           <input type="checkbox" v-model="filters.showSavedOnly" />
           저장된 데이터만 보기
         </label>
-        <span class="actions-sep" aria-hidden="true"></span>
         <div class="long-term-toggle-wrap">
           <span class="long-term-toggle-label">장기계약 건</span>
           <button
@@ -655,9 +654,6 @@ onMounted(() => {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid #e2e8f0;
-}
-.actions-sep {
-  flex: 1;
 }
 .checkbox-label {
   display: flex;
