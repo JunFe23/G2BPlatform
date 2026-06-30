@@ -944,7 +944,7 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 ## 36. G2B-57 — 탑 수주 현황 민수 입력 업체명 정규화 및 중복 제거 (2026-06-30)
 
 - 티켓: G2B-57(에픽 G2B-25). 브랜치: `feature/G2B-57-manual-vendor-canonical-name`.
-- 상태: 구현 및 로컬 빌드 검증 완료. **커밋/푸시/PR/배포는 아직 안 함**(이 섹션 작성 시점 기준).
+- 상태: **배포 완료**. PR #54 머지 후 운영 서버 Docker 재빌드/재기동 완료.
 - 요구:
   - 탑 수주 현황 민수 데이터 입력 시 업체 선택 표기를 정확한 법인명으로 변경.
     - `탑인더스트리` → `탑인더스트리(주)`
@@ -961,5 +961,13 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 검증:
   - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
   - npm 로그 파일 생성 권한 경고(`~/.npm/_logs` EPERM)와 Vite chunk size 경고는 있었지만 빌드 성공.
-- 남은 일:
-  - PR 생성/머지 후 운영 배포 및 handoff 배포 기록 갱신.
+- 배포 완료(2026-06-30):
+  - 커밋: `fd5b632` (`G2B-57 feat: 민수 입력 업체명 정규화`).
+  - PR #54 머지: master merge commit `f31fb85`.
+  - 서버 `~/g2b`에서 `git fetch && git merge origin/master && docker compose build && docker compose up -d` 실행 완료.
+  - 서버 로컬수정 `deploy/g2b.conf` 보존 확인(`git status --short deploy/g2b.conf` = `M deploy/g2b.conf`).
+  - Docker build 성공: api는 캐시 사용, web은 `npm run build` PASS.
+  - `g2b-api-1`/`g2b-web-1` 재기동 완료.
+  - 운영 웹 `https://g2btop.duckdns.org/` 200 OK, 신규 번들 `index-BfU1iTJ7.js`/`index-CeexNyHh.css` 응답 확인.
+  - 운영 API 보호 경로 `/api/report/top-companies?grouped=true&start=0&length=1` → 401(인증 전 라우팅 정상, 500 아님).
+  - API 로그: Spring Boot 정상 기동, Flyway schema version 29 / 신규 migration 없음, 배포 직후 SQL 에러 없음.
