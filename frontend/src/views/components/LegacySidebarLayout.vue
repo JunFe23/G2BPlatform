@@ -53,7 +53,7 @@
             <span class="menu-label">탑 수주 현황</span>
           </li>
           <li class="menu-item" @click="$router.push('/report-target-projects')">
-            <span class="menu-label">수주대상 사업탐색</span>
+            <span class="menu-label">사업탐색(with 설계&감리)</span>
           </li>
           <li class="menu-item" @click="$router.push('/report-dashboard')">
             <span class="menu-label">대시보드</span>
