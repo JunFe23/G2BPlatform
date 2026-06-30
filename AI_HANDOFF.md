@@ -938,3 +938,28 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - 운영 웹 `https://g2btop.duckdns.org/` 200 OK, 신규 번들 `index-DilD_bpg.js`/`index-BDivlsGZ.css` 응답 확인.
   - 운영 API 보호 경로 `/api/report/top-companies?grouped=true&start=0&length=1` → 401(인증 전 라우팅 정상, 500 아님).
   - API 로그: Spring Boot 정상 기동, Flyway schema version 29 / 신규 migration 없음, 배포 직후 SQL 에러 없음.
+
+---
+
+## 36. G2B-57 — 탑 수주 현황 민수 입력 업체명 정규화 및 중복 제거 (2026-06-30)
+
+- 티켓: G2B-57(에픽 G2B-25). 브랜치: `feature/G2B-57-manual-vendor-canonical-name`.
+- 상태: 구현 및 로컬 빌드 검증 완료. **커밋/푸시/PR/배포는 아직 안 함**(이 섹션 작성 시점 기준).
+- 요구:
+  - 탑 수주 현황 민수 데이터 입력 시 업체 선택 표기를 정확한 법인명으로 변경.
+    - `탑인더스트리` → `탑인더스트리(주)`
+    - `탑정보통신` → `탑정보통신 주식회사`
+  - 민수 입력 폼의 `업체`와 `업체명`이 중복이므로 `업체` select 하나로 정리.
+- 변경:
+  - `frontend/src/views/TopContractsReportView.vue`
+    - `vendorOptions`의 업체명을 정확한 법인명으로 수정.
+    - 민수 입력 폼에서 `업체명` input 제거.
+    - `manualForm.vendorName` 상태와 `onVendorChange()` 제거.
+    - `toPayload()`에서 `vendorName`을 `vendorBizRegNo` 기준 canonical name으로 자동 세팅.
+    - 민수 목록의 업체명 표시는 `vendorBizRegNo` 기준 canonical name을 우선 사용하고, 알 수 없는 번호일 때만 기존 저장값 fallback.
+  - 백엔드/API/DB 스키마 변경 없음. `top_manual_contract.vendor_name` 컬럼은 유지.
+- 검증:
+  - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
+  - npm 로그 파일 생성 권한 경고(`~/.npm/_logs` EPERM)와 Vite chunk size 경고는 있었지만 빌드 성공.
+- 남은 일:
+  - PR 생성/머지 후 운영 배포 및 handoff 배포 기록 갱신.

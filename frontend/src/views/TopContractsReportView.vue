@@ -105,11 +105,10 @@
               </select>
             </label>
             <label>업체
-              <select v-model="manualForm.vendorBizRegNo" @change="onVendorChange">
+              <select v-model="manualForm.vendorBizRegNo">
                 <option v-for="v in vendorOptions" :key="v.no" :value="v.no">{{ v.name }}</option>
               </select>
             </label>
-            <label>업체명<input type="text" v-model="manualForm.vendorName" /></label>
             <label>계약건명<input type="text" v-model="manualForm.contractName" /></label>
             <label>수요기관명<input type="text" v-model="manualForm.demandAgencyName" /></label>
             <label>수요기관지역명<input type="text" v-model="manualForm.demandAgencyRegion" /></label>
@@ -144,7 +143,7 @@
               <tr v-if="manualList.length === 0"><td colspan="8" class="no-data">민수 데이터가 없습니다.</td></tr>
               <tr v-for="row in manualList" :key="row.id">
                 <td>{{ row.type }}</td>
-                <td>{{ row.vendorName }}</td>
+                <td>{{ vendorDisplayName(row.vendorBizRegNo, row.vendorName) }}</td>
                 <td>{{ row.contractName }}</td>
                 <td>{{ row.demandAgencyName }}</td>
                 <td>{{ row.productClassification }}</td>
@@ -245,8 +244,8 @@ const authStore = useAuthStore()
 const isAdmin = computed(() => authStore.isAdmin)
 
 const vendorOptions = [
-  { no: '1188117437', name: '탑인더스트리' },
-  { no: '1188119624', name: '탑정보통신' },
+  { no: '1188117437', name: '탑인더스트리(주)' },
+  { no: '1188119624', name: '탑정보통신 주식회사' },
 ]
 
 const isLoading = ref(false)
@@ -468,7 +467,6 @@ function emptyManualForm() {
     id: null,
     type: '물품',
     vendorBizRegNo: vendorOptions[0].no,
-    vendorName: vendorOptions[0].name,
     contractName: '',
     demandAgencyName: '',
     demandAgencyRegion: '',
@@ -489,9 +487,12 @@ function resetManualForm() {
   Object.assign(manualForm, emptyManualForm())
 }
 
-function onVendorChange() {
-  const v = vendorOptions.find((o) => o.no === manualForm.vendorBizRegNo)
-  if (v && !manualForm.vendorName) manualForm.vendorName = v.name
+function selectedVendorName(vendorBizRegNo) {
+  return vendorOptions.find((o) => o.no === vendorBizRegNo)?.name || ''
+}
+
+function vendorDisplayName(vendorBizRegNo, fallbackName) {
+  return selectedVendorName(vendorBizRegNo) || fallbackName || ''
 }
 
 async function toggleManualPanel() {
@@ -513,7 +514,7 @@ function toPayload() {
   return {
     type: manualForm.type,
     vendorBizRegNo: manualForm.vendorBizRegNo,
-    vendorName: manualForm.vendorName || null,
+    vendorName: selectedVendorName(manualForm.vendorBizRegNo) || null,
     contractName: manualForm.contractName || null,
     demandAgencyName: manualForm.demandAgencyName || null,
     demandAgencyRegion: manualForm.demandAgencyRegion || null,
@@ -553,7 +554,6 @@ function editManual(row) {
     id: row.id,
     type: row.type,
     vendorBizRegNo: row.vendorBizRegNo,
-    vendorName: row.vendorName || '',
     contractName: row.contractName || '',
     demandAgencyName: row.demandAgencyName || '',
     demandAgencyRegion: row.demandAgencyRegion || '',
