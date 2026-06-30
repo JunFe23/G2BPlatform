@@ -85,7 +85,7 @@
             DATE_FORMAT(last_contract_date, '%Y-%m-%d')         AS cntrctDate,
             last_contract_amount                                AS thtmCntrctAmt,
             contract_change_seq                                 AS cntrctCnt,
-            'N'                                                 AS saved
+            IFNULL(saved, 'N')                                  AS saved
         FROM top_manual_contract
         WHERE vendor_biz_reg_no IN ('1188117437','1188119624')
     </sql>
@@ -289,6 +289,7 @@
         <result property="lastContractAmount"   column="last_contract_amount"/>
         <result property="contractChangeSeq"    column="contract_change_seq"/>
         <result property="dataOrigin"           column="data_origin"/>
+        <result property="saved"                column="saved"/>
         <result property="createdAt"            column="created_at"/>
         <result property="updatedAt"            column="updated_at"/>
     </resultMap>
@@ -333,6 +334,12 @@
             last_contract_date = #{lastContractDate},
             last_contract_amount = #{lastContractAmount},
             contract_change_seq = #{contractChangeSeq}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateManualSaved">
+        UPDATE top_manual_contract
+        SET saved = #{saved}
         WHERE id = #{id}
     </update>
 

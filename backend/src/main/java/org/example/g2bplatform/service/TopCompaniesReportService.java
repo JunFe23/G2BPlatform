@@ -71,6 +71,12 @@ public class TopCompaniesReportService {
     }
 
     @Transactional
+    public boolean updateManualSaved(Long id, String saved) {
+        String normalized = "Y".equalsIgnoreCase(saved) ? "Y" : "N";
+        return mapper.updateManualSaved(id, normalized) > 0;
+    }
+
+    @Transactional
     public boolean deleteManual(Long id) {
         return mapper.deleteManual(id) > 0;
     }

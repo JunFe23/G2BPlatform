@@ -971,3 +971,37 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - 운영 웹 `https://g2btop.duckdns.org/` 200 OK, 신규 번들 `index-BfU1iTJ7.js`/`index-CeexNyHh.css` 응답 확인.
   - 운영 API 보호 경로 `/api/report/top-companies?grouped=true&start=0&length=1` → 401(인증 전 라우팅 정상, 500 아님).
   - API 로그: Spring Boot 정상 기동, Flyway schema version 29 / 신규 migration 없음, 배포 직후 SQL 에러 없음.
+
+---
+
+## 37. G2B-58 — 탑 수주 현황 저장 필터 즉시 조회 및 민수 saved 지원 (2026-06-30)
+
+- 티켓: G2B-58(에픽 G2B-25). 브랜치: `feature/G2B-58-top-saved-filter-manual`.
+- 상태: 구현 및 로컬 빌드 검증 완료. **커밋/푸시/PR/배포는 아직 안 함**(사용자 명시 요청 대기).
+- 요구:
+  - 탑 수주 현황의 `저장된 데이터만 보기` 체크 시 시장데이터 페이지처럼 즉시 재조회.
+  - 민수 데이터도 저장/해제 및 저장된 데이터만 보기 필터 대상에 포함.
+- 원인:
+  - 탑 수주 현황은 `filters.showSavedOnly` 변경을 watch하지 않아 체크만으로는 `applied`/API 조회가 갱신되지 않았고, `검색` 버튼을 눌러야 반영됨.
+  - `top_manual_contract`에는 `saved` 컬럼이 없어 민수 row는 매퍼에서 항상 `'N' AS saved`로 내려왔고, 프론트 저장 토글도 민수 전용 분기 없이 관급 API로 흘러갈 수 있었음.
+- 변경:
+  - `backend/src/main/resources/db/migration/V30__add_top_manual_contract_saved.sql`
+    - `top_manual_contract.saved CHAR(1) NOT NULL DEFAULT 'N'` 컬럼 및 `idx_tmc_saved` 인덱스 추가.
+  - `TopManualContract` entity에 `saved` 필드/getter/setter 추가.
+  - `TopCompaniesReportMapper.xml`
+    - `manualSelect`의 saved projection을 `IFNULL(saved, 'N') AS saved`로 변경.
+    - `manualEntityMap`에 saved 매핑 추가.
+    - `updateManualSaved` 쿼리 추가.
+  - `TopCompaniesReportMapper.java`/`TopCompaniesReportService`/`ReportDataController`
+    - `PATCH /api/report/top-companies/manual/{id}/saved` 추가.
+    - `hasAnyRole('ADMIN','SUPER_ADMIN')` 권한 유지.
+  - `frontend/src/views/TopContractsReportView.vue`
+    - `filters.showSavedOnly` watch 추가 → 체크/해제 즉시 `handleSearch()`.
+    - `toggleSave()`에서 `dataOrigin === '민수'`일 때 신규 manual saved API 호출.
+- 검증:
+  - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew compileJava` PASS.
+  - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
+  - 로컬 MySQL 확인: 현재 `top_manual_contract`에는 `saved` 컬럼 없음, 민수 행 0건. V30은 아직 로컬 DB에 직접 적용하지 않음(Flyway 적용 시 검증 예정).
+- 남은 일:
+  - 사용자 승인 시 커밋/푸시/PR 생성.
+  - 배포 요청 시 PR 머지 후 운영 Flyway V30 적용 및 API/화면 확인.
