@@ -977,7 +977,7 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 ## 37. G2B-58 — 탑 수주 현황 저장 필터 즉시 조회 및 민수 saved 지원 (2026-06-30)
 
 - 티켓: G2B-58(에픽 G2B-25). 브랜치: `feature/G2B-58-top-saved-filter-manual`.
-- 상태: 구현 및 로컬 빌드 검증 완료. **커밋/푸시/PR/배포는 아직 안 함**(사용자 명시 요청 대기).
+- 상태: **배포 완료**. PR #55 머지 후 운영 서버 Docker 재빌드/재기동 및 Flyway V30 적용 완료.
 - 요구:
   - 탑 수주 현황의 `저장된 데이터만 보기` 체크 시 시장데이터 페이지처럼 즉시 재조회.
   - 민수 데이터도 저장/해제 및 저장된 데이터만 보기 필터 대상에 포함.
@@ -1002,6 +1002,16 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
   - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew compileJava` PASS.
   - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
   - 로컬 MySQL 확인: 현재 `top_manual_contract`에는 `saved` 컬럼 없음, 민수 행 0건. V30은 아직 로컬 DB에 직접 적용하지 않음(Flyway 적용 시 검증 예정).
-- 남은 일:
-  - 사용자 승인 시 커밋/푸시/PR 생성.
-  - 배포 요청 시 PR 머지 후 운영 Flyway V30 적용 및 API/화면 확인.
+- 배포 완료(2026-06-30):
+  - 커밋: `adfa6a0` (`G2B-58 feat: 탑 저장 필터와 민수 saved 지원`).
+  - PR #55 머지: master merge commit `a781b16`.
+  - 서버 `~/g2b`에서 `git fetch && git merge origin/master && docker compose build && docker compose up -d` 실행 완료.
+  - 서버 로컬수정 `deploy/g2b.conf` 보존 확인(`git status --short deploy/g2b.conf` = `M deploy/g2b.conf`).
+  - Docker build 성공: web `npm run build` PASS, api `gradle build -x test --no-daemon` BUILD SUCCESSFUL.
+  - `g2b-api-1`/`g2b-web-1` 재기동 완료.
+  - 운영 Flyway: 31 migrations validated, schema 29 → **V30 적용 성공**, now at version v30, execution time 0.304s.
+  - 운영 웹 `https://g2btop.duckdns.org/` 200 OK, 신규 번들 `index-Kl_92P2_.js`/`index-CjoYEagr.css` 응답 확인.
+  - 운영 API 보호 경로 확인:
+    - `/api/report/top-companies?grouped=true&showSavedOnly=true&start=0&length=1` → 401(인증 전 라우팅 정상, 500 아님).
+    - `/api/report/top-companies/manual/1/saved` → 401(인증 전 라우팅 정상, 500 아님).
+  - API 로그: Spring Boot 정상 기동, 배포 직후 SQL 에러 없음.
