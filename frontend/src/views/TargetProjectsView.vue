@@ -51,11 +51,6 @@
           </template>
         </div>
 
-        <div class="search-filter-row keyword-row">
-          <input type="text" v-model="reportFilters.includeText" placeholder="포함 텍스트 예: 하수도, 상수도" />
-          <input type="text" v-model="reportFilters.excludeText" placeholder="제외 텍스트 예: 송전탑" />
-        </div>
-
         <div class="search-actions-row">
           <button @click="handleReportSearch" class="search-btn">검색</button>
           <button @click="handleReportExcel" class="excel-btn">엑셀 다운로드</button>
@@ -150,6 +145,18 @@
                   v-model="reportModalSearch"
                   placeholder="계약명, 수요기관, 공공조달분류 검색"
                   class="modal-search-input"
+                />
+                <input
+                  type="text"
+                  v-model="reportModalIncludeText"
+                  placeholder="포함 텍스트 예: 하수도, 상수도"
+                  class="modal-search-input keyword-input"
+                />
+                <input
+                  type="text"
+                  v-model="reportModalExcludeText"
+                  placeholder="제외 텍스트 예: 송전탑"
+                  class="modal-search-input keyword-input"
                 />
                 <label class="select-all-label">
                   <input type="checkbox" :checked="isAllVisibleChecked" @change="toggleVisibleCandidates" />
@@ -461,8 +468,6 @@ const reportFilters = reactive({
   month: '',
   rangeStart: '',
   rangeEnd: '',
-  includeText: '',
-  excludeText: '',
 })
 
 const reportItems = ref([
@@ -543,6 +548,8 @@ const reportCandidateItems = ref([
 const isReportModalOpen = ref(false)
 const activeReportTab = ref('select')
 const reportModalSearch = ref('')
+const reportModalIncludeText = ref('')
+const reportModalExcludeText = ref('')
 const reportSelectedCandidates = ref([])
 const reportTabs = [
   { value: 'select', label: '선택하기' },
@@ -566,7 +573,7 @@ const filteredReportItems = computed(() => {
     if (reportFilters.categoryName && item.categoryName !== reportFilters.categoryName) return false
     if (reportFilters.cntctCnclsMthdNm && item.contractMethod !== reportFilters.cntctCnclsMthdNm) return false
     if (reportFilters.firstCntrctDate && item.firstContractDate !== reportFilters.firstCntrctDate) return false
-    return matchesKeywordRule(item)
+    return true
   })
 })
 
@@ -575,10 +582,8 @@ const visibleCandidates = computed(() => {
   const existing = new Set(reportItems.value.map((item) => item.contractNo))
   return reportCandidateItems.value.filter((item) => {
     if (activeReportTab.value === 'select' && existing.has(item.contractNo)) return false
-    if (!keyword) return true
-    return [item.contractName, item.demandAgencyName, item.categoryName].some((value) =>
-      value.includes(keyword),
-    )
+    if (keyword && !candidateTargetText(item).includes(keyword)) return false
+    return matchesModalKeywordRule(item)
   })
 })
 
@@ -594,10 +599,14 @@ function splitWords(value) {
     .filter(Boolean)
 }
 
-function matchesKeywordRule(item) {
-  const target = `${item.contractName} ${item.demandAgencyName} ${item.categoryName}`
-  const includeWords = splitWords(reportFilters.includeText)
-  const excludeWords = splitWords(reportFilters.excludeText)
+function candidateTargetText(item) {
+  return `${item.contractName} ${item.demandAgencyName} ${item.categoryName}`
+}
+
+function matchesModalKeywordRule(item) {
+  const target = candidateTargetText(item)
+  const includeWords = splitWords(reportModalIncludeText.value)
+  const excludeWords = splitWords(reportModalExcludeText.value)
   if (includeWords.length > 0 && !includeWords.some((word) => target.includes(word))) return false
   if (excludeWords.some((word) => target.includes(word))) return false
   return true
@@ -615,6 +624,8 @@ function openReportModal() {
   isReportModalOpen.value = true
   activeReportTab.value = 'select'
   reportModalSearch.value = ''
+  reportModalIncludeText.value = ''
+  reportModalExcludeText.value = ''
   reportSelectedCandidates.value = []
 }
 
@@ -1188,12 +1199,18 @@ a:hover {
   align-items: center;
   gap: 12px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .modal-search-input {
-  width: 100%;
+  flex: 1 1 260px;
+  min-width: 180px;
   padding: 8px;
   box-sizing: border-box;
+}
+
+.keyword-input {
+  flex-basis: 220px;
 }
 
 .select-all-label {
