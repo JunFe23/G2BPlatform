@@ -26,6 +26,7 @@ public class TopManualContract {
     private Long lastContractAmount;
     private Integer contractChangeSeq;
     private String dataOrigin;            // 고정: 민수
+    private String saved;                 // Y|N
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -79,6 +80,9 @@ public class TopManualContract {
 
     public String getDataOrigin() { return dataOrigin; }
     public void setDataOrigin(String dataOrigin) { this.dataOrigin = dataOrigin; }
+
+    public String getSaved() { return saved; }
+    public void setSaved(String saved) { this.saved = saved; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

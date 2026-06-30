@@ -36,5 +36,6 @@ public interface TopCompaniesReportMapper {
     TopManualContract selectManualById(@Param("id") Long id);
     int insertManual(TopManualContract entity);
     int updateManual(TopManualContract entity);
+    int updateManualSaved(@Param("id") Long id, @Param("saved") String saved);
     int deleteManual(@Param("id") Long id);
 }

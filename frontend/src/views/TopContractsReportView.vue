@@ -382,7 +382,9 @@ async function handleDownloadExcel() {
 async function toggleSave(item) {
   const nextSaved = item.saved === 'Y' ? 'N' : 'Y'
   try {
-    if (item.type === '물품' || item.type === '쇼핑몰') {
+    if ((item.dataOrigin || '관급') === '민수') {
+      await axios.patch(`${MANUAL_API}/${item.pk1}/saved`, { saved: nextSaved })
+    } else if (item.type === '물품' || item.type === '쇼핑몰') {
       const body = { grouped: grouped.value, saved: nextSaved }
       if (grouped.value) {
         body.dataType = item.type === '쇼핑몰' ? 'shopping_mall' : 'general'
@@ -422,6 +424,11 @@ function formatNumber(val) {
   const num = Number(val)
   return isNaN(num) ? val : num.toLocaleString('ko-KR')
 }
+
+watch(
+  () => filters.showSavedOnly,
+  () => handleSearch(),
+)
 
 // 표 셀 말줄임(...) 시 hover로 전체값 — 다른 페이지와 동일
 function refreshCellTitles() {

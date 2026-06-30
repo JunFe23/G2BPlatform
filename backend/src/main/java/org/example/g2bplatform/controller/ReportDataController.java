@@ -554,6 +554,18 @@ public class ReportDataController {
         return ResponseEntity.ok(body);
     }
 
+    @Operation(summary = "탑 수주현황 민수 데이터 저장 여부 업데이트", description = "ROLE_ADMIN 전용")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PatchMapping("/top-companies/manual/{id}/saved")
+    public ResponseEntity<Map<String, Object>> updateManualSaved(@PathVariable Long id,
+                                                                 @RequestBody Map<String, Object> req) {
+        String saved = req != null && req.get("saved") != null
+                ? ("Y".equalsIgnoreCase(req.get("saved").toString()) ? "Y" : "N") : "N";
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", topCompaniesReportService.updateManualSaved(id, saved));
+        return ResponseEntity.ok(body);
+    }
+
     @Operation(summary = "탑 수주현황 민수 데이터 삭제", description = "ROLE_ADMIN 전용")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @DeleteMapping("/top-companies/manual/{id}")
