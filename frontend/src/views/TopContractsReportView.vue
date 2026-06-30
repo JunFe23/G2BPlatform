@@ -594,25 +594,37 @@ onMounted(() => {
   color: #ecf0f1;
 }
 .search-container {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   padding: 18px 20px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
 }
 .search-filter-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px 12px;
+  flex: 1 1 100%;
+  min-width: 0;
+  justify-content: flex-end;
+}
+.search-filter-row input[type='text'],
+.search-filter-row input[type='month'],
+.search-filter-row select {
+  min-width: 100px;
 }
 .search-filter-row input[type='text'],
 .search-filter-row input[type='month'],
 .date-select {
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 0.9375em;
   background: #fff;
   color: #2c3e50;
   min-width: 120px;
@@ -623,7 +635,6 @@ onMounted(() => {
 }
 .search-category-row {
   padding-top: 8px;
-  margin-top: 8px;
   border-top: 1px dashed #e2e8f0;
   justify-content: flex-end;
 }
@@ -631,14 +642,19 @@ onMounted(() => {
   font-size: 0.875em;
   font-weight: 500;
   color: #475569;
+  white-space: nowrap;
   align-self: center;
 }
 .search-actions-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
+  flex: 1 1 100%;
   margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
 }
 .actions-sep {
   flex: 1;

@@ -872,3 +872,32 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
     - `/api/report/top-companies?grouped=true&start=0&length=1` → 401(인증 전 라우팅 정상, 500 아님).
     - `/api/report/top-companies/filter-options` → 401(인증 전 라우팅 정상, 500 아님).
   - API 로그: Spring Boot 정상 기동, Flyway schema version 29 / 신규 migration 없음, 배포 직후 SQL 에러 없음.
+
+---
+
+## 34. G2B-55 — 탑 수주 현황 검색필터 CSS 시장데이터 페이지 양식 통일 (2026-06-30)
+
+- 티켓: G2B-55(에픽 G2B-25). 브랜치: `feature/G2B-55-top-filter-css-parity`.
+- 상태: 구현 및 로컬 빌드 검증 완료. **커밋/푸시/PR/배포는 아직 안 함**(사용자 명시 요청 대기).
+- 요구:
+  - 탑 수주 현황 페이지 검색필터 CSS 양식을 시장데이터-물품/용역/공사 페이지와 일치.
+  - 오른쪽 정렬과 각 라인 구성을 통일.
+  - 라인 구성은 기존 G2B-54 기준 유지:
+    1. 기본필터
+    2. 연도/월/기간 검색
+    3. 공공조달분류
+    4. 저장/장기계약/검색/엑셀
+- 변경:
+  - `frontend/src/views/TopContractsReportView.vue` CSS만 수정.
+  - `.search-container`를 시장데이터 페이지처럼 flex wrapper로 변경(`display:flex`, `flex-wrap:wrap`, `gap:12px`, `align-items:flex-start`)하고 margin-bottom을 24px로 통일.
+  - `.search-filter-row`를 전체 폭 row(`flex:1 1 100%`, `min-width:0`)로 만들고 `justify-content:flex-end`/`align-items:center` 적용.
+  - input/select padding/font-size/min-width를 시장데이터 페이지 기준으로 맞춤.
+  - `.search-category-row`의 별도 `margin-top` 제거, dashed border와 우측 정렬 유지.
+  - `.search-actions-row`에 `justify-content:flex-end`, `flex:1 1 100%`, `padding-top:10px`, 상단 실선 border 적용.
+  - 백엔드/API/DB 변경 없음.
+- 검증:
+  - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
+  - npm 로그 파일 생성 권한 경고(`~/.npm/_logs` EPERM)와 Vite chunk size 경고는 있었지만 빌드 성공.
+- 남은 일:
+  - 사용자 승인 시 커밋/푸시/PR 생성.
+  - 배포 요청 시 PR 머지 후 서버 배포 및 운영 화면 확인.
