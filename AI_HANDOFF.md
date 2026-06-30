@@ -878,7 +878,7 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 ## 34. G2B-55 — 탑 수주 현황 검색필터 CSS 시장데이터 페이지 양식 통일 (2026-06-30)
 
 - 티켓: G2B-55(에픽 G2B-25). 브랜치: `feature/G2B-55-top-filter-css-parity`.
-- 상태: 구현 및 로컬 빌드 검증 완료. **커밋/푸시/PR/배포는 아직 안 함**(사용자 명시 요청 대기).
+- 상태: **배포 완료**. PR #52 머지 후 운영 서버 Docker 재빌드/재기동 완료.
 - 요구:
   - 탑 수주 현황 페이지 검색필터 CSS 양식을 시장데이터-물품/용역/공사 페이지와 일치.
   - 오른쪽 정렬과 각 라인 구성을 통일.
@@ -898,6 +898,13 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 검증:
   - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
   - npm 로그 파일 생성 권한 경고(`~/.npm/_logs` EPERM)와 Vite chunk size 경고는 있었지만 빌드 성공.
-- 남은 일:
-  - 사용자 승인 시 커밋/푸시/PR 생성.
-  - 배포 요청 시 PR 머지 후 서버 배포 및 운영 화면 확인.
+- 배포 완료(2026-06-30):
+  - 커밋: `6438058` (`G2B-55 feat: 탑 수주 현황 필터 CSS 통일`).
+  - PR #52 머지: master merge commit `a4a92b4`.
+  - 서버 `~/g2b`에서 `git fetch && git merge origin/master && docker compose build && docker compose up -d` 실행 완료.
+  - 서버 로컬수정 `deploy/g2b.conf` 보존 확인(`git status --short deploy/g2b.conf` = `M deploy/g2b.conf`).
+  - Docker build 성공: api는 캐시 사용, web은 `npm run build` PASS.
+  - `g2b-api-1`/`g2b-web-1` 재기동 완료.
+  - 운영 웹 `https://g2btop.duckdns.org/` 200 OK, 신규 번들 `index-g1XMKSrF.js`/`index-BVGJIVXF.css` 응답 확인.
+  - 운영 API 보호 경로 `/api/report/top-companies?grouped=true&start=0&length=1` → 401(인증 전 라우팅 정상, 500 아님).
+  - API 로그: Spring Boot 정상 기동, Flyway schema version 29 / 신규 migration 없음, 배포 직후 SQL 에러 없음.
