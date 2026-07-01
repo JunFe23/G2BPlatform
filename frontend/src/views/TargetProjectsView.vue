@@ -139,7 +139,7 @@
               포함/제외 키워드를 먼저 저장해두고, 수주대상 확정 화면에서 추천 리스트 분류 기준으로 사용합니다.
             </div>
             <div v-else-if="activeReportTab === 'select'">
-              기간과 설계/감리 조건으로 조회한 뒤 추천/제외 추천/미분류를 나눠 보여줍니다. 제외 추천도 콤보박스로 수주대상 확정이 가능합니다.
+              기간과 설계/감리 조건으로 조회한 뒤 추천/제외 추천/미분류를 나눠 보여줍니다. 각 리스트에서 체크한 항목은 확정 예정 항목에 포함됩니다.
             </div>
             <div v-else-if="activeReportTab === 'reselect'">
               아직 확정되지 않은 계약만 다시 조회해서 추가 선택하는 화면입니다.
@@ -222,16 +222,17 @@
                     :key="item.contractNo"
                     class="modal-list-item candidate-item"
                   >
-                    <span class="recommendation-reason">제외 키워드: {{ matchedKeyword(item, 'exclude') }}</span>
-                    <span>{{ item.firstContractDate }} | {{ item.contractName }} | {{ item.demandAgencyName }}</span>
-                    <select
-                      class="candidate-action-select"
-                      :value="excludedCandidateActions[item.contractNo] || 'exclude'"
-                      @change="handleExcludedCandidateAction(item, $event.target.value)"
-                    >
-                      <option value="exclude">대상 제외</option>
-                      <option value="target">수주대상</option>
-                    </select>
+                    <label>
+                      <input
+                        type="checkbox"
+                        :checked="isCandidateChecked(item)"
+                        @change="toggleCandidate(item)"
+                      />
+                      <span>
+                        <span class="recommendation-reason">제외 키워드: {{ matchedKeyword(item, 'exclude') }}</span>
+                        {{ item.firstContractDate }} | {{ item.contractName }} | {{ item.demandAgencyName }}
+                      </span>
+                    </label>
                   </li>
                   <li v-if="excludedCandidates.length === 0" class="modal-loading">조회 결과가 없습니다.</li>
                 </ul>
@@ -781,7 +782,6 @@ const keywordDraft = reactive({
   exclude: keywordDictionary.exclude.join(', '),
 })
 const reportSelectedCandidates = ref([])
-const excludedCandidateActions = reactive({})
 const manualInputItem = ref(null)
 const reportTabs = [
   { value: 'keyword', label: '키워드 사전' },
@@ -899,7 +899,6 @@ function openReportModal() {
   activeReportTab.value = 'select'
   reportModalSearch.value = ''
   reportSelectedCandidates.value = []
-  for (const key of Object.keys(excludedCandidateActions)) delete excludedCandidateActions[key]
 }
 
 function closeReportModal() {
@@ -929,15 +928,6 @@ function toggleRecommendedCandidates() {
   for (const item of recommendedCandidates.value) {
     if (!isCandidateChecked(item)) reportSelectedCandidates.value.push({ ...item, manual: createDefaultManual() })
   }
-}
-
-function handleExcludedCandidateAction(item, value) {
-  excludedCandidateActions[item.contractNo] = value
-  if (value === 'target' && !isCandidateChecked(item)) {
-    reportSelectedCandidates.value.push({ ...item, manual: createDefaultManual() })
-    return
-  }
-  if (value !== 'target') removeReportCandidate(item)
 }
 
 function removeReportCandidate(item) {
@@ -1579,16 +1569,6 @@ a:hover {
   color: #475569;
   font-size: 12px;
   font-weight: 700;
-}
-
-.candidate-action-select {
-  display: block;
-  width: 132px;
-  margin-top: 8px;
-  padding: 6px;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  background: #fff;
 }
 
 .selected-pane {
