@@ -30,12 +30,6 @@
             <option value="토목감리용역">토목감리용역</option>
             <option value="건축감리용역">건축감리용역</option>
           </select>
-          <select v-model="reportFilters.cntctCnclsMthdNm" class="date-select">
-            <option value="">입찰계약방법 (전체)</option>
-            <option value="제한경쟁">제한경쟁</option>
-            <option value="일반경쟁">일반경쟁</option>
-            <option value="수의계약">수의계약</option>
-          </select>
           <input type="text" v-model="reportFilters.firstCntrctDate" placeholder="최초계약일자(YYYY-MM-DD)" />
         </div>
 
@@ -145,7 +139,7 @@
               포함/제외 키워드를 먼저 저장해두고, 수주대상 확정 화면에서 추천 리스트 분류 기준으로 사용합니다.
             </div>
             <div v-else-if="activeReportTab === 'select'">
-              기간과 설계/감리 조건으로 조회한 뒤 저장된 키워드 기준으로 대상 추천/제외 추천/미분류를 나눠 보여줍니다.
+              기간과 설계/감리 조건으로 조회한 뒤 추천/제외 추천/미분류를 나눠 보여줍니다. 제외 추천도 콤보박스로 수주대상 확정이 가능합니다.
             </div>
             <div v-else-if="activeReportTab === 'reselect'">
               아직 확정되지 않은 계약만 다시 조회해서 추가 선택하는 화면입니다.
@@ -192,10 +186,20 @@
                 <option value="first">최초계약일자 기준</option>
                 <option value="completion">완수일자 기준</option>
               </select>
-              <select v-model="reportModalFilters.year" class="date-select">
-                <option value="">기간 전체</option>
-                <option v-for="y in years" :key="y" :value="y">{{ y }}년</option>
+              <select v-model="reportModalFilters.dateType" class="date-select">
+                <option value="year">연도 검색</option>
+                <option value="month">특정 월 검색</option>
+                <option value="range">기간 검색</option>
               </select>
+              <select v-if="reportModalFilters.dateType === 'year'" v-model="reportModalFilters.year" class="date-select">
+                <option value="">선택</option>
+                <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+              </select>
+              <input v-if="reportModalFilters.dateType === 'month'" type="month" v-model="reportModalFilters.month" />
+              <template v-if="reportModalFilters.dateType === 'range'">
+                <input type="month" v-model="reportModalFilters.rangeStart" placeholder="시작월" />
+                <input type="month" v-model="reportModalFilters.rangeEnd" placeholder="종료월" />
+              </template>
               <select v-model="reportModalFilters.designSupervisionType" class="date-select">
                 <option value="">설계/감리 전체</option>
                 <option value="설계">설계</option>
@@ -207,10 +211,6 @@
                 placeholder="계약명, 수요기관, 공공조달분류 검색"
                 class="modal-search-input"
               />
-              <label class="select-all-label">
-                <input type="checkbox" :checked="isAllSelectableChecked" @change="toggleSelectableCandidates" />
-                조회결과 전체 선택
-              </label>
             </div>
 
             <div class="recommendation-grid">
@@ -224,6 +224,14 @@
                   >
                     <span class="recommendation-reason">제외 키워드: {{ matchedKeyword(item, 'exclude') }}</span>
                     <span>{{ item.firstContractDate }} | {{ item.contractName }} | {{ item.demandAgencyName }}</span>
+                    <select
+                      class="candidate-action-select"
+                      :value="excludedCandidateActions[item.contractNo] || 'exclude'"
+                      @change="handleExcludedCandidateAction(item, $event.target.value)"
+                    >
+                      <option value="exclude">대상 제외</option>
+                      <option value="target">수주대상</option>
+                    </select>
                   </li>
                   <li v-if="excludedCandidates.length === 0" class="modal-loading">조회 결과가 없습니다.</li>
                 </ul>
@@ -251,7 +259,13 @@
               </div>
 
               <div class="modal-pane recommendation-pane include">
-                <h4>대상 추천리스트</h4>
+                <div class="recommendation-heading">
+                  <h4>대상 추천리스트</h4>
+                  <label class="select-all-label">
+                    <input type="checkbox" :checked="isAllRecommendedChecked" @change="toggleRecommendedCandidates" />
+                    전체 선택
+                  </label>
+                </div>
                 <ul class="modal-list">
                   <li
                     v-for="item in recommendedCandidates"
@@ -336,7 +350,7 @@
           </div>
           <div class="manual-form">
             <label>
-              착수일자
+              착공일자
               <input type="text" v-model="manualInputItem.manual.startDate" placeholder="YYYY-MM-DD" />
             </label>
             <label>
@@ -357,6 +371,10 @@
                 <option value="확인">확인금액</option>
               </select>
             </div>
+            <label class="manual-note-field">
+              비고
+              <textarea v-model="manualInputItem.manual.note" placeholder="비고 입력"></textarea>
+            </label>
           </div>
           <div class="modal-footer">
             <button @click="manualInputItem = null" class="save-btn">저장</button>
@@ -586,7 +604,6 @@ const reportFilters = reactive({
   viewMode: 'flat',
   designSupervisionType: '',
   categoryName: '',
-  cntctCnclsMthdNm: '',
   firstCntrctDate: '',
   dateBasis: 'completion',
   dateType: 'year',
@@ -621,6 +638,7 @@ const reportItems = ref([
       controlAmountStatus: '예상',
       buildingControlAmount: '',
       buildingControlAmountStatus: '예상',
+      note: '장기계약 총완수일자 기준 검토 필요',
     },
   },
   {
@@ -647,6 +665,7 @@ const reportItems = ref([
       controlAmountStatus: '예상',
       buildingControlAmount: '',
       buildingControlAmountStatus: '예상',
+      note: '',
     },
   },
   {
@@ -673,6 +692,7 @@ const reportItems = ref([
       controlAmountStatus: '예상',
       buildingControlAmount: '',
       buildingControlAmountStatus: '예상',
+      note: '',
     },
   },
 ])
@@ -744,8 +764,12 @@ const isReportModalOpen = ref(false)
 const activeReportTab = ref('select')
 const reportModalSearch = ref('')
 const reportModalFilters = reactive({
-  dateBasis: 'completion',
+  dateBasis: 'first',
+  dateType: 'range',
   year: '',
+  month: '',
+  rangeStart: '2026-05',
+  rangeEnd: '2026-05',
   designSupervisionType: '',
 })
 const keywordDictionary = reactive({
@@ -757,6 +781,7 @@ const keywordDraft = reactive({
   exclude: keywordDictionary.exclude.join(', '),
 })
 const reportSelectedCandidates = ref([])
+const excludedCandidateActions = reactive({})
 const manualInputItem = ref(null)
 const reportTabs = [
   { value: 'keyword', label: '키워드 사전' },
@@ -786,8 +811,8 @@ const filteredReportItems = computed(() => {
     if (reportFilters.contractName && !item.contractName.includes(reportFilters.contractName)) return false
     if (reportFilters.designSupervisionType && item.designSupervisionType !== reportFilters.designSupervisionType) return false
     if (reportFilters.categoryName && item.categoryName !== reportFilters.categoryName) return false
-    if (reportFilters.cntctCnclsMthdNm && item.contractMethod !== reportFilters.cntctCnclsMthdNm) return false
     if (reportFilters.firstCntrctDate && item.firstContractDate !== reportFilters.firstCntrctDate) return false
+    if (!matchesDateFilter(item, reportFilters)) return false
     return true
   })
 })
@@ -798,7 +823,7 @@ const modalBaseCandidates = computed(() => {
   return reportCandidateItems.value.filter((item) => {
     if ((activeReportTab.value === 'select' || activeReportTab.value === 'reselect') && existing.has(item.contractNo)) return false
     if (reportModalFilters.designSupervisionType && item.designSupervisionType !== reportModalFilters.designSupervisionType) return false
-    if (reportModalFilters.year && !item.firstContractDate.startsWith(reportModalFilters.year)) return false
+    if (!matchesDateFilter(item, reportModalFilters)) return false
     if (keyword && !candidateTargetText(item).includes(keyword)) return false
     return true
   })
@@ -818,18 +843,9 @@ const neutralCandidates = computed(() =>
   ),
 )
 
-const selectableCandidates = computed(() => {
-  const blocked = new Set(excludedCandidates.value.map((item) => item.contractNo))
-  return [...recommendedCandidates.value, ...neutralCandidates.value].filter(
-    (item, index, list) =>
-      !blocked.has(item.contractNo) &&
-      list.findIndex((candidate) => candidate.contractNo === item.contractNo) === index,
-  )
-})
-
-const isAllSelectableChecked = computed(() => {
-  if (selectableCandidates.value.length === 0) return false
-  return selectableCandidates.value.every((item) => isCandidateChecked(item))
+const isAllRecommendedChecked = computed(() => {
+  if (recommendedCandidates.value.length === 0) return false
+  return recommendedCandidates.value.every((item) => isCandidateChecked(item))
 })
 
 function splitWords(value) {
@@ -849,6 +865,27 @@ function matchedKeyword(item, type) {
   return splitWords(keywordDictionary[type]).find((word) => target.includes(word)) || ''
 }
 
+function itemBasisDate(item, filtersForDate) {
+  return filtersForDate.dateBasis === 'first' ? item.firstContractDate : item.completionDate
+}
+
+function matchesDateFilter(item, filtersForDate) {
+  const dateValue = itemBasisDate(item, filtersForDate)
+  if (!dateValue) return true
+  if (filtersForDate.dateType === 'year') {
+    return !filtersForDate.year || dateValue.startsWith(filtersForDate.year)
+  }
+  if (filtersForDate.dateType === 'month') {
+    return !filtersForDate.month || dateValue.startsWith(filtersForDate.month)
+  }
+  if (filtersForDate.dateType === 'range') {
+    const monthValue = dateValue.slice(0, 7)
+    if (filtersForDate.rangeStart && monthValue < filtersForDate.rangeStart) return false
+    if (filtersForDate.rangeEnd && monthValue > filtersForDate.rangeEnd) return false
+  }
+  return true
+}
+
 function handleReportSearch() {
   currentPage.value = 1
 }
@@ -862,6 +899,7 @@ function openReportModal() {
   activeReportTab.value = 'select'
   reportModalSearch.value = ''
   reportSelectedCandidates.value = []
+  for (const key of Object.keys(excludedCandidateActions)) delete excludedCandidateActions[key]
 }
 
 function closeReportModal() {
@@ -880,17 +918,26 @@ function toggleCandidate(item) {
   reportSelectedCandidates.value.push({ ...item, manual: createDefaultManual() })
 }
 
-function toggleSelectableCandidates() {
-  if (isAllSelectableChecked.value) {
-    const visible = new Set(selectableCandidates.value.map((item) => item.contractNo))
+function toggleRecommendedCandidates() {
+  if (isAllRecommendedChecked.value) {
+    const visible = new Set(recommendedCandidates.value.map((item) => item.contractNo))
     reportSelectedCandidates.value = reportSelectedCandidates.value.filter(
       (item) => !visible.has(item.contractNo),
     )
     return
   }
-  for (const item of selectableCandidates.value) {
+  for (const item of recommendedCandidates.value) {
     if (!isCandidateChecked(item)) reportSelectedCandidates.value.push({ ...item, manual: createDefaultManual() })
   }
+}
+
+function handleExcludedCandidateAction(item, value) {
+  excludedCandidateActions[item.contractNo] = value
+  if (value === 'target' && !isCandidateChecked(item)) {
+    reportSelectedCandidates.value.push({ ...item, manual: createDefaultManual() })
+    return
+  }
+  if (value !== 'target') removeReportCandidate(item)
 }
 
 function removeReportCandidate(item) {
@@ -933,6 +980,7 @@ function createDefaultManual() {
     controlAmountStatus: '예상',
     buildingControlAmount: '',
     buildingControlAmountStatus: '예상',
+    note: '',
   }
 }
 
@@ -1501,6 +1549,18 @@ a:hover {
   font-size: 14px;
 }
 
+.recommendation-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.recommendation-heading h4 {
+  margin: 0;
+}
+
 .recommendation-pane.exclude {
   border-color: #fecaca;
 }
@@ -1519,6 +1579,16 @@ a:hover {
   color: #475569;
   font-size: 12px;
   font-weight: 700;
+}
+
+.candidate-action-select {
+  display: block;
+  width: 132px;
+  margin-top: 8px;
+  padding: 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
 }
 
 .selected-pane {
@@ -1670,6 +1740,19 @@ a:hover {
   grid-template-columns: 1fr 110px;
   gap: 8px;
   align-items: end;
+}
+
+.manual-note-field {
+  grid-column: 1 / -1;
+}
+
+.manual-note-field textarea {
+  min-height: 76px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  font: inherit;
 }
 
 .modal-footer {
