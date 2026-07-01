@@ -898,6 +898,29 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 검증:
   - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
   - npm 로그 파일 생성 권한 경고(`~/.npm/_logs` EPERM)와 Vite chunk size 경고는 있었지만 빌드 성공.
+
+---
+
+## 40. G2B-60 — 로컬 시장데이터 공사/용역/탑 수주 현황 500 복구 (2026-07-01)
+
+- 티켓: G2B-60. 상태: 로컬 복구 완료. 커밋/푸시/PR/배포 없음.
+- 증상:
+  - 로컬 Docker API가 40시간 전 이미지로 떠 있어 `TopCompaniesReportMapper`가 구 `construction_contract_flat`/`service_contract_flat`을 참조 → 탑 수주 현황 500.
+  - 로컬 DB는 V29까지만 적용된 상태였고, 현재 코드의 `top_manual_contract.saved` 참조에 필요한 V30 컬럼이 없음.
+- 조치:
+  - 로컬 DB에 V30 내용 수동 적용: `top_manual_contract.saved CHAR(1) DEFAULT 'N'`, `idx_tmc_saved`.
+  - `flyway_schema_history`에 V30 이력 및 checksum `-1445802394` 보정.
+  - `docker compose up -d --build api`로 로컬 API 이미지를 최신 소스 기준 재빌드/재기동.
+- 검증:
+  - Docker API Gradle build: `BUILD SUCCESSFUL`.
+  - 인증 토큰으로 로컬 API 호출:
+    - `/api/report/market-contracts?contractType=service&grouped=true&start=0&length=1` → `success=true`, `recordsFiltered=1150327`.
+    - `/api/report/market-contracts?contractType=construction&grouped=true&start=0&length=1` → `success=true`, `recordsFiltered=1473667`.
+    - `/api/report/top-companies?grouped=false&start=0&length=1` → `success=true`, `recordsFiltered=816`.
+    - `/api/report/top-companies/filter-options` → `success=true`, `categories=40`, `contractMethods=4`.
+- 참고:
+  - 공사/용역 테이블(`market_contract_flat/grouped`) 자체는 로컬에 정상 적재되어 있었음.
+  - 탑 UNION collation 1271은 현재 코드의 `DataSourceCollationConfig`가 JDBC 세션에서 처리한다. CLI 직접 검증 시에는 `SET collation_connection = utf8mb4_unicode_ci` 필요.
 - 배포 완료(2026-06-30):
   - 커밋: `6438058` (`G2B-55 feat: 탑 수주 현황 필터 CSS 통일`).
   - PR #52 머지: master merge commit `a4a92b4`.
@@ -1015,3 +1038,68 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
     - `/api/report/top-companies?grouped=true&showSavedOnly=true&start=0&length=1` → 401(인증 전 라우팅 정상, 500 아님).
     - `/api/report/top-companies/manual/1/saved` → 401(인증 전 라우팅 정상, 500 아님).
   - API 로그: Spring Boot 정상 기동, 배포 직후 SQL 에러 없음.
+
+---
+
+## 38. G2B-59 — 로컬 task_member_contract_raw COMMENT 한글 깨짐 보정 (2026-06-30)
+
+- 티켓: G2B-59(에픽 G2B-25). 브랜치 생성 없음. **로컬 MySQL 스키마 메타데이터 보정만 수행**.
+- 상태: 완료. 커밋/PR/배포 없음.
+- 문제:
+  - 로컬 `g2b.task_member_contract_raw`의 컬럼/테이블 COMMENT가 `ìˆ˜ìš”ê¸°ê´€...` 형태로 mojibake 표시됨.
+  - 저장소 원본 `backend/src/main/resources/db/migration/V11__create_task_member_contract_raw.sql`의 한글 COMMENT는 정상.
+- 조치:
+  - 로컬에서 `ALTER TABLE task_member_contract_raw ... MODIFY ... COMMENT ...`를 실행해 V11 원본 DDL 기준으로 컬럼 COMMENT 전체와 테이블 COMMENT를 재설정.
+  - 데이터 행/인덱스/컬럼명/타입 변경 없음.
+  - `contract_type` COMMENT는 V11 원본 기준 `업종구분: service(기술용역) | construction(공사)`로 보정.
+- 검증:
+  - `mysql -uroot -h127.0.0.1 g2b -e "SHOW CREATE TABLE task_member_contract_raw\\G"`에서 한글 COMMENT 정상 표시 확인.
+  - `information_schema.COLUMNS` 확인:
+    - `contract_type` = `업종구분: service(기술용역) | construction(공사)`
+    - `demand_agency_region` = `수요기관소재시군구`
+    - `source_file` = `업로드 원본 파일명`
+  - `information_schema.TABLES.TABLE_COMMENT` = `업무별 구성원별 계약내역 RAW 테이블 (기술용역+공사 통합, 조달데이터허브)`.
+
+---
+
+## 39. G2B-28 — 사업탐색(with 설계&감리) 화면 흐름 목업 (2026-06-30~2026-07-01)
+
+- 티켓: G2B-28(에픽 G2B-25). 브랜치: `feature/G2B-28-target-projects-design-supervision`.
+- 이전 목업 배포:
+  - 커밋 `7b05286` (`G2B-28 feat: 사업탐색 설계감리 목업 화면`) 및 `2cdc0d2` (`G2B-28 feat: 후보 포함 제외 필터 목업`) 푸시 완료.
+  - 운영 서버 `~/g2b`를 해당 브랜치/커밋으로 전환 후 web만 `docker compose build web && docker compose up -d web`로 반영.
+  - `https://g2btop.duckdns.org/report-target-projects` 200 OK 확인.
+- 2026-07-01 클라이언트 답변 반영 목업 변경:
+  - 상태: **로컬 미커밋/미배포**. 현재 추가 변경 파일은 `frontend/src/views/TargetProjectsView.vue`, `AI_HANDOFF.md`.
+  - `영업대상(O/X)` 컬럼 제거.
+  - 조회 화면에 `설계/감리`, `공공조달분류명`, `수기입력` 컬럼 추가.
+  - 검색 필터에 `풀어서 보기 / 합쳐서 보기`, `설계/감리` 조건 추가.
+  - `수주대상 확정하기` 모달을 `키워드 사전 / 선택하기 / 재선택하기 / 변경하기` 흐름으로 변경.
+  - 키워드 사전 목업:
+    - 대상 추천 포함 키워드 예: `하수도`, `상수도`, `배수지`.
+    - 대상 제외 추천 키워드 예: `송전탑`, `석면`, `조경`.
+    - 키워드 매칭 대상은 `계약명 + 수요기관명 + 공공조달분류명`.
+  - 선택/재선택 목업:
+    - 기간, 설계/감리, 검색어로 후보 조회.
+    - 후보를 `대상 제외 추천리스트`, `미분류`, `대상 추천리스트`로 분리.
+    - 제외 추천은 참고 리스트로 두고, 추천/미분류에서 체크한 항목만 `확정 예정 항목`으로 이동.
+  - 변경 목업:
+    - 선택된 계약만 조회하는 형태.
+    - 삭제 및 수기입력 진입 버튼 제공.
+  - 수기입력 목업:
+    - `착수일자`, `발주일자`.
+    - `총공사금액`, `수배전금액`, `제어금액`, `빌딩제어금액`.
+    - 각 금액마다 `예상금액 / 확인금액` 상태 저장 UI 제공.
+- 요구/결정:
+  - 데이터는 향후 `market_contract_flat` 계약 단위와 `market_contract_grouped` 합쳐서 보기 둘 다 지원해야 함.
+  - 단건/풀어서 보기에서는 `완수일자`, `총완수일자`를 모두 다루는 방향이 안전하고, 합쳐서 보기에서는 `총완수일자` 기준 표시가 적합.
+  - `착공일자` 요청은 용역 CSV 라벨에 맞춰 `착수일자`로 목업 반영.
+  - 포함/제외 키워드에 모두 걸리지 않는 항목은 `대상 제외 추천`이 아니라 `미분류`로 분리하는 방향.
+- 남은 확인/실구현 항목:
+  - 클라이언트에게 현재 목업 흐름 컨펌 필요.
+  - `감리 / 용역 표시`라는 답변 문구가 실제로 `설계 / 감리 표시` 의미인지 재확인 필요.
+  - 키워드 사전, 선택 확정/재선택/변경, 수기입력 저장은 별도 DB 테이블 설계 필요.
+  - `market_contract_flat/grouped`에 `total_end_date` 등 필요한 원본 필드가 없는 경우 ETL/스키마 확장 필요.
+- 검증:
+  - `cd frontend && env PATH=/Users/junfe/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH npm run build` PASS.
+  - npm 로그 파일 생성 권한 경고(`~/.npm/_logs` EPERM)와 Vite chunk size 경고는 있었지만 빌드 성공.

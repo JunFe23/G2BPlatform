@@ -13,6 +13,15 @@
           <input type="text" v-model="reportFilters.dminsttNm" placeholder="수요기관명 검색" />
           <input type="text" v-model="reportFilters.dminsttNmDetail" placeholder="수요기관지역명 검색" />
           <input type="text" v-model="reportFilters.contractName" placeholder="계약명 검색" />
+          <select v-model="reportFilters.viewMode" class="date-select">
+            <option value="flat">풀어서 보기</option>
+            <option value="grouped">합쳐서 보기</option>
+          </select>
+          <select v-model="reportFilters.designSupervisionType" class="date-select">
+            <option value="">설계/감리 (전체)</option>
+            <option value="설계">설계</option>
+            <option value="감리">감리</option>
+          </select>
           <select v-model="reportFilters.categoryName" class="date-select">
             <option value="">공공조달분류명 (전체)</option>
             <option value="토목설계용역">토목설계용역</option>
@@ -66,30 +75,36 @@
                 <th>업체명</th>
                 <th>계약건명</th>
                 <th>수요기관명</th>
+                <th>설계/감리</th>
+                <th>공공조달분류명</th>
                 <th>입찰공고번호</th>
                 <th>최초계약일자</th>
                 <th>최초계약금액</th>
                 <th>완수일자</th>
-                <th>영업대상(O/X)</th>
+                <th>수기입력</th>
                 <th>선택해제</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="filteredReportItems.length === 0">
-                <td colspan="9" class="no-data">데이터가 없습니다.</td>
+                <td colspan="11" class="no-data">데이터가 없습니다.</td>
               </tr>
               <tr v-else v-for="item in filteredReportItems" :key="item.contractNo">
                 <td>{{ item.vendorName }}</td>
                 <td>{{ item.contractName }}</td>
                 <td>{{ item.demandAgencyName }}</td>
+                <td>
+                  <span class="type-badge" :class="{ supervision: item.designSupervisionType === '감리' }">
+                    {{ item.designSupervisionType }}
+                  </span>
+                </td>
+                <td>{{ item.categoryName }}</td>
                 <td>{{ item.bidNoticeNo }}</td>
                 <td>{{ item.firstContractDate }}</td>
                 <td>{{ formatNumber(item.firstContractAmount) }}</td>
                 <td>{{ item.completionDate }}</td>
                 <td>
-                  <span class="target-badge" :class="{ off: item.businessTarget !== 'O' }">
-                    {{ item.businessTarget }}
-                  </span>
+                  <button class="manual-btn" @click="openManualInput(item)">입력</button>
                 </td>
                 <td>
                   <button class="unselect-btn" @click="mockUnselect(item)">선택 해제</button>
@@ -126,67 +141,140 @@
           </div>
 
           <div class="notice">
-            <div v-if="activeReportTab === 'select'">
-              조건에 맞는 설계/감리 용역 후보를 체크박스로 선택하고 확정하는 화면입니다. 전체 선택이 가능합니다.
+            <div v-if="activeReportTab === 'keyword'">
+              포함/제외 키워드를 먼저 저장해두고, 수주대상 확정 화면에서 추천 리스트 분류 기준으로 사용합니다.
+            </div>
+            <div v-else-if="activeReportTab === 'select'">
+              기간과 설계/감리 조건으로 조회한 뒤 저장된 키워드 기준으로 대상 추천/제외 추천/미분류를 나눠 보여줍니다.
             </div>
             <div v-else-if="activeReportTab === 'reselect'">
-              확정되지 않은 계약을 다시 검색해서 추가 선택하는 화면입니다.
+              아직 확정되지 않은 계약만 다시 조회해서 추가 선택하는 화면입니다.
             </div>
             <div v-else>
-              이미 확정된 계약의 영업대상 상태를 바꾸거나 목록에서 삭제하는 화면입니다.
+              이미 확정된 계약만 조회하고, 선택 목록에서 삭제하거나 수기 입력 값을 관리하는 화면입니다.
             </div>
           </div>
 
-          <div v-if="activeReportTab !== 'change'" class="modal-body">
-            <div class="modal-pane left-pane">
-              <div class="modal-tool-row">
-                <input
-                  type="text"
-                  v-model="reportModalSearch"
-                  placeholder="계약명, 수요기관, 공공조달분류 검색"
-                  class="modal-search-input"
-                />
-                <input
-                  type="text"
-                  v-model="reportModalIncludeText"
-                  placeholder="포함 텍스트 예: 하수도, 상수도"
-                  class="modal-search-input keyword-input"
-                />
-                <input
-                  type="text"
-                  v-model="reportModalExcludeText"
-                  placeholder="제외 텍스트 예: 송전탑"
-                  class="modal-search-input keyword-input"
-                />
-                <label class="select-all-label">
-                  <input type="checkbox" :checked="isAllVisibleChecked" @change="toggleVisibleCandidates" />
-                  전체 선택
-                </label>
+          <div v-if="activeReportTab === 'keyword'" class="keyword-config">
+            <div class="keyword-card include">
+              <h4>대상 추천 포함 키워드</h4>
+              <div class="keyword-chip-row">
+                <span v-for="word in keywordDictionary.include" :key="word" class="keyword-chip include">
+                  {{ word }}
+                </span>
               </div>
-              <ul class="modal-list">
-                <li
-                  v-for="item in visibleCandidates"
-                  :key="item.contractNo"
-                  class="modal-list-item candidate-item"
-                >
-                  <label>
-                    <input
-                      type="checkbox"
-                      :checked="isCandidateChecked(item)"
-                      @change="toggleCandidate(item)"
-                    />
-                    <span>
-                      {{ item.firstContractDate }} | {{ item.contractName }} | {{ item.demandAgencyName }} |
-                      {{ formatNumber(item.firstContractAmount) }}
-                    </span>
-                  </label>
-                </li>
-                <li v-if="visibleCandidates.length === 0" class="modal-loading">검색 결과가 없습니다.</li>
-              </ul>
+              <input
+                type="text"
+                v-model="keywordDraft.include"
+                placeholder="예: 하수도, 상수도, 배수지"
+                class="modal-search-input"
+              />
+            </div>
+            <div class="keyword-card exclude">
+              <h4>대상 제외 추천 키워드</h4>
+              <div class="keyword-chip-row">
+                <span v-for="word in keywordDictionary.exclude" :key="word" class="keyword-chip exclude">
+                  {{ word }}
+                </span>
+              </div>
+              <input
+                type="text"
+                v-model="keywordDraft.exclude"
+                placeholder="예: 송전탑, 조경, 석면"
+                class="modal-search-input"
+              />
+            </div>
+          </div>
+
+          <div v-else-if="activeReportTab !== 'change'" class="modal-body report-selection-body">
+            <div class="modal-filter-band">
+              <select v-model="reportModalFilters.dateBasis" class="date-select">
+                <option value="first">최초계약일자 기준</option>
+                <option value="completion">완수일자 기준</option>
+              </select>
+              <select v-model="reportModalFilters.year" class="date-select">
+                <option value="">기간 전체</option>
+                <option v-for="y in years" :key="y" :value="y">{{ y }}년</option>
+              </select>
+              <select v-model="reportModalFilters.designSupervisionType" class="date-select">
+                <option value="">설계/감리 전체</option>
+                <option value="설계">설계</option>
+                <option value="감리">감리</option>
+              </select>
+              <input
+                type="text"
+                v-model="reportModalSearch"
+                placeholder="계약명, 수요기관, 공공조달분류 검색"
+                class="modal-search-input"
+              />
+              <label class="select-all-label">
+                <input type="checkbox" :checked="isAllSelectableChecked" @change="toggleSelectableCandidates" />
+                조회결과 전체 선택
+              </label>
             </div>
 
-            <div class="modal-pane right-pane">
-              <h4>선택된 항목</h4>
+            <div class="recommendation-grid">
+              <div class="modal-pane recommendation-pane exclude">
+                <h4>대상 제외 추천리스트</h4>
+                <ul class="modal-list">
+                  <li
+                    v-for="item in excludedCandidates"
+                    :key="item.contractNo"
+                    class="modal-list-item candidate-item"
+                  >
+                    <span class="recommendation-reason">제외 키워드: {{ matchedKeyword(item, 'exclude') }}</span>
+                    <span>{{ item.firstContractDate }} | {{ item.contractName }} | {{ item.demandAgencyName }}</span>
+                  </li>
+                  <li v-if="excludedCandidates.length === 0" class="modal-loading">조회 결과가 없습니다.</li>
+                </ul>
+              </div>
+
+              <div class="modal-pane recommendation-pane neutral">
+                <h4>미분류</h4>
+                <ul class="modal-list">
+                  <li
+                    v-for="item in neutralCandidates"
+                    :key="item.contractNo"
+                    class="modal-list-item candidate-item"
+                  >
+                    <label>
+                      <input
+                        type="checkbox"
+                        :checked="isCandidateChecked(item)"
+                        @change="toggleCandidate(item)"
+                      />
+                      <span>{{ item.firstContractDate }} | {{ item.contractName }} | {{ item.categoryName }}</span>
+                    </label>
+                  </li>
+                  <li v-if="neutralCandidates.length === 0" class="modal-loading">조회 결과가 없습니다.</li>
+                </ul>
+              </div>
+
+              <div class="modal-pane recommendation-pane include">
+                <h4>대상 추천리스트</h4>
+                <ul class="modal-list">
+                  <li
+                    v-for="item in recommendedCandidates"
+                    :key="item.contractNo"
+                    class="modal-list-item candidate-item"
+                  >
+                    <label>
+                      <input
+                        type="checkbox"
+                        :checked="isCandidateChecked(item)"
+                        @change="toggleCandidate(item)"
+                      />
+                      <span class="recommendation-reason">포함 키워드: {{ matchedKeyword(item, 'include') }}</span>
+                      <span>{{ item.firstContractDate }} | {{ item.contractName }} | {{ item.demandAgencyName }}</span>
+                    </label>
+                  </li>
+                  <li v-if="recommendedCandidates.length === 0" class="modal-loading">조회 결과가 없습니다.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="modal-pane selected-pane">
+              <h4>확정 예정 항목</h4>
               <ul class="modal-list">
                 <li v-for="item in reportSelectedCandidates" :key="item.contractNo" class="modal-list-item">
                   {{ item.firstContractDate }} | {{ item.contractName }} | {{ item.demandAgencyName }}
@@ -207,7 +295,7 @@
                     <th>계약건명</th>
                     <th>수요기관명</th>
                     <th>완수일자</th>
-                    <th>영업대상</th>
+                    <th>수기입력</th>
                     <th>관리</th>
                   </tr>
                 </thead>
@@ -217,10 +305,7 @@
                     <td>{{ item.demandAgencyName }}</td>
                     <td>{{ item.completionDate }}</td>
                     <td>
-                      <select v-model="item.businessTarget" class="target-select">
-                        <option value="O">O</option>
-                        <option value="X">X</option>
-                      </select>
+                      <button class="manual-btn" @click="openManualInput(item)">입력</button>
                     </td>
                     <td>
                       <button class="remove-btn" @click="mockUnselect(item)">삭제</button>
@@ -232,10 +317,49 @@
           </div>
 
           <div class="modal-footer">
-            <button v-if="activeReportTab !== 'change'" @click="saveReportSelected" class="save-btn">
+            <button v-if="activeReportTab === 'keyword'" @click="saveKeywordMock" class="save-btn">
+              키워드 사전 저장
+            </button>
+            <button v-else-if="activeReportTab !== 'change'" @click="saveReportSelected" class="save-btn">
               선택 항목 확정
             </button>
             <button v-else @click="closeReportModal" class="save-btn">변경 내용 확인</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="manualInputItem" class="modal-overlay">
+        <div class="modal-content manual-modal">
+          <div class="modal-header">
+            <strong>수기 입력 - {{ manualInputItem.contractName }}</strong>
+            <button @click="manualInputItem = null" class="close-btn">&times;</button>
+          </div>
+          <div class="manual-form">
+            <label>
+              착수일자
+              <input type="text" v-model="manualInputItem.manual.startDate" placeholder="YYYY-MM-DD" />
+            </label>
+            <label>
+              발주일자
+              <input type="text" v-model="manualInputItem.manual.orderDate" placeholder="YYYY-MM-DD" />
+            </label>
+            <div
+              v-for="field in manualAmountFields"
+              :key="field.key"
+              class="manual-amount-row"
+            >
+              <label>
+                {{ field.label }}
+                <input type="text" v-model="manualInputItem.manual[field.key]" placeholder="금액 입력" />
+              </label>
+              <select v-model="manualInputItem.manual[`${field.key}Status`]">
+                <option value="예상">예상금액</option>
+                <option value="확인">확인금액</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button @click="manualInputItem = null" class="save-btn">저장</button>
           </div>
         </div>
       </div>
@@ -459,6 +583,8 @@ const reportFilters = reactive({
   dminsttNm: '',
   dminsttNmDetail: '',
   contractName: '',
+  viewMode: 'flat',
+  designSupervisionType: '',
   categoryName: '',
   cntctCnclsMthdNm: '',
   firstCntrctDate: '',
@@ -478,12 +604,24 @@ const reportItems = ref([
     demandAgencyName: '경상북도 칠곡군 수도사업소',
     demandAgencyRegion: '경상북도 칠곡군',
     categoryName: '토목감리용역',
+    designSupervisionType: '감리',
     contractMethod: '제한경쟁',
     bidNoticeNo: '20260528112',
     firstContractDate: '2026-05-28',
     firstContractAmount: 1574000000,
     completionDate: '2028-07-06',
-    businessTarget: 'O',
+    manual: {
+      startDate: '2026-06-15',
+      orderDate: '2026-05-20',
+      totalConstructionAmount: '4,200,000,000',
+      totalConstructionAmountStatus: '예상',
+      powerDistributionAmount: '380,000,000',
+      powerDistributionAmountStatus: '확인',
+      controlAmount: '',
+      controlAmountStatus: '예상',
+      buildingControlAmount: '',
+      buildingControlAmountStatus: '예상',
+    },
   },
   {
     contractNo: 'R26TA01905487',
@@ -492,12 +630,24 @@ const reportItems = ref([
     demandAgencyName: '부산광역시 강서구',
     demandAgencyRegion: '부산광역시 강서구',
     categoryName: '상하수도설계용역',
+    designSupervisionType: '설계',
     contractMethod: '제한경쟁',
     bidNoticeNo: '20260528074',
     firstContractDate: '2026-05-28',
     firstContractAmount: 640600000,
     completionDate: '2029-03-29',
-    businessTarget: 'O',
+    manual: {
+      startDate: '',
+      orderDate: '',
+      totalConstructionAmount: '',
+      totalConstructionAmountStatus: '예상',
+      powerDistributionAmount: '',
+      powerDistributionAmountStatus: '예상',
+      controlAmount: '',
+      controlAmountStatus: '예상',
+      buildingControlAmount: '',
+      buildingControlAmountStatus: '예상',
+    },
   },
   {
     contractNo: 'R26TA01903743',
@@ -506,12 +656,24 @@ const reportItems = ref([
     demandAgencyName: '서울특별시교육청 서울다솜관광고등학교',
     demandAgencyRegion: '서울특별시',
     categoryName: '안전진단용역',
+    designSupervisionType: '감리',
     contractMethod: '수의계약',
     bidNoticeNo: '20260529031',
     firstContractDate: '2026-05-29',
     firstContractAmount: 2860000,
     completionDate: '2026-09-30',
-    businessTarget: 'X',
+    manual: {
+      startDate: '',
+      orderDate: '',
+      totalConstructionAmount: '',
+      totalConstructionAmountStatus: '예상',
+      powerDistributionAmount: '',
+      powerDistributionAmountStatus: '예상',
+      controlAmount: '',
+      controlAmountStatus: '예상',
+      buildingControlAmount: '',
+      buildingControlAmountStatus: '예상',
+    },
   },
 ])
 
@@ -521,40 +683,92 @@ const reportCandidateItems = ref([
     contractName: '삼척시 성장관리계획구역 지정 및 성장관리계획 수립 용역',
     demandAgencyName: '강원특별자치도 삼척시',
     categoryName: '도시계획용역',
+    designSupervisionType: '설계',
     firstContractDate: '2026-05-29',
     firstContractAmount: 99935000,
     completionDate: '2027-11-25',
+    bidNoticeNo: '20260529221',
+    vendorName: '도시종합기술단',
   },
   {
     contractNo: 'R26TA01914917',
     contractName: '2030년 통영 도시관리계획 수립 용역(총괄분 및 1차분)',
     demandAgencyName: '경상남도 통영시',
     categoryName: '도시계획용역',
+    designSupervisionType: '설계',
     firstContractDate: '2026-05-29',
     firstContractAmount: 300000000,
     completionDate: '2028-11-20',
+    bidNoticeNo: '20260529104',
+    vendorName: '한려엔지니어링',
   },
   {
     contractNo: 'R26TA01906263',
     contractName: '서성지구 농촌공간정비사업 석면감리용역',
     demandAgencyName: '한국농어촌공사 전남지역본부 화순지사',
     categoryName: '건축감리용역',
+    designSupervisionType: '감리',
     firstContractDate: '2026-05-28',
     firstContractAmount: 45000000,
     completionDate: '2027-12-20',
+    bidNoticeNo: '20260528048',
+    vendorName: '해담건축사사무소',
+  },
+  {
+    contractNo: 'R26TA01922207',
+    contractName: '하수도정비 기본계획 변경 및 침수대응 설계용역',
+    demandAgencyName: '경기도 광주시',
+    categoryName: '상하수도설계용역',
+    designSupervisionType: '설계',
+    firstContractDate: '2026-05-30',
+    firstContractAmount: 730000000,
+    completionDate: '2028-02-15',
+    bidNoticeNo: '20260530077',
+    vendorName: '수엔지니어링',
+  },
+  {
+    contractNo: 'R26TA01924188',
+    contractName: '송전탑 주변지역 정비 실시설계용역',
+    demandAgencyName: '한국전력공사',
+    categoryName: '전기설계용역',
+    designSupervisionType: '설계',
+    firstContractDate: '2026-05-30',
+    firstContractAmount: 88000000,
+    completionDate: '2026-12-20',
+    bidNoticeNo: '20260530119',
+    vendorName: '대한전력기술',
   },
 ])
 
 const isReportModalOpen = ref(false)
 const activeReportTab = ref('select')
 const reportModalSearch = ref('')
-const reportModalIncludeText = ref('')
-const reportModalExcludeText = ref('')
+const reportModalFilters = reactive({
+  dateBasis: 'completion',
+  year: '',
+  designSupervisionType: '',
+})
+const keywordDictionary = reactive({
+  include: ['하수도', '상수도', '배수지'],
+  exclude: ['송전탑', '석면', '조경'],
+})
+const keywordDraft = reactive({
+  include: keywordDictionary.include.join(', '),
+  exclude: keywordDictionary.exclude.join(', '),
+})
 const reportSelectedCandidates = ref([])
+const manualInputItem = ref(null)
 const reportTabs = [
+  { value: 'keyword', label: '키워드 사전' },
   { value: 'select', label: '선택하기' },
   { value: 'reselect', label: '재선택하기' },
   { value: 'change', label: '변경하기' },
+]
+const manualAmountFields = [
+  { key: 'totalConstructionAmount', label: '총공사금액' },
+  { key: 'powerDistributionAmount', label: '수배전금액' },
+  { key: 'controlAmount', label: '제어금액' },
+  { key: 'buildingControlAmount', label: '빌딩제어금액' },
 ]
 
 const isModalOpen = ref(false)
@@ -568,8 +782,9 @@ const modalAllLoaded = ref(false)
 const filteredReportItems = computed(() => {
   return reportItems.value.filter((item) => {
     if (reportFilters.dminsttNm && !item.demandAgencyName.includes(reportFilters.dminsttNm)) return false
-    if (reportFilters.dminsttNmDetail && !item.demandAgencyRegion.includes(reportFilters.dminsttNmDetail)) return false
+    if (reportFilters.dminsttNmDetail && !(item.demandAgencyRegion || '').includes(reportFilters.dminsttNmDetail)) return false
     if (reportFilters.contractName && !item.contractName.includes(reportFilters.contractName)) return false
+    if (reportFilters.designSupervisionType && item.designSupervisionType !== reportFilters.designSupervisionType) return false
     if (reportFilters.categoryName && item.categoryName !== reportFilters.categoryName) return false
     if (reportFilters.cntctCnclsMthdNm && item.contractMethod !== reportFilters.cntctCnclsMthdNm) return false
     if (reportFilters.firstCntrctDate && item.firstContractDate !== reportFilters.firstCntrctDate) return false
@@ -577,23 +792,49 @@ const filteredReportItems = computed(() => {
   })
 })
 
-const visibleCandidates = computed(() => {
+const modalBaseCandidates = computed(() => {
   const keyword = reportModalSearch.value.trim()
   const existing = new Set(reportItems.value.map((item) => item.contractNo))
   return reportCandidateItems.value.filter((item) => {
-    if (activeReportTab.value === 'select' && existing.has(item.contractNo)) return false
+    if ((activeReportTab.value === 'select' || activeReportTab.value === 'reselect') && existing.has(item.contractNo)) return false
+    if (reportModalFilters.designSupervisionType && item.designSupervisionType !== reportModalFilters.designSupervisionType) return false
+    if (reportModalFilters.year && !item.firstContractDate.startsWith(reportModalFilters.year)) return false
     if (keyword && !candidateTargetText(item).includes(keyword)) return false
-    return matchesModalKeywordRule(item)
+    return true
   })
 })
 
-const isAllVisibleChecked = computed(() => {
-  if (visibleCandidates.value.length === 0) return false
-  return visibleCandidates.value.every((item) => isCandidateChecked(item))
+const recommendedCandidates = computed(() =>
+  modalBaseCandidates.value.filter((item) => Boolean(matchedKeyword(item, 'include'))),
+)
+
+const excludedCandidates = computed(() =>
+  modalBaseCandidates.value.filter((item) => Boolean(matchedKeyword(item, 'exclude'))),
+)
+
+const neutralCandidates = computed(() =>
+  modalBaseCandidates.value.filter(
+    (item) => !matchedKeyword(item, 'include') && !matchedKeyword(item, 'exclude'),
+  ),
+)
+
+const selectableCandidates = computed(() => {
+  const blocked = new Set(excludedCandidates.value.map((item) => item.contractNo))
+  return [...recommendedCandidates.value, ...neutralCandidates.value].filter(
+    (item, index, list) =>
+      !blocked.has(item.contractNo) &&
+      list.findIndex((candidate) => candidate.contractNo === item.contractNo) === index,
+  )
+})
+
+const isAllSelectableChecked = computed(() => {
+  if (selectableCandidates.value.length === 0) return false
+  return selectableCandidates.value.every((item) => isCandidateChecked(item))
 })
 
 function splitWords(value) {
-  return value
+  const source = Array.isArray(value) ? value.join(',') : value
+  return source
     .split(',')
     .map((word) => word.trim())
     .filter(Boolean)
@@ -603,13 +844,9 @@ function candidateTargetText(item) {
   return `${item.contractName} ${item.demandAgencyName} ${item.categoryName}`
 }
 
-function matchesModalKeywordRule(item) {
+function matchedKeyword(item, type) {
   const target = candidateTargetText(item)
-  const includeWords = splitWords(reportModalIncludeText.value)
-  const excludeWords = splitWords(reportModalExcludeText.value)
-  if (includeWords.length > 0 && !includeWords.some((word) => target.includes(word))) return false
-  if (excludeWords.some((word) => target.includes(word))) return false
-  return true
+  return splitWords(keywordDictionary[type]).find((word) => target.includes(word)) || ''
 }
 
 function handleReportSearch() {
@@ -624,8 +861,6 @@ function openReportModal() {
   isReportModalOpen.value = true
   activeReportTab.value = 'select'
   reportModalSearch.value = ''
-  reportModalIncludeText.value = ''
-  reportModalExcludeText.value = ''
   reportSelectedCandidates.value = []
 }
 
@@ -642,19 +877,19 @@ function toggleCandidate(item) {
     removeReportCandidate(item)
     return
   }
-  reportSelectedCandidates.value.push({ ...item, businessTarget: 'O' })
+  reportSelectedCandidates.value.push({ ...item, manual: createDefaultManual() })
 }
 
-function toggleVisibleCandidates() {
-  if (isAllVisibleChecked.value) {
-    const visible = new Set(visibleCandidates.value.map((item) => item.contractNo))
+function toggleSelectableCandidates() {
+  if (isAllSelectableChecked.value) {
+    const visible = new Set(selectableCandidates.value.map((item) => item.contractNo))
     reportSelectedCandidates.value = reportSelectedCandidates.value.filter(
       (item) => !visible.has(item.contractNo),
     )
     return
   }
-  for (const item of visibleCandidates.value) {
-    if (!isCandidateChecked(item)) reportSelectedCandidates.value.push({ ...item, businessTarget: 'O' })
+  for (const item of selectableCandidates.value) {
+    if (!isCandidateChecked(item)) reportSelectedCandidates.value.push({ ...item, manual: createDefaultManual() })
   }
 }
 
@@ -678,6 +913,32 @@ function saveReportSelected() {
 
 function mockUnselect(item) {
   reportItems.value = reportItems.value.filter((row) => row.contractNo !== item.contractNo)
+}
+
+function saveKeywordMock() {
+  keywordDictionary.include = splitWords(keywordDraft.include)
+  keywordDictionary.exclude = splitWords(keywordDraft.exclude)
+  activeReportTab.value = 'select'
+}
+
+function createDefaultManual() {
+  return {
+    startDate: '',
+    orderDate: '',
+    totalConstructionAmount: '',
+    totalConstructionAmountStatus: '예상',
+    powerDistributionAmount: '',
+    powerDistributionAmountStatus: '예상',
+    controlAmount: '',
+    controlAmountStatus: '예상',
+    buildingControlAmount: '',
+    buildingControlAmountStatus: '예상',
+  }
+}
+
+function openManualInput(item) {
+  if (!item.manual) item.manual = createDefaultManual()
+  manualInputItem.value = item
 }
 
 function buildParams() {
@@ -1080,6 +1341,33 @@ a:hover {
   cursor: pointer;
 }
 
+.manual-btn {
+  padding: 5px 10px;
+  background-color: #0f766e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.type-badge.supervision {
+  background: #dcfce7;
+  color: #166534;
+}
+
 .target-badge {
   display: inline-flex;
   align-items: center;
@@ -1184,6 +1472,59 @@ a:hover {
   gap: 10px;
 }
 
+.report-selection-body {
+  flex-direction: column;
+}
+
+.modal-filter-band {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.recommendation-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.recommendation-pane h4,
+.selected-pane h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.recommendation-pane.exclude {
+  border-color: #fecaca;
+}
+
+.recommendation-pane.include {
+  border-color: #bbf7d0;
+}
+
+.recommendation-pane.neutral {
+  border-color: #fde68a;
+}
+
+.recommendation-reason {
+  display: block;
+  margin-bottom: 4px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.selected-pane {
+  flex: 0 0 150px;
+}
+
 .modal-pane {
   flex: 1;
   display: flex;
@@ -1211,6 +1552,55 @@ a:hover {
 
 .keyword-input {
   flex-basis: 220px;
+}
+
+.keyword-config {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 12px;
+  padding: 14px;
+  overflow: auto;
+}
+
+.keyword-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fff;
+}
+
+.keyword-card h4 {
+  margin: 0 0 12px;
+  color: #0f172a;
+}
+
+.keyword-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+  margin-bottom: 12px;
+}
+
+.keyword-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.keyword-chip.include {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.keyword-chip.exclude {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .select-all-label {
@@ -1250,6 +1640,36 @@ a:hover {
 
 .target-select {
   min-width: 64px;
+}
+
+.manual-modal {
+  width: min(680px, 92vw);
+  height: auto;
+  max-height: 86vh;
+}
+
+.manual-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.manual-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #334155;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.manual-amount-row {
+  display: grid;
+  grid-template-columns: 1fr 110px;
+  gap: 8px;
+  align-items: end;
 }
 
 .modal-footer {
