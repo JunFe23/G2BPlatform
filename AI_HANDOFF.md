@@ -1015,3 +1015,31 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
     - `/api/report/top-companies?grouped=true&showSavedOnly=true&start=0&length=1` → 401(인증 전 라우팅 정상, 500 아님).
     - `/api/report/top-companies/manual/1/saved` → 401(인증 전 라우팅 정상, 500 아님).
   - API 로그: Spring Boot 정상 기동, 배포 직후 SQL 에러 없음.
+
+---
+
+## 38. G2B-61 — 회원 최종 접속일 갱신 기준 개선 (2026-07-02)
+
+- 티켓: G2B-61. 브랜치: `feature/G2B-61-last-login-touch-on-me`.
+- 상태: **로컬 구현/검증 완료, 커밋·푸시·배포 전**.
+- 배경:
+  - 회원관리 `최종 접속일`은 `users.last_login_at`을 표시.
+  - 기존에는 `AuthService.login()`에서만 갱신되어, 이미 로그인된 사용자가 다음날 저장된 JWT로 접속하면 갱신되지 않았음.
+- 결정:
+  - DB 컬럼은 새로 만들지 않고 기존 `last_login_at` 재사용.
+  - 의미를 “로그인 또는 인증 상태 활동 시점”으로 확장.
+  - `/api/auth/me` 호출 시 `Asia/Seoul` 날짜 기준 하루 1회만 `last_login_at` 갱신.
+  - 같은 날짜 재접속/화면 이동에서는 DB 쓰기를 하지 않음.
+- 변경 파일:
+  - `backend/src/main/java/org/example/g2bplatform/service/AuthService.java`
+    - `me()`에 `@Transactional` 추가.
+    - `touchLastLoginOncePerDay()` 헬퍼 추가.
+    - `SERVICE_ZONE = Asia/Seoul` 기준으로 마지막 접속일 날짜 비교.
+  - `backend/src/main/java/org/example/g2bplatform/entity/User.java`
+    - `lastLoginAt` 주석을 “로그인 또는 인증 상태 활동 시점”으로 보정.
+- 검증:
+  - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew compileJava` PASS.
+  - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew test` PASS.
+- 남은 일:
+  - 사용자 명시 요청 시 커밋/푸시/서버 배포.
+  - 운영 반영 후 이미 로그인된 브라우저에서 새로고침 또는 앱 진입 시 `/api/auth/me`가 호출되는지 확인.

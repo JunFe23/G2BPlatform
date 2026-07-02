@@ -35,7 +35,7 @@ public class User {
     @Column(nullable = false)
     private Boolean approved = true;
 
-    /** 최종 접속일(로그인 시점). null이면 미로그인. */
+    /** 최종 접속일(로그인 또는 인증 상태 활동 시점). null이면 미접속. */
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 

@@ -16,6 +16,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
@@ -25,6 +27,7 @@ public class AuthService {
 
     private static final String RECOVERY_MESSAGE = "If the email exists, we sent instructions.";
     private static final int TOKEN_EXPIRY_HOURS = 24;
+    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
@@ -78,9 +81,11 @@ public class AuthService {
         return new AuthDto.LoginResponse(token, jwtUtil.getExpiresInSeconds(), userInfo);
     }
 
+    @Transactional
     public AuthDto.MeResponse me(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AuthException("UNAUTHORIZED", "인증되지 않았습니다."));
+        touchLastLoginOncePerDay(user, Instant.now());
         String masked = maskEmail(user.getEmail());
         return new AuthDto.MeResponse(user.getUsername(), masked, user.getRole());
     }
@@ -138,6 +143,19 @@ public class AuthService {
         if (at <= 0) return "***";
         String local = email.substring(0, Math.min(2, at));
         return local + "***" + email.substring(at);
+    }
+
+    private void touchLastLoginOncePerDay(User user, Instant now) {
+        Instant lastLoginAt = user.getLastLoginAt();
+        if (lastLoginAt != null && toServiceDate(lastLoginAt).equals(toServiceDate(now))) {
+            return;
+        }
+        user.setLastLoginAt(now);
+        userRepository.save(user);
+    }
+
+    private static LocalDate toServiceDate(Instant instant) {
+        return instant.atZone(SERVICE_ZONE).toLocalDate();
     }
 
     private static String generateSecureToken() {
