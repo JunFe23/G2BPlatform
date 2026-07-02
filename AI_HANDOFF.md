@@ -1021,7 +1021,7 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 ## 38. G2B-61 — 회원 최종 접속일 갱신 기준 개선 (2026-07-02)
 
 - 티켓: G2B-61. 브랜치: `feature/G2B-61-last-login-touch-on-me`.
-- 상태: **로컬 구현/검증 완료, 커밋·푸시·배포 전**.
+- 상태: **배포 완료**. 운영 API 컨테이너 재빌드/재기동 완료.
 - 배경:
   - 회원관리 `최종 접속일`은 `users.last_login_at`을 표시.
   - 기존에는 `AuthService.login()`에서만 갱신되어, 이미 로그인된 사용자가 다음날 저장된 JWT로 접속하면 갱신되지 않았음.
@@ -1040,6 +1040,16 @@ FROM specific_item_grouped WHERE group_key LIKE '20191104D04%';
 - 검증:
   - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew compileJava` PASS.
   - `cd backend && env GRADLE_USER_HOME=.gradle ./gradlew test` PASS.
+- 배포 완료(2026-07-02):
+  - 커밋: `12b8bd6` (`G2B-61 feat: 최종 접속일 활동 기준 갱신`) 푸시 완료.
+  - 서버는 G2B-28 사업탐색 목업 web 확인 상태를 유지하기 위해 다음 방식으로 배포:
+    - 서버 `~/g2b`에서 `feature/G2B-61-last-login-touch-on-me`로 임시 전환.
+    - `docker compose build api && docker compose up -d api` 실행.
+    - 서버 작업트리는 다시 `feature/G2B-28-target-projects-design-supervision`으로 복귀.
+    - web 컨테이너는 재빌드하지 않아 G2B-28 목업 화면 유지.
+  - 운영 API Docker build: `gradle build -x test --no-daemon` BUILD SUCCESSFUL.
+  - `g2b-api-1` 재기동 완료, `g2b-web-1` 유지.
+  - API 로그: Spring Boot 정상 기동, Flyway schema version 30 / 신규 migration 없음.
+  - 서버 내부 `GET http://localhost:8080/api/auth/me` 인증 없음 호출 → 401 JSON 응답 확인(라우팅 정상).
 - 남은 일:
-  - 사용자 명시 요청 시 커밋/푸시/서버 배포.
-  - 운영 반영 후 이미 로그인된 브라우저에서 새로고침 또는 앱 진입 시 `/api/auth/me`가 호출되는지 확인.
+  - 실제 로그인된 브라우저에서 새로고침 또는 앱 진입 시 `/api/auth/me` 호출 후 회원관리 최종 접속일 갱신 확인.
